@@ -1,27 +1,41 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
-import { loginAPI, registerAPI, getProfileAPI, updateProfileAPI, ShopUser } from '@/api/auth';
 
-interface RegisterData {
+export interface AuthUser {
+  _id: string;
   fullName: string;
-  email: string;
   phone: string;
-  password: string;
+  email?: string;
+  role?: 'customer' | 'delivery_staff' | 'warehouse_staff' | 'admin';
+  companyId?: string;
+  companyName?: string;
+  companyLogo?: string;
+  primaryColor?: string;
+  pushToken?: string;
+
+  // Customer identity and ERP details from JWT
+  customerToken?: string; // CT-XXXXXX
+  tier?: 'standard' | 'regular' | 'premium';
+  pricingGroup?: string;
+  creditLimit?: number;
+  creditAvailable?: number;
+  isPriority?: boolean;
 }
 
 interface AuthStore {
-  user: ShopUser | null;
+  user: AuthUser | null;
   token: string | null;
   isLoading: boolean;
   isAuthenticated: boolean;
 
-  login: (email: string, password: string) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
+  setSession: (token: string, user: AuthUser) => Promise<void>;
   logout: () => Promise<void>;
   restoreSession: () => Promise<void>;
-  updateProfile: (data: Partial<ShopUser>) => void;
-  setUser: (user: ShopUser) => void;
+  updatePushToken: (pushToken: string) => void;
 }
+
+const TOKEN_KEY = 'store_token';
+const USER_KEY  = 'aits_auth_user';
 
 export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
@@ -29,48 +43,34 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   isLoading: true,
   isAuthenticated: false,
 
-  login: async (email, password) => {
-    const response = await loginAPI(email, password);
-    const token = response.token;
-    const user = response.user;
-    await SecureStore.setItemAsync('shop_token', token);
-    set({ user, token, isAuthenticated: true });
-  },
-
-  register: async (data) => {
-    const response = await registerAPI(data);
-    const token = response.token;
-    const user = response.user;
-    await SecureStore.setItemAsync('shop_token', token);
-    set({ user, token, isAuthenticated: true });
+  setSession: async (token, user) => {
+    await SecureStore.setItemAsync(TOKEN_KEY, token);
+    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(user));
+    set({ token, user, isAuthenticated: true, isLoading: false });
   },
 
   logout: async () => {
-    await SecureStore.deleteItemAsync('shop_token');
-    set({ user: null, token: null, isAuthenticated: false });
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    await SecureStore.deleteItemAsync(USER_KEY);
+    set({ token: null, user: null, isAuthenticated: false });
   },
 
   restoreSession: async () => {
     set({ isLoading: true });
     try {
-      const token = await SecureStore.getItemAsync('shop_token');
-      if (!token) {
-        set({ isLoading: false });
-        return;
+      const token = await SecureStore.getItemAsync(TOKEN_KEY);
+      const userStr = await SecureStore.getItemAsync(USER_KEY);
+      if (token && userStr) {
+        const user = JSON.parse(userStr) as AuthUser;
+        set({ token, user, isAuthenticated: true });
       }
-      const user = await getProfileAPI(token);
-      set({ user, token, isAuthenticated: true });
-    } catch {
-      await SecureStore.deleteItemAsync('shop_token');
+    } catch (e) {
+      console.error('Session restore failed:', e);
     } finally {
       set({ isLoading: false });
     }
   },
 
-  updateProfile: (data) =>
-    set((s) => ({
-      user: s.user ? { ...s.user, ...data } : null,
-    })),
-
-  setUser: (user) => set({ user }),
+  updatePushToken: (pushToken) =>
+    set(s => ({ user: s.user ? { ...s.user, pushToken } : null })),
 }));

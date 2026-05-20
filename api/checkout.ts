@@ -48,3 +48,19 @@ export const demoPay = async (ecomOrderId: string) => {
   });
   return data;
 };
+
+export const payWithCreditLimit = async (ecomOrderId: string) => {
+  const { data } = await client.post('/api/store/checkout/verify', {
+    ecomOrderId,
+    paymentMethod: 'credit',
+  });
+  return data;
+};
+
+export const payOfflineInvoice = async (ecomOrderId: string) => {
+  const { data } = await client.post('/api/store/checkout/verify', {
+    ecomOrderId,
+    paymentMethod: 'offline_invoice',
+  });
+  return data;
+};

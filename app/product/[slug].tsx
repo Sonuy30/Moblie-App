@@ -79,8 +79,8 @@ export default function ProductDetailScreen() {
           {/* Pricing */}
           <View style={styles.priceRow}>
             <Text style={styles.price}>{formatINR(product.storePrice)}</Text>
-            {product.mrp > product.storePrice && <Text style={styles.mrp}>{formatINR(product.mrp)}</Text>}
-            {product.discount > 0 && <Badge text={`${product.discount}% OFF`} variant="success" />}
+            {product.mrp !== undefined && product.mrp > product.storePrice && <Text style={styles.mrp}>{formatINR(product.mrp)}</Text>}
+            {product.discount !== undefined && product.discount > 0 && <Badge text={`${product.discount}% OFF`} variant="success" />}
           </View>
 
           <StockBadge inStock={product.inStock} stockQty={product.stockQty} />
@@ -120,10 +120,10 @@ export default function ProductDetailScreen() {
           )}
 
           {/* Specifications */}
-          {product.specifications?.length > 0 && (
+          {(product.specifications?.length || 0) > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Specifications</Text>
-              {product.specifications.map((s, i) => (
+              {product.specifications?.map((s: any, i: number) => (
                 <View key={i} style={styles.specRow}>
                   <Text style={styles.specKey}>{s.key}</Text>
                   <Text style={styles.specVal}>{s.value}</Text>
@@ -145,11 +145,11 @@ export default function ProductDetailScreen() {
           </View>
 
           {/* Related */}
-          {product.relatedProducts?.length > 0 && (
+          {(product.relatedProducts?.length || 0) > 0 && (
             <View style={styles.section}>
               <SectionHeader title="You may also like" />
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 0, gap: 12 }}>
-                {product.relatedProducts.map((p) => (
+                {product.relatedProducts?.map((p: any) => (
                   <View key={p._id} style={{ width: 170 }}><ProductCard {...p} /></View>
                 ))}
               </ScrollView>

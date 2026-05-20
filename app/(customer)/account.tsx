@@ -10,7 +10,7 @@ import { colors } from '@/constants/colors';
 import { spacing, borderRadius } from '@/constants/config';
 
 const menuItems = [
-  { icon: 'cube-outline' as const, label: 'My Orders', route: '/(tabs)/orders' },
+  { icon: 'cube-outline' as const, label: 'My Orders', route: '/(customer)/orders' },
   { icon: 'heart-outline' as const, label: 'Wishlist', route: '/wishlist' },
   { icon: 'location-outline' as const, label: 'Saved Addresses', route: '/addresses' },
   { icon: 'notifications-outline' as const, label: 'Notifications', route: null },
@@ -32,8 +32,8 @@ export default function AccountScreen() {
           </View>
           <Text style={styles.guestTitle}>Sign in to your account</Text>
           <Text style={styles.guestSub}>See your orders, wishlist and more</Text>
-          <Button title="Sign In" onPress={() => router.push('/(auth)/login')} fullWidth style={{ marginTop: spacing.xl }} />
-          <Button title="Create Account" onPress={() => router.push('/(auth)/register')} variant="outline" fullWidth style={{ marginTop: spacing.md }} />
+          <Button title="Sign In" onPress={() => router.push('/(onboarding)/phone')} fullWidth style={{ marginTop: spacing.xl }} />
+          <Button title="Create Account" onPress={() => router.push('/(onboarding)/phone')} variant="outline" fullWidth style={{ marginTop: spacing.md }} />
         </View>
       </SafeAreaView>
     );
@@ -71,7 +71,7 @@ export default function AccountScreen() {
         </View>
 
         {/* Logout */}
-        <TouchableOpacity style={styles.logoutBtn} onPress={async () => { await logout(); router.replace('/(auth)/welcome'); }}>
+        <TouchableOpacity style={styles.logoutBtn} onPress={async () => { await logout(); router.replace('/(onboarding)/welcome'); }}>
           <Ionicons name="log-out-outline" size={20} color={colors.error} />
           <Text style={styles.logoutText}>Sign Out</Text>
         </TouchableOpacity>

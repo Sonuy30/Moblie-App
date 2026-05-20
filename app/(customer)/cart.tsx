@@ -26,7 +26,7 @@ export default function CartScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <Text style={styles.screenTitle}>My Cart</Text>
-        <EmptyState icon="cart-outline" title="Your cart is empty" subtitle="Start browsing our products" actionLabel="Start Shopping" onAction={() => router.push('/(tabs)/explore')} />
+        <EmptyState icon="cart-outline" title="Your cart is empty" subtitle="Start browsing our products" actionLabel="Start Shopping" onAction={() => router.push('/(customer)/explore')} />
       </SafeAreaView>
     );
   }

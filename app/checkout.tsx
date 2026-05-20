@@ -7,7 +7,7 @@ import { useCart } from '@/hooks/useCart';
 import { useAuthStore } from '@/stores/authStore';
 import { useCartStore } from '@/stores/cartStore';
 import { getAddresses, addAddress } from '@/api/addresses';
-import { initiateCheckout, demoPay } from '@/api/checkout';
+import { initiateCheckout, demoPay, payWithCreditLimit, payOfflineInvoice } from '@/api/checkout';
 import { Address } from '@/api/orders';
 import OrderItemRow from '@/components/order/OrderItemRow';
 import CartSummary from '@/components/cart/CartSummary';
@@ -28,13 +28,13 @@ export default function CheckoutScreen() {
   const [selectedAddr, setSelectedAddr] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod'>('online');
+  const [paymentMethod, setPaymentMethod] = useState<'online' | 'cod' | 'credit' | 'offline_invoice'>('online');
 
   // Address form
   const [addrForm, setAddrForm] = useState({ fullName: '', phone: '', addressLine1: '', addressLine2: '', city: '', state: '', pincode: '' });
 
   useEffect(() => {
-    if (!isAuth) { router.replace('/(auth)/login'); return; }
+    if (!isAuth) { router.replace('/(onboarding)/phone'); return; }
     loadAddresses();
   }, []);
 
@@ -67,8 +67,18 @@ export default function CheckoutScreen() {
         cartItems: items.map((i) => ({ productId: i.productId, name: i.name, price: i.price, quantity: i.quantity, image: i.image })),
         addressId: selectedAddr,
       });
-      // Demo payment
-      await demoPay(response.ecomOrderId);
+      
+      // Process payment based on method
+      if (paymentMethod === 'online') {
+        await demoPay(response.ecomOrderId);
+      } else if (paymentMethod === 'credit') {
+        await payWithCreditLimit(response.ecomOrderId);
+      } else if (paymentMethod === 'offline_invoice') {
+        await payOfflineInvoice(response.ecomOrderId);
+      } else {
+        await demoPay(response.ecomOrderId);
+      }
+      
       clearCart();
       router.replace({ pathname: '/order-success', params: { orderNumber: response.orderNumber, orderId: response.ecomOrderId } } as any);
     } catch (err) {
@@ -167,16 +177,79 @@ export default function CheckoutScreen() {
 
             <View style={styles.payMethodSection}>
               <Text style={styles.sectionTitle}>Payment Method</Text>
-              <TouchableOpacity style={[styles.payOption, paymentMethod === 'online' && styles.payOptionActive]} onPress={() => setPaymentMethod('online')}>
-                <View style={[styles.radio, paymentMethod === 'online' && styles.radioActive]}>{paymentMethod === 'online' && <View style={styles.radioDot} />}</View>
+              
+              {/* Pay Online - available to all */}
+              <TouchableOpacity 
+                style={[styles.payOption, paymentMethod === 'online' && styles.payOptionActive]} 
+                onPress={() => setPaymentMethod('online')}
+              >
+                <View style={[styles.radio, paymentMethod === 'online' && styles.radioActive]}>
+                  {paymentMethod === 'online' && <View style={styles.radioDot} />}
+                </View>
                 <Ionicons name="card-outline" size={20} color={colors.text} />
-                <Text style={styles.payOptionText}>Pay Online (Demo)</Text>
+                <Text style={styles.payOptionText}>Pay Online (Card / UPI / NetBanking)</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.payOption, paymentMethod === 'cod' && styles.payOptionActive]} onPress={() => setPaymentMethod('cod')}>
-                <View style={[styles.radio, paymentMethod === 'cod' && styles.radioActive]}>{paymentMethod === 'cod' && <View style={styles.radioDot} />}</View>
-                <Ionicons name="cash-outline" size={20} color={colors.text} />
-                <Text style={styles.payOptionText}>Cash on Delivery</Text>
-              </TouchableOpacity>
+
+              {/* Premium/Regular Customer payment options */}
+              {(user?.tier === 'premium' || user?.tier === 'regular') ? (
+                <>
+                  {/* Credit Limit payment option */}
+                  {(() => {
+                    const creditVal = user.creditAvailable !== undefined ? user.creditAvailable : (user.creditLimit || 0);
+                    const isCreditDisabled = creditVal < grandTotal;
+                    
+                    return (
+                      <TouchableOpacity 
+                        style={[
+                          styles.payOption, 
+                          paymentMethod === 'credit' && styles.payOptionActive,
+                          isCreditDisabled && styles.payOptionDisabled
+                        ]} 
+                        onPress={() => !isCreditDisabled && setPaymentMethod('credit')}
+                        disabled={isCreditDisabled}
+                      >
+                        <View style={[styles.radio, paymentMethod === 'credit' && styles.radioActive, isCreditDisabled && styles.radioDisabled]}>
+                          {paymentMethod === 'credit' && <View style={styles.radioDot} />}
+                        </View>
+                        <Ionicons name="gift-outline" size={20} color={isCreditDisabled ? colors.textMuted : colors.text} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.payOptionText, isCreditDisabled && styles.payOptionTextDisabled]}>Pay with Credit Limit</Text>
+                          <Text style={[styles.payOptionSub, isCreditDisabled && styles.payOptionSubDisabled]}>
+                            Available: {formatINR(creditVal)} {isCreditDisabled && '(Insufficient Balance)'}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })()}
+
+                  {/* Offline Invoice Terms */}
+                  <TouchableOpacity 
+                    style={[styles.payOption, paymentMethod === 'offline_invoice' && styles.payOptionActive]} 
+                    onPress={() => setPaymentMethod('offline_invoice')}
+                  >
+                    <View style={[styles.radio, paymentMethod === 'offline_invoice' && styles.radioActive]}>
+                      {paymentMethod === 'offline_invoice' && <View style={styles.radioDot} />}
+                    </View>
+                    <Ionicons name="document-text-outline" size={20} color={colors.text} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.payOptionText}>Offline Invoice Terms (ERP)</Text>
+                      <Text style={styles.payOptionSub}>Bill to company account as per terms</Text>
+                    </View>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                /* Cash on Delivery for standard users */
+                <TouchableOpacity 
+                  style={[styles.payOption, paymentMethod === 'cod' && styles.payOptionActive]} 
+                  onPress={() => setPaymentMethod('cod')}
+                >
+                  <View style={[styles.radio, paymentMethod === 'cod' && styles.radioActive]}>
+                    {paymentMethod === 'cod' && <View style={styles.radioDot} />}
+                  </View>
+                  <Ionicons name="cash-outline" size={20} color={colors.text} />
+                  <Text style={styles.payOptionText}>Cash on Delivery</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             <Button title={`Place Order  ${formatINR(grandTotal)}`} onPress={handlePlaceOrder} loading={loading} fullWidth style={{ marginTop: spacing.xl }} />
@@ -231,4 +304,24 @@ const styles = StyleSheet.create({
   payOption: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.white, borderRadius: borderRadius.md, padding: spacing.lg, borderWidth: 1.5, borderColor: colors.border },
   payOptionActive: { borderColor: colors.primary, backgroundColor: colors.primaryLight },
   payOptionText: { fontSize: 14, fontWeight: '500', color: colors.text },
+  payOptionDisabled: {
+    opacity: 0.5,
+    backgroundColor: '#f9f9f9',
+    borderColor: '#e2e2e2',
+  },
+  radioDisabled: {
+    borderColor: '#e2e2e2',
+  },
+  payOptionTextDisabled: {
+    color: colors.textMuted,
+  },
+  payOptionSub: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  payOptionSubDisabled: {
+    color: '#d9534f',
+    fontWeight: '500',
+  },
 });

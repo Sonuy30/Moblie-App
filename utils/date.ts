@@ -43,3 +43,5 @@ export const formatDeliveryRange = (iso: string): string => {
     return iso;
   }
 };
+
+export const formatRelativeDate = formatDateTime;

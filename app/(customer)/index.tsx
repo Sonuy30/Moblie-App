@@ -46,7 +46,7 @@ export default function HomeScreen() {
           <TouchableOpacity style={styles.iconBtn}>
             <Ionicons name="notifications-outline" size={22} color={colors.text} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/(tabs)/cart')}>
+          <TouchableOpacity style={styles.iconBtn} onPress={() => router.push('/(customer)/cart')}>
             <Ionicons name="cart-outline" size={22} color={colors.text} />
             {totalItems > 0 && (
               <View style={styles.cartBadge}>
@@ -80,7 +80,7 @@ export default function HomeScreen() {
 
         {/* Featured */}
         <View style={styles.section}>
-          <SectionHeader title="Featured" onSeeAll={() => router.push({ pathname: '/(tabs)/explore', params: { featured: 'true' } } as any)} />
+          <SectionHeader title="Featured" onSeeAll={() => router.push({ pathname: '/(customer)/explore', params: { featured: 'true' } } as any)} />
           {loadFeat ? (
             <FlatList data={[1,2,3]} horizontal showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.hList} keyExtractor={(i) => i.toString()}
@@ -100,7 +100,7 @@ export default function HomeScreen() {
 
         {/* New Arrivals */}
         <View style={styles.section}>
-          <SectionHeader title="New Arrivals" onSeeAll={() => router.push({ pathname: '/(tabs)/explore', params: { sort: 'newest' } } as any)} />
+          <SectionHeader title="New Arrivals" onSeeAll={() => router.push({ pathname: '/(customer)/explore', params: { sort: 'newest' } } as any)} />
           {loadNew ? (
             <FlatList data={[1,2,3]} horizontal showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.hList} keyExtractor={(i) => i.toString()}

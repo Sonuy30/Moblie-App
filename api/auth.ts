@@ -1,65 +1,41 @@
 import client from './client';
+import type { AuthUser } from '@/stores/authStore';
 
-export interface ShopUser {
-  _id: string;
-  fullName: string;
-  email: string;
-  phone: string;
-  avatar?: string;
-}
-
-interface AuthResponse {
-  token: string;
-  user: ShopUser;
-}
-
-const DUMMY_USER: ShopUser = {
-  _id: 'mock_user_123',
-  fullName: 'Test User',
-  email: 'test@example.com',
-  phone: '1234567890',
-};
-
-const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
-
-export const loginAPI = async (email: string, password: string): Promise<AuthResponse> => {
-  await delay(1000); // Simulate network latency
-  // Accept any login for testing
-  return {
-    token: 'mock_jwt_token_123',
-    user: { ...DUMMY_USER, email },
+// Validate invite token from QR scan
+export const validateInviteToken = async (inviteToken: string) => {
+  const { data } = await client.post('/api/store/auth/invite', { inviteToken });
+  return data as {
+    customerId: string;
+    maskedPhone: string;
+    companyName: string;
   };
 };
 
-export const registerAPI = async (payload: {
-  fullName: string;
-  email: string;
-  phone: string;
-  password: string;
-}): Promise<AuthResponse> => {
-  await delay(1000);
-  return {
-    token: 'mock_jwt_token_123',
-    user: { ...DUMMY_USER, ...payload },
-  };
+// Request OTP for phone login/register
+export const requestOTP = async (phone: string) => {
+  const { data } = await client.post('/api/store/auth/send-otp', { phone });
+  return data as { maskedPhone?: string; companyName?: string; success?: boolean };
 };
 
+// Verify OTP and get auth token
+export const verifyOTP = async (phone: string, otp: string) => {
+  const { data } = await client.post('/api/store/auth/register', { phone, otp });
+  return data as { token: string; customer: AuthUser; isNewUser?: boolean };
+};
+
+// Get current user profile (used to restore session)
+export const getProfile = async () => {
+  const { data } = await client.get('/api/store/auth/profile');
+  return data as { user: AuthUser };
+};
+
+// Save push token to backend
+export const savePushToken = async (pushToken: string) => {
+  await client.put('/api/store/auth/profile', { pushToken });
+};
+
+// Forgot password API (legacy/fallback)
 export const forgotPasswordAPI = async (email: string) => {
-  await delay(1000);
-  return { success: true, message: 'OTP sent to email' };
-};
-
-export const verifyOtpAPI = async (email: string, otp: string) => {
-  await delay(1000);
-  return { success: true, message: 'OTP verified successfully' };
-};
-
-export const getProfileAPI = async (token?: string): Promise<ShopUser> => {
-  await delay(500);
-  return DUMMY_USER;
-};
-
-export const updateProfileAPI = async (payload: Partial<ShopUser>) => {
-  await delay(1000);
-  return { success: true, user: { ...DUMMY_USER, ...payload } };
+  const { data } = await client.post('/api/store/auth/forgot-password', { email });
+  return data;
 };

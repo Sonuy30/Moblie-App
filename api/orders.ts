@@ -1,13 +1,5 @@
 import client from './client';
 
-export interface EcomOrderItem {
-  name: string;
-  image: string;
-  quantity: number;
-  price: number;
-  productId?: string;
-}
-
 export interface Address {
   _id?: string;
   fullName: string;
@@ -23,28 +15,56 @@ export interface Address {
 export interface EcomOrder {
   _id: string;
   orderNumber: string;
-  items: EcomOrderItem[];
+  items: { name: string; image: string; quantity: number; price: number; unit: string }[];
   deliveryAddress: Address;
   subtotal: number;
   gstAmount: number;
   deliveryCharge: number;
   totalAmount: number;
-  paymentMethod: string;
   paymentStatus: 'paid' | 'failed' | 'pending';
-  status: 'confirmed' | 'packed' | 'shipped' | 'delivered' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'packed' | 'shipped' | 'out_for_delivery' | 'delivered' | 'cancelled';
   trackingNumber?: string;
   courierName?: string;
+  deliveryToken?: string;
   estimatedDelivery?: string;
   placedAt: string;
   updatedAt: string;
+  paymentMethod?: string;
 }
 
-export const getOrders = async (): Promise<EcomOrder[]> => {
-  const { data } = await client.get('/api/store/orders');
-  return data.orders || data || [];
+export const fetchOrders = async (params?: { status?: string; page?: number }) => {
+  const { data } = await client.get('/api/store/orders', { params });
+  return data as { orders: EcomOrder[]; total: number };
 };
 
-export const getOrderById = async (id: string): Promise<EcomOrder> => {
+export const fetchOrderById = async (id: string) => {
   const { data } = await client.get(`/api/store/orders/${id}`);
-  return data.order || data;
+  return data as { order: EcomOrder };
+};
+
+// Initiate checkout — validates stock + creates Razorpay order
+export const initiateCheckout = async (payload: {
+  cartItems: { productId: string; quantity: number; price: number }[];
+  addressId: string;
+  promoCode?: string;
+}) => {
+  const { data } = await client.post('/api/store/checkout/initiate', payload);
+  return data as {
+    razorpayOrderId: string;
+    amount: number;     // in paise
+    currency: string;
+    key: string;
+    ecomOrderId: string;
+  };
+};
+
+// Verify payment after Razorpay success
+export const verifyPayment = async (payload: {
+  razorpay_payment_id: string;
+  razorpay_order_id: string;
+  razorpay_signature: string;
+  ecomOrderId: string;
+}) => {
+  const { data } = await client.post('/api/store/checkout/verify', payload);
+  return data as { orderNumber: string; estimatedDelivery: string };
 };

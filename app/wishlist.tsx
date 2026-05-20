@@ -41,7 +41,7 @@ export default function WishlistScreen() {
           {[1,2,3,4].map((i) => <View key={i} style={styles.gridItem}><ProductCardSkeleton /></View>)}
         </View>
       ) : products.length === 0 ? (
-        <EmptyState icon="heart-outline" title="Nothing saved yet" subtitle="Browse products and tap the heart to save" actionLabel="Browse Products" onAction={() => router.push('/(tabs)/explore')} />
+        <EmptyState icon="heart-outline" title="Nothing saved yet" subtitle="Browse products and tap the heart to save" actionLabel="Browse Products" onAction={() => router.push('/(customer)/explore')} />
       ) : (
         <FlatList data={products} numColumns={2} keyExtractor={(item) => item._id}
           contentContainerStyle={styles.list} columnWrapperStyle={styles.row}

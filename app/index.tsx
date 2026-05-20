@@ -1,30 +1,40 @@
-import { Redirect } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { View, ActivityIndicator } from 'react-native';
+import { router } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { colors } from '@/constants/colors';
 
 export default function Index() {
-  const { isAuthenticated, isLoading } = useAuthStore();
+  const { isAuthenticated, isLoading, user, restoreSession } = useAuthStore();
+  const [isInitializing, setIsInitializing] = useState(true);
 
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color={colors.primary} />
-      </View>
-    );
-  }
+  useEffect(() => {
+    restoreSession().finally(() => {
+      setIsInitializing(false);
+    });
+  }, []);
 
-  if (isAuthenticated) {
-    return <Redirect href="/(tabs)" />;
-  }
+  useEffect(() => {
+    if (isInitializing || isLoading) return;
 
-  return <Redirect href="/(auth)/welcome" />;
+    if (!isAuthenticated) {
+      router.replace('/(onboarding)/welcome');
+      return;
+    }
+
+    // Route based on role from JWT
+    const role = user?.role;
+    if (role === 'customer') {
+      router.replace('/(customer)');
+    } else if (role === 'delivery_staff' || role === 'warehouse_staff' || role === 'admin') {
+      router.replace('/(staff)');
+    } else {
+      router.replace('/(onboarding)/welcome');
+    }
+  }, [isAuthenticated, isLoading, user, isInitializing]);
+
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' }}>
+      <ActivityIndicator size="large" color="#185FA5" />
+    </View>
+  );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});

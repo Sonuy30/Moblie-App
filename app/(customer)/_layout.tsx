@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/constants/colors';
 import { useCartStore } from '@/stores/cartStore';
 
-export default function TabLayout() {
+export default function CustomerLayout() {
   const totalItems = useCartStore((s) => s.totalItems());
 
   return (

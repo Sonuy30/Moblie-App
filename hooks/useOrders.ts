@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { getOrders, getOrderById } from '@/api/orders';
+import { fetchOrders, fetchOrderById } from '@/api/orders';
 import { useAuthStore } from '@/stores/authStore';
 
 export const useOrders = () => {
@@ -7,7 +7,10 @@ export const useOrders = () => {
 
   return useQuery({
     queryKey: ['orders'],
-    queryFn: getOrders,
+    queryFn: async () => {
+      const res = await fetchOrders();
+      return res.orders;
+    },
     enabled: isAuthenticated,
   });
 };
@@ -15,7 +18,11 @@ export const useOrders = () => {
 export const useOrderDetail = (id: string) => {
   return useQuery({
     queryKey: ['order', id],
-    queryFn: () => getOrderById(id),
+    queryFn: async () => {
+      const res = await fetchOrderById(id);
+      return res.order;
+    },
     enabled: !!id,
   });
 };
+

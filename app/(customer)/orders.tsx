@@ -26,7 +26,7 @@ export default function OrdersScreen() {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <Text style={styles.title}>My Orders</Text>
-        <EmptyState icon="log-in-outline" title="Sign in to view orders" subtitle="Track your orders and manage returns" actionLabel="Sign In" onAction={() => router.push('/(auth)/login')} />
+        <EmptyState icon="log-in-outline" title="Sign in to view orders" subtitle="Track your orders and manage returns" actionLabel="Sign In" onAction={() => router.push('/(onboarding)/phone')} />
       </SafeAreaView>
     );
   }
@@ -61,7 +61,7 @@ export default function OrdersScreen() {
           {[1,2,3].map((i) => <View key={i} style={styles.skeletonCard}><ProductCardSkeleton /></View>)}
         </View>
       ) : filtered.length === 0 ? (
-        <EmptyState icon="receipt-outline" title="No orders yet" subtitle="Start shopping to see your orders here" actionLabel="Shop Now" onAction={() => router.push('/(tabs)/explore')} />
+        <EmptyState icon="receipt-outline" title="No orders yet" subtitle="Start shopping to see your orders here" actionLabel="Shop Now" onAction={() => router.push('/(customer)/explore')} />
       ) : (
         <FlatList data={filtered} keyExtractor={(item) => item._id}
           contentContainerStyle={styles.list}

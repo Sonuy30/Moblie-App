@@ -1,9 +1,10 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
+const TypedFlashList = FlashList as any;
 import { useInfiniteProducts } from '@/hooks/useProducts';
 import ProductCard from '@/components/product/ProductCard';
 import ProductCardWide from '@/components/product/ProductCardWide';
@@ -134,7 +135,7 @@ export default function ExploreScreen() {
       ) : allProducts.length === 0 ? (
         <EmptyState icon="search-outline" title="No products found" subtitle="Try different search or filters" actionLabel="Clear filters" onAction={() => { setSearch(''); setActiveChip(0); }} />
       ) : (
-        <FlashList
+        <TypedFlashList
           key={viewMode}
           data={allProducts}
           numColumns={viewMode === 'grid' ? 2 : 1}
@@ -142,8 +143,8 @@ export default function ExploreScreen() {
           contentContainerStyle={{ paddingHorizontal: spacing.sm, paddingBottom: 100 }}
           onEndReached={onEndReached}
           onEndReachedThreshold={0.5}
-          keyExtractor={(item) => item._id}
-          renderItem={({ item }) =>
+          keyExtractor={(item: any) => item._id}
+          renderItem={({ item }: any) =>
             viewMode === 'grid' ? (
               <View style={{ flex: 1, padding: spacing.sm }}><ProductCard {...item} /></View>
             ) : (
@@ -151,6 +152,7 @@ export default function ExploreScreen() {
             )
           }
           ListFooterComponent={isFetchingNextPage ? <View style={styles.grid}>{[1,2].map((i) => <View key={i} style={styles.gridItem}><ProductCardSkeleton /></View>)}</View> : null}
+          estimatedItemSize={200}
         />
       )}
     </SafeAreaView>

@@ -53,7 +53,7 @@ export default function SearchScreen() {
           <Ionicons name="search-outline" size={20} color={colors.textMuted} />
           <TextInput style={styles.input} placeholder="Search products..." placeholderTextColor={colors.textMuted}
             value={query} onChangeText={setQuery} autoFocus returnKeyType="search"
-            onSubmitEditing={() => { if (query.trim()) { saveRecent(query.trim()); router.push({ pathname: '/(tabs)/explore', params: { search: query } } as any); } }} />
+            onSubmitEditing={() => { if (query.trim()) { saveRecent(query.trim()); router.push({ pathname: '/(customer)/explore', params: { search: query } } as any); } }} />
           {query.length > 0 && (
             <TouchableOpacity onPress={() => setQuery('')}>
               <Ionicons name="close-circle" size={20} color={colors.textMuted} />

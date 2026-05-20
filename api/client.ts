@@ -1,41 +1,32 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
-import { API_BASE_URL } from '@/constants/config';
+import { router } from 'expo-router';
+
+const API_BASE_URL = 'https://aitserp-30072025.vercel.app';
 
 const client = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
-// Request interceptor — attach JWT token
-client.interceptors.request.use(
-  async (config) => {
-    try {
-      const token = await SecureStore.getItemAsync('shop_token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    } catch {
-      // SecureStore not available (web), skip
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+// Attach JWT token to every request
+client.interceptors.request.use(async (config) => {
+  const token = await SecureStore.getItemAsync('store_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
-// Response interceptor — handle 401 (token expired)
+// Handle 401 (expired token) — redirect to onboarding
 client.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response?.status === 401) {
-      try {
-        await SecureStore.deleteItemAsync('shop_token');
-      } catch {
-        // ignore
-      }
+      await SecureStore.deleteItemAsync('store_token');
+      await SecureStore.deleteItemAsync('aits_auth_user');
+      router.replace('/(onboarding)/welcome');
     }
     return Promise.reject(error);
   }
@@ -43,14 +34,16 @@ client.interceptors.response.use(
 
 export default client;
 
-// Helper to extract error message from API response
-export const getErrorMessage = (error: unknown): string => {
-  if (axios.isAxiosError(error)) {
-    return error.response?.data?.message 
-      || error.response?.data?.error 
-      || error.message 
-      || 'Something went wrong';
+// Utility to extract a user-friendly error message from Axios errors
+export const getErrorMessage = (err: unknown): string => {
+  if (typeof err === 'string') return err;
+  if (err && typeof err === 'object') {
+    const e = err as any;
+    // Axios error with backend message
+    if (e.response?.data?.message) return e.response.data.message;
+    if (e.response?.data?.error) return e.response.data.error;
+    // Standard Error
+    if (e.message) return e.message;
   }
-  if (error instanceof Error) return error.message;
-  return 'Something went wrong';
+  return 'Something went wrong. Please try again.';
 };
