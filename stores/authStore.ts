@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
+import { getProfile } from '@/api/auth';
 
 export interface AuthUser {
   _id: string;
@@ -62,11 +63,26 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const userStr = await SecureStore.getItemAsync(USER_KEY);
       if (token && userStr) {
         const user = JSON.parse(userStr) as AuthUser;
-        set({ token, user, isAuthenticated: true });
+        // Instantly authenticate with cached data to avoid visual jumps
+        set({ token, user, isAuthenticated: true, isLoading: false });
+
+        // Synchronize dynamic claims (creditAvailable, tier, pricingGroup) in the background
+        try {
+          const profileResponse = await getProfile();
+          if (profileResponse?.user) {
+            const updatedUser = { ...user, ...profileResponse.user };
+            await SecureStore.setItemAsync(USER_KEY, JSON.stringify(updatedUser));
+            set({ user: updatedUser });
+          }
+        } catch (syncError) {
+          // Quietly log sync error, allowing the user to continue offline/with cached data
+          console.warn('Dynamic claims background sync failed:', syncError);
+        }
+      } else {
+        set({ isLoading: false });
       }
     } catch (e) {
       console.error('Session restore failed:', e);
-    } finally {
       set({ isLoading: false });
     }
   },
@@ -74,3 +90,4 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   updatePushToken: (pushToken) =>
     set(s => ({ user: s.user ? { ...s.user, pushToken } : null })),
 }));
+
