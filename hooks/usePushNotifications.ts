@@ -1,6 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
-import { savePushToken } from '@/api/auth';
+import { updateProfile } from '@/api/auth';
 import { useAuthStore } from '@/stores/authStore';
 import { router } from 'expo-router';
 
@@ -25,7 +25,7 @@ export const usePushNotifications = () => {
       }
 
       updatePushToken(token);
-      await savePushToken(token);  // POST to backend → stored on customer document
+      await updateProfile({ pushToken: token });  // PUT to backend → stored on customer document
     } catch (e) {
       console.log('Failed to setup push notifications or save token:', e);
     }

@@ -16,7 +16,7 @@ export default function OrderItemRow({ name, image, quantity, price }: OrderItem
   return (
     <View style={styles.container}>
       <Image
-        source={{ uri: image || 'https://via.placeholder.com/60' }}
+        source={{ uri: image || 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=200&auto=format&fit=crop&q=80' }}
         style={styles.image}
         contentFit="cover"
       />

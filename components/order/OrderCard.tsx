@@ -41,7 +41,7 @@ export default function OrderCard({ order }: OrderCardProps) {
         {order.items.slice(0, 3).map((item, i) => (
           <Image
             key={i}
-            source={{ uri: item.image || 'https://via.placeholder.com/60' }}
+            source={{ uri: item.image || 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=200&auto=format&fit=crop&q=80' }}
             style={styles.itemImage}
             contentFit="cover"
           />

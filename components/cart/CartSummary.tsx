@@ -6,12 +6,13 @@ import { borderRadius, spacing } from '@/constants/config';
 
 interface CartSummaryProps {
   subtotal: number;
+  bulkDiscount?: number;
   gst: number;
   deliveryCharge: number;
   grandTotal: number;
 }
 
-export default function CartSummary({ subtotal, gst, deliveryCharge, grandTotal }: CartSummaryProps) {
+export default function CartSummary({ subtotal, bulkDiscount = 0, gst, deliveryCharge, grandTotal }: CartSummaryProps) {
   return (
     <View style={styles.card}>
       <Text style={styles.title}>Order Summary</Text>
@@ -20,6 +21,15 @@ export default function CartSummary({ subtotal, gst, deliveryCharge, grandTotal 
         <Text style={styles.label}>Subtotal</Text>
         <Text style={styles.value}>{formatINR(subtotal)}</Text>
       </View>
+
+      {bulkDiscount > 0 && (
+        <View style={styles.row}>
+          <Text style={[styles.label, { color: colors.success, fontWeight: '600' }]}>Wholesale Discount</Text>
+          <Text style={[styles.value, { color: colors.success, fontWeight: '700' }]}>
+            -{formatINR(bulkDiscount)}
+          </Text>
+        </View>
+      )}
 
       <View style={styles.row}>
         <Text style={styles.label}>GST (18%)</Text>
@@ -35,7 +45,7 @@ export default function CartSummary({ subtotal, gst, deliveryCharge, grandTotal 
 
       {deliveryCharge > 0 && (
         <Text style={styles.freeHint}>
-          Add {formatINR(999 - subtotal)} more for free delivery
+          Add {formatINR(999 - (subtotal - bulkDiscount))} more for free delivery
         </Text>
       )}
 

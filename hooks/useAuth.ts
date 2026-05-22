@@ -1,7 +1,8 @@
 import { useAuthStore } from '@/stores/authStore';
+import type { AuthUser } from '@/stores/authStore';
 import { useCallback } from 'react';
 import { getErrorMessage } from '@/api/client';
-import { verifyOTP } from '@/api/auth';
+import { verifyRegisterOTP } from '@/api/auth';
 
 /**
  * Legacy auth hook used by (auth)/login.tsx and (auth)/register.tsx.
@@ -16,9 +17,17 @@ export const useAuth = () => {
     try {
       const phone = email; // In legacy flow, email field holds phone
       const otp = password; // In legacy flow, password field holds OTP
-      const { token, customer } = await verifyOTP(phone, otp);
-      const userRole = customer.role || 'customer';
-      const authenticatedUser = { ...customer, role: userRole };
+      const { authToken: token, user } = await verifyRegisterOTP(phone, otp);
+      if (!user) throw new Error('Verification failed');
+      const authenticatedUser: AuthUser = {
+        ...user,
+        _id: user._id || '',
+        fullName: user.fullName || '',
+        phone: user.phone || phone,
+        role: (user.role || 'customer') as AuthUser['role'],
+        companyId: user.companyId || '',
+        companyName: user.companyName || '',
+      };
       await store.setSession(token, authenticatedUser);
       return { success: true, error: null };
     } catch (err) {

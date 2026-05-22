@@ -22,6 +22,7 @@ interface ProductCardWideProps {
   reviewCount: number;
   inStock: boolean;
   stockQty: number;
+  unit?: string;
 }
 
 export default function ProductCardWide(props: ProductCardWideProps) {
@@ -37,7 +38,7 @@ export default function ProductCardWide(props: ProductCardWideProps) {
     >
       <View style={styles.imageContainer}>
         <Image
-          source={{ uri: props.images?.[0] || 'https://via.placeholder.com/300' }}
+          source={{ uri: props.images?.[0] || 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&auto=format&fit=crop&q=80' }}
           style={styles.image}
           contentFit="cover"
           transition={200}
@@ -73,6 +74,7 @@ export default function ProductCardWide(props: ProductCardWideProps) {
                 image: props.images?.[0] || '',
                 price: props.storePrice,
                 maxQty: props.stockQty,
+                unit: props.unit || 'pcs',
               });
             }}
           >

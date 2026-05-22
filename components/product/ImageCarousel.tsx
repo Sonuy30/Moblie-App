@@ -22,7 +22,8 @@ export default function ImageCarousel({ images, height = 350 }: ImageCarouselPro
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
 
-  const imageList = images.length > 0 ? images : ['https://via.placeholder.com/400'];
+  const imageList = images.length > 0 ? images : ['https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&auto=format&fit=crop&q=80'];
+
 
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);

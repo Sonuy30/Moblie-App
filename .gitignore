@@ -39,3 +39,10 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Helper/probe scripts
+probe*.js
+read_*.js
+find_domain.js
+search_probe_output.js
+

@@ -42,7 +42,7 @@ export default function CartScreen() {
           <Text style={styles.promoLabel}>Have a promo code?</Text>
           <View style={styles.promoRow}>
             <TextInput style={styles.promoInput} placeholder="Enter code" placeholderTextColor={colors.textMuted}
-              value={promoCode} onChangeText={setPromoCode} autoCapitalize="characters" />
+              value={promoCode || undefined} onChangeText={setPromoCode} autoCapitalize="characters" />
             <TouchableOpacity style={styles.promoBtn}>
               <Text style={styles.promoBtnText}>Apply</Text>
             </TouchableOpacity>
