@@ -104,7 +104,7 @@ export default function StaffProfile() {
           <Text style={styles.logoutText}>Sign Out</Text>
         </TouchableOpacity>
 
-        <Text style={styles.version}>Pankaj Steel Pvt Ltd · v1.0.0 · Staff Portal</Text>
+        <Text style={styles.version}>{process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01'} Pvt Ltd · v1.0.0 · Staff Portal</Text>
         <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>

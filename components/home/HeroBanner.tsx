@@ -8,53 +8,58 @@ import { borderRadius, spacing } from '@/constants/config';
 
 const { width } = Dimensions.get('window');
 
-const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Pankaj Steel';
+const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
 
 export default function HeroBanner() {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#1a3a5c', '#185FA5', '#1e7fcb']}
+        colors={['#0F2027', '#203A43', '#2C5364']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradient}
       >
         {/* Top Badge */}
         <View style={styles.topRow}>
-          <View style={styles.liveBadge}>
+          <LinearGradient
+            colors={['#FF512F', '#DD2476']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.liveBadgeGradient}
+          >
             <View style={styles.liveDot} />
-            <Text style={styles.liveText}>OFFICIAL STORE</Text>
-          </View>
+            <Text style={styles.liveText}>⚡ MEGA DEAL</Text>
+          </LinearGradient>
           <View style={styles.certBadge}>
-            <Ionicons name="checkmark-circle" size={12} color="#38ef7d" />
+            <Ionicons name="shield-checkmark" size={12} color="#38ef7d" />
             <Text style={styles.certText}>ISI Certified</Text>
           </View>
         </View>
 
         <View style={styles.content}>
-          <Text style={styles.brandLine}>{companyName}</Text>
-          <Text style={styles.title}>Premium Steel{'\n'}& Metal Products</Text>
+          <Text style={styles.brandLine}>🌟 {companyName} SUPER VALUE FEST</Text>
+          <Text style={styles.title}>Build Securely{'\n'}Save Up To 20%</Text>
           <Text style={styles.subtitle}>
-            TMT Bars • MS Angles • GI Pipes • Channels{'\n'}Factory-direct pricing with bulk discounts
+            Direct-from-mill discounts on premium TMT rebars, rust-proof GI pipes, and binding wire combos.
           </Text>
 
-          {/* CTA Buttons */}
+          {/* CTA & Offer Highlights */}
           <View style={styles.ctaRow}>
             <TouchableOpacity
               style={styles.primaryCta}
               onPress={() => router.push('/(tabs)/explore')}
               activeOpacity={0.85}
             >
-              <Ionicons name="search-outline" size={14} color="#fff" />
-              <Text style={styles.primaryCtaText}>Shop Now</Text>
+              <Ionicons name="cart-outline" size={15} color="#fff" />
+              <Text style={styles.primaryCtaText}>Claim Offers</Text>
             </TouchableOpacity>
             <View style={styles.statPill}>
-              <Text style={styles.statNumber}>500+</Text>
-              <Text style={styles.statLabel}>Products</Text>
+              <Text style={styles.statNumber}>Flat 20%</Text>
+              <Text style={styles.statLabel}>Instant Off</Text>
             </View>
             <View style={styles.statPill}>
-              <Text style={styles.statNumber}>B2B</Text>
-              <Text style={styles.statLabel}>Prices</Text>
+              <Text style={styles.statNumber}>FREE</Text>
+              <Text style={styles.statLabel}>Site Shipping</Text>
             </View>
           </View>
         </View>
@@ -94,11 +99,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     zIndex: 1,
   },
-  liveBadge: {
+  liveBadgeGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
-    backgroundColor: 'rgba(255,255,255,0.15)',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: borderRadius.full,

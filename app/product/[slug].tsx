@@ -13,10 +13,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import StarRating from '@/components/product/StarRating';
 import StockBadge from '@/components/product/StockBadge';
 import ReviewCard from '@/components/product/ReviewCard';
+import RatingBreakdown from '@/components/product/RatingBreakdown';
+import WriteReviewModal from '@/components/product/WriteReviewModal';
 import ProductCard from '@/components/product/ProductCard';
 import Badge from '@/components/ui/Badge';
 import { ProductDetailSkeleton } from '@/components/ui/Skeleton';
-import SectionHeader from '@/components/home/SectionHeader';
 import { formatINR } from '@/utils/currency';
 import { colors } from '@/constants/colors';
 import { spacing, borderRadius } from '@/constants/config';
@@ -27,11 +28,14 @@ export default function ProductDetailScreen() {
   const { data: product, isLoading } = useProductDetail(slug || '');
   const addItem = useCartStore((s) => s.addItem);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
   const showAuthModal = useAuthModalStore((s) => s.show);
   
   const [qty, setQty] = useState(1);
   const [expanded, setExpanded] = useState(false);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [showAllReviews, setShowAllReviews] = useState(false);
+  const [reviewModalVisible, setReviewModalVisible] = useState(false);
 
   React.useEffect(() => {
     if (product?._id) {
@@ -87,7 +91,6 @@ export default function ProductDetailScreen() {
       return;
     }
 
-    // Add multiple quantities as selected by the user
     for (let i = 0; i < qty; i++) {
       addItem(payload);
     }
@@ -110,12 +113,36 @@ export default function ProductDetailScreen() {
       return;
     }
 
-    // Add multiple quantities as selected by the user to checkout
     for (let i = 0; i < qty; i++) {
       addItem(payload);
     }
     router.push('/checkout');
   };
+
+  const handleWriteReview = () => {
+    if (!isAuthenticated) {
+      showAuthModal('cart', null as any);
+      Toast.show({
+        type: 'info',
+        text1: 'Login required',
+        text2: 'Please login to write a review.',
+        position: 'bottom',
+      });
+      return;
+    }
+    setReviewModalVisible(true);
+  };
+
+  const handleReviewSubmitted = (newReview: Review) => {
+    setReviews((prev) => [newReview, ...prev]);
+  };
+
+  const displayedReviews = showAllReviews ? reviews : reviews.slice(0, 3);
+
+  // Compute avg from current reviews list
+  const computedAvgRating = reviews.length > 0
+    ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+    : product.avgRating || 0;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -152,7 +179,7 @@ export default function ProductDetailScreen() {
           <StockBadge inStock={product.inStock} stockQty={product.stockQty} />
 
           <TouchableOpacity onPress={() => {}} style={styles.ratingRow}>
-            <StarRating rating={product.avgRating || 0} count={product.reviewCount || 0} />
+            <StarRating rating={computedAvgRating} count={reviews.length || product.reviewCount || 0} />
           </TouchableOpacity>
 
           {/* Quantity Stepper */}
@@ -278,39 +305,92 @@ export default function ProductDetailScreen() {
           {(product.specifications?.length || 0) > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Specifications</Text>
-              {product.specifications?.map((s: any, i: number) => (
-                <View key={i} style={styles.specRow}>
-                  <Text style={styles.specKey}>{s.key}</Text>
-                  <Text style={styles.specVal}>{s.value}</Text>
-                </View>
-              ))}
+              <View style={styles.specsCard}>
+                {product.specifications?.map((s: any, i: number) => (
+                  <View key={i} style={[styles.specRow, i === (product.specifications!.length - 1) && styles.specRowLast]}>
+                    <View style={styles.specKeyBox}>
+                      <Text style={styles.specKey}>{s.key}</Text>
+                    </View>
+                    <Text style={styles.specVal}>{s.value}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
           )}
 
-          {/* Reviews List */}
+          {/* ── Customer Reviews Section ── */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Customer Reviews</Text>
+            <View style={styles.reviewSectionHeader}>
+              <Text style={styles.sectionTitle}>Customer Reviews</Text>
+              <TouchableOpacity style={styles.writeReviewBtn} onPress={handleWriteReview}>
+                <Ionicons name="create-outline" size={15} color={colors.primary} />
+                <Text style={styles.writeReviewText}>Write a Review</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Rating Breakdown */}
+            {reviews.length > 0 && (
+              <RatingBreakdown
+                avgRating={computedAvgRating}
+                reviewCount={reviews.length}
+                reviews={reviews}
+              />
+            )}
+
+            {/* Review Cards */}
             {reviews.length > 0 ? (
-              reviews.slice(0, 5).map((r) => (
-                <ReviewCard
-                  key={r._id}
-                  userName={r.userName}
-                  rating={r.rating}
-                  comment={r.comment}
-                  createdAt={r.createdAt}
-                  title={r.title}
-                />
-              ))
+              <View style={{ marginTop: spacing.md }}>
+                {displayedReviews.map((r) => (
+                  <ReviewCard
+                    key={r._id}
+                    userName={r.userName}
+                    rating={r.rating}
+                    comment={r.comment}
+                    createdAt={r.createdAt}
+                    title={r.title}
+                    isHighlighted={r.userId === 'me'}
+                  />
+                ))}
+                {reviews.length > 3 && (
+                  <TouchableOpacity
+                    style={styles.showMoreReviewsBtn}
+                    onPress={() => setShowAllReviews(!showAllReviews)}
+                  >
+                    <Text style={styles.showMoreReviewsText}>
+                      {showAllReviews ? 'Show less reviews' : `Show all ${reviews.length} reviews`}
+                    </Text>
+                    <Ionicons
+                      name={showAllReviews ? 'chevron-up' : 'chevron-down'}
+                      size={16}
+                      color={colors.primary}
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
             ) : (
-              <Text style={styles.noReviews}>No reviews yet</Text>
+              <View style={styles.noReviewsBox}>
+                <Ionicons name="chatbubble-outline" size={36} color={colors.border} />
+                <Text style={styles.noReviewsTitle}>No reviews yet</Text>
+                <Text style={styles.noReviewsSub}>Be the first to share your experience!</Text>
+                <TouchableOpacity style={styles.firstReviewBtn} onPress={handleWriteReview}>
+                  <Text style={styles.firstReviewBtnText}>Write First Review</Text>
+                </TouchableOpacity>
+              </View>
             )}
           </View>
 
-          {/* Related products */}
+          {/* ── You May Also Like ── */}
           {(product.relatedProducts?.length || 0) > 0 && (
             <View style={styles.section}>
-              <SectionHeader title="You may also like" />
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 0, gap: 12 }}>
+              <View style={styles.recommendedHeader}>
+                <Ionicons name="sparkles" size={16} color={colors.star} />
+                <Text style={styles.sectionTitle}>You May Also Like</Text>
+              </View>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: 0, gap: 12 }}
+              >
                 {product.relatedProducts?.map((p: any) => (
                   <View key={p._id} style={{ width: 170 }}>
                     <ProductCard {...p} />
@@ -342,6 +422,16 @@ export default function ProductDetailScreen() {
           <Text style={styles.buyNowText}>{product.inStock ? 'Buy Now' : 'Out of Stock'}</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Write Review Modal */}
+      <WriteReviewModal
+        visible={reviewModalVisible}
+        onClose={() => setReviewModalVisible(false)}
+        productId={product._id}
+        productName={product.name}
+        onReviewSubmitted={handleReviewSubmitted}
+        userName={user?.fullName || 'Customer'}
+      />
     </SafeAreaView>
   );
 }
@@ -370,14 +460,110 @@ const styles = StyleSheet.create({
   buyNowBtn: { backgroundColor: colors.primary },
   buyNowText: { fontSize: 15, fontWeight: '700', color: colors.white },
   disabledBtn: { opacity: 0.5 },
-  section: { marginTop: spacing.md, gap: spacing.sm },
+  section: { marginTop: spacing.sm, gap: spacing.sm },
   sectionTitle: { fontSize: 17, fontWeight: '800', color: colors.text },
   desc: { fontSize: 14, color: colors.textSecondary, lineHeight: 22 },
   readMore: { fontSize: 13, color: colors.primary, fontWeight: '700', marginTop: 4 },
-  specRow: { flexDirection: 'row', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.border },
-  specKey: { flex: 1, fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
-  specVal: { flex: 1.5, fontSize: 13, color: colors.text, fontWeight: '700' },
-  noReviews: { fontSize: 13, color: colors.textMuted, fontStyle: 'italic' },
+
+  // Specs
+  specsCard: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  specRow: {
+    flexDirection: 'row',
+    paddingVertical: 11,
+    paddingHorizontal: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    alignItems: 'center',
+  },
+  specRowLast: {
+    borderBottomWidth: 0,
+  },
+  specKeyBox: {
+    flex: 1,
+    paddingRight: 8,
+  },
+  specKey: { fontSize: 13, color: colors.textSecondary, fontWeight: '600' },
+  specVal: { flex: 1.5, fontSize: 13, color: colors.text, fontWeight: '700', textAlign: 'right' },
+
+  // Review section
+  reviewSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  writeReviewBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: borderRadius.full,
+  },
+  writeReviewText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  showMoreReviewsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.lg,
+    marginTop: 4,
+  },
+  showMoreReviewsText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  noReviewsBox: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    gap: 8,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+  },
+  noReviewsTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  noReviewsSub: {
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+  firstReviewBtn: {
+    marginTop: 8,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: borderRadius.full,
+  },
+  firstReviewBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.white,
+  },
+
+  // Recommended
+  recommendedHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+
+  // Calculator
   calcCard: {
     borderRadius: borderRadius.lg,
     overflow: 'hidden',
@@ -388,113 +574,25 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
-  calcGradient: {
-    padding: 16,
-  },
-  calcHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  calcTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: colors.white,
-  },
-  calcDivider: {
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    marginVertical: 12,
-  },
-  calcRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  calcCol: {
-    flex: 1,
-  },
-  calcLabel: {
-    fontSize: 11,
-    color: '#94a3b8',
-    fontWeight: '600',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-  },
-  calcValLarge: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: colors.white,
-  },
-  tiersTitle: {
-    fontSize: 11,
-    color: '#94a3b8',
-    fontWeight: '600',
-    marginBottom: 8,
-    textTransform: 'uppercase',
-  },
-  tiersRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  tierBadge: {
-    flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: borderRadius.md,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  tierBadgeActive: {
-    backgroundColor: 'rgba(249, 115, 22, 0.15)',
-    borderColor: '#f97316',
-  },
-  tierBadgeSurpassed: {
-    backgroundColor: 'rgba(56, 239, 125, 0.1)',
-    borderColor: 'rgba(56, 239, 125, 0.4)',
-  },
-  tierBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.white,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  summaryLabel: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: colors.white,
-  },
-  savingsText: {
-    fontSize: 11,
-    color: '#38ef7d',
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  oldSubtotal: {
-    fontSize: 12,
-    color: '#94a3b8',
-    textDecorationLine: 'line-through',
-    marginBottom: 2,
-  },
-  summaryPrice: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: colors.white,
-  },
-  helperRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 12,
-  },
-  helperText: {
-    fontSize: 11,
-    color: '#94a3b8',
-    fontWeight: '600',
-  },
+  calcGradient: { padding: 16 },
+  calcHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  calcTitle: { fontSize: 14, fontWeight: '800', color: colors.white },
+  calcDivider: { height: 1, backgroundColor: 'rgba(255, 255, 255, 0.1)', marginVertical: 12 },
+  calcRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  calcCol: { flex: 1 },
+  calcLabel: { fontSize: 11, color: '#94a3b8', fontWeight: '600', marginBottom: 4, textTransform: 'uppercase' },
+  calcValLarge: { fontSize: 18, fontWeight: '800', color: colors.white },
+  tiersTitle: { fontSize: 11, color: '#94a3b8', fontWeight: '600', marginBottom: 8, textTransform: 'uppercase' },
+  tiersRow: { flexDirection: 'row', gap: 8 },
+  tierBadge: { flex: 1, backgroundColor: 'rgba(255, 255, 255, 0.05)', paddingVertical: 8, paddingHorizontal: 12, borderRadius: borderRadius.md, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)' },
+  tierBadgeActive: { backgroundColor: 'rgba(249, 115, 22, 0.15)', borderColor: '#f97316' },
+  tierBadgeSurpassed: { backgroundColor: 'rgba(56, 239, 125, 0.1)', borderColor: 'rgba(56, 239, 125, 0.4)' },
+  tierBadgeText: { fontSize: 11, fontWeight: '700', color: colors.white },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  summaryLabel: { fontSize: 14, fontWeight: '800', color: colors.white },
+  savingsText: { fontSize: 11, color: '#38ef7d', fontWeight: '700', marginTop: 2 },
+  oldSubtotal: { fontSize: 12, color: '#94a3b8', textDecorationLine: 'line-through', marginBottom: 2 },
+  summaryPrice: { fontSize: 20, fontWeight: '900', color: colors.white },
+  helperRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 12 },
+  helperText: { fontSize: 11, color: '#94a3b8', fontWeight: '600' },
 });

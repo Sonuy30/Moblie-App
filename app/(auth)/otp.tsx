@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,9 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  TouchableWithoutFeedback,
+  Keyboard,
+  InteractionManager,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,25 +27,44 @@ import { colors } from '@/constants/colors';
 import { spacing, borderRadius } from '@/constants/config';
 
 export default function OTPScreen() {
-  const { phone } = useLocalSearchParams<{ phone: string }>();
+  const { phone, devOtp } = useLocalSearchParams<{ phone: string; devOtp?: string }>();
 
   const [otp, setOtp] = useState('');
-  const [seconds, setSeconds] = useState(60); // Exact 60 seconds countdown as specified
+  const [shownOtp, setShownOtp] = useState(devOtp || ''); // OTP shown from server in dev mode
+  const [seconds, setSeconds] = useState(60);
   const [isLoading, setIsLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
+
   const inputRef = useRef<TextInput>(null);
 
-  const focusInput = () => {
-    inputRef.current?.focus();
-  };
-
-  useEffect(() => {
-    setTimeout(() => {
-      focusInput();
-    }, 300);
+  // Robust focus: wait for any running interactions to finish, then focus
+  // This fixes Android bug where .focus() is ignored right after keyboard dismiss
+  const focusInput = useCallback(() => {
+    InteractionManager.runAfterInteractions(() => {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 80);
+    });
   }, []);
+
+  // Auto-focus on mount
+  useEffect(() => {
+    const timer = setTimeout(focusInput, 400);
+    return () => clearTimeout(timer);
+  }, [focusInput]);
+
+  // Re-focus whenever keyboard hides unexpectedly (e.g. back button on Android)
+  useEffect(() => {
+    const sub = Keyboard.addListener('keyboardDidHide', () => {
+      // Only re-focus if user hasn't intentionally moved away
+      if (isFocused) {
+        setIsFocused(false); // reset so tapping cells re-shows keyboard
+      }
+    });
+    return () => sub.remove();
+  }, [isFocused]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -133,17 +155,23 @@ export default function OTPScreen() {
     if (seconds > 0) return;
     setIsLoading(true);
     setErrorMsg('');
+    // Don't clear shownOtp yet — keep old one visible until new one arrives
 
     try {
-      await resendRegisterOTP(phone!);
+      const result = await resendRegisterOTP(phone!);
+      // Update displayed OTP (mock always returns devOtp; real SMS doesn't)
+      const newOtp = (result as any).devOtp;
+      if (newOtp) setShownOtp(newOtp);
       setSeconds(60);
       setOtp('');
       focusInput();
 
       Toast.show({
         type: 'info',
-        text1: 'OTP Sent',
-        text2: 'A new 6-digit OTP code has been sent to your phone number.',
+        text1: 'New OTP Sent',
+        text2: newOtp
+          ? `Your new OTP is shown in the blue box above.`
+          : 'A new 6-digit OTP code has been sent.',
         position: 'bottom',
       });
     } catch (err: any) {
@@ -182,7 +210,9 @@ export default function OTPScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+      {/* TouchableWithoutFeedback: tapping anywhere re-shows keyboard if dismissed */}
+      <TouchableWithoutFeedback onPress={focusInput} accessible={false}>
+        <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="always">
         {/* Back navigation */}
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={24} color={colors.text} />
@@ -194,9 +224,27 @@ export default function OTPScreen() {
           </LinearGradient>
           <Text style={styles.title}>Verify your number</Text>
           <Text style={styles.subtitle}>
-            Enter the 6-digit security code sent to <Text style={styles.highlight}>+91 {phone}</Text>
+            Enter the 6-digit code sent to{' '}
+            <Text style={styles.highlight}>+91 {phone}</Text>
           </Text>
         </View>
+
+        {/* OTP Display Box — always visible since SMS is not live */}
+        <View style={styles.devOtpBox}>
+          <Ionicons name="information-circle" size={20} color="#0C447C" />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.devOtpLabel}>
+              {shownOtp ? 'Your OTP Code' : 'Your OTP Code (Demo Mode)'}
+            </Text>
+            <Text style={styles.devOtpCode}>{shownOtp || '123456'}</Text>
+            <Text style={styles.devOtpNote}>
+              {shownOtp
+                ? 'SMS not configured. Use this code to verify.'
+                : 'Live SMS not configured. Use this code to verify.'}
+            </Text>
+          </View>
+        </View>
+
 
         {/* Input Card Container */}
         <View style={styles.card}>
@@ -273,9 +321,10 @@ export default function OTPScreen() {
         </View>
 
         <Text style={styles.securityText}>
-          Didn't receive the SMS? Check your network coverage and verify that the mobile number provided is correct.
+          Didn't see the OTP? Check the blue box above or use Resend OTP after the timer ends.
         </Text>
-      </ScrollView>
+        </ScrollView>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 }
@@ -479,5 +528,39 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: 'auto',
     paddingHorizontal: 20,
+  },
+  // ── Dev Mode OTP Display ─────────────────────────────
+  devOtpBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#E8F4FD',
+    borderWidth: 1.5,
+    borderColor: '#185FA5',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  devOtpLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0C447C',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    marginBottom: 6,
+  },
+  devOtpCode: {
+    fontSize: 36,
+    fontWeight: '900',
+    color: '#0C447C',
+    letterSpacing: 6,
+    marginBottom: 4,
+    includeFontPadding: false,
+  },
+  devOtpNote: {
+    fontSize: 11,
+    color: '#185FA5',
+    fontWeight: '500',
+    lineHeight: 16,
   },
 });

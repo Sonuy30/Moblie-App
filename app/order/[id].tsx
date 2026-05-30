@@ -23,7 +23,23 @@ const statusBanner: Record<string, { text: string; bg: string; color: string }> 
 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { data: order, isLoading } = useOrderDetail(id || '');
+  const { data: rawOrder, isLoading } = useOrderDetail(id || '');
+
+  // ── Normalise the ERP order shape to guard against undefined fields ──
+  const order = rawOrder ? {
+    ...rawOrder,
+    orderNumber:    rawOrder.orderNumber   || `ORD-${id?.slice(-6).toUpperCase()}`,
+    status:         rawOrder.status        || 'confirmed',
+    paymentStatus:  rawOrder.paymentStatus || 'pending',
+    paymentMethod:  rawOrder.paymentMethod || 'Online',
+    items:          rawOrder.items         || [],
+    subtotal:       rawOrder.subtotal       ?? 0,
+    gstAmount:      rawOrder.gstAmount      ?? 0,
+    deliveryCharge: rawOrder.deliveryCharge ?? 0,
+    totalAmount:    rawOrder.totalAmount    ?? 0,
+    placedAt:       rawOrder.placedAt       || rawOrder.createdAt || new Date().toISOString(),
+    updatedAt:      rawOrder.updatedAt      || new Date().toISOString(),
+  } : null;
 
   if (isLoading || !order) {
     return (
@@ -40,7 +56,8 @@ export default function OrderDetailScreen() {
     );
   }
 
-  const banner = statusBanner[order.status] || statusBanner.confirmed;
+  const safeStatus = (order.status || 'confirmed').toLowerCase();
+  const banner = statusBanner[safeStatus] || statusBanner.confirmed;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -55,14 +72,14 @@ export default function OrderDetailScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         {/* Status Banner */}
         <View style={[styles.banner, { backgroundColor: banner.bg }]}>
-          <Ionicons name={order.status === 'delivered' ? 'checkmark-circle' : order.status === 'cancelled' ? 'close-circle' : 'time-outline'} size={22} color={banner.color} />
+          <Ionicons name={safeStatus === 'delivered' ? 'checkmark-circle' : safeStatus === 'cancelled' ? 'close-circle' : 'time-outline'} size={22} color={banner.color} />
           <Text style={[styles.bannerText, { color: banner.color }]}>{banner.text}</Text>
         </View>
 
         {/* Tracking */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Tracking</Text>
-          <TrackingTimeline status={order.status} trackingNumber={order.trackingNumber} courierName={order.courierName} placedAt={order.placedAt} updatedAt={order.updatedAt} />
+          <TrackingTimeline status={safeStatus} trackingNumber={order.trackingNumber} courierName={order.courierName} placedAt={order.placedAt} updatedAt={order.updatedAt} />
         </View>
 
         {/* Delivery Address */}
@@ -101,7 +118,7 @@ export default function OrderDetailScreen() {
           <Text style={styles.sectionTitle}>Payment</Text>
           <View style={styles.payCard}>
             <View style={styles.payRow}><Text style={styles.payLabel}>Method</Text><Text style={styles.payVal}>{order.paymentMethod || 'Online'}</Text></View>
-            <View style={styles.payRow}><Text style={styles.payLabel}>Status</Text><Badge text={order.paymentStatus.toUpperCase()} variant={order.paymentStatus === 'paid' ? 'success' : 'warning'} /></View>
+            <View style={styles.payRow}><Text style={styles.payLabel}>Status</Text><Badge text={(order.paymentStatus || 'PENDING').toUpperCase()} variant={order.paymentStatus === 'paid' ? 'success' : 'warning'} /></View>
             <View style={styles.payRow}><Text style={styles.payLabel}>Date</Text><Text style={styles.payVal}>{formatDate(order.placedAt)}</Text></View>
           </View>
         </View>

@@ -46,6 +46,13 @@ function isBackendMissing(err: any): boolean {
   // No response at all = network error / CORS / server down
   if (!err?.response) return true;
   const status = err.response.status;
+  
+  // If the company is explicitly not found in the DB, it is a configuration error,
+  // not a missing API endpoint, so we should NOT silently fall back to mocks.
+  if (status === 404 && err.response.data?.message === "Company not found") {
+    return false;
+  }
+
   // 401 / 403: backend requires auth even for product browsing → use mock
   // 404: endpoint not found → use mock
   // 405: method not allowed → use mock
@@ -57,12 +64,15 @@ function isBackendMissing(err: any): boolean {
 // ──────────────────────────────────────────────────────────
 export const fetchProducts = async (params?: ProductFilters): Promise<ProductListResponse> => {
   try {
-    const { data } = await client.get('/api/items', { params });
+    const COMPANY_SLUG = process.env.EXPO_PUBLIC_COMPANY_SLUG || 'sudama01';
+    const { data } = await client.get('/api/mobile/items', {
+      params: { ...params, companySlug: COMPANY_SLUG },
+    });
     const limit = params?.limit || 20;
     const totalPages = data.totalPages || Math.ceil((data.total || 0) / limit);
 
     // Normalize different backend shapes
-    const products = data.items || data.products || data.data || [];
+    const products = data.products || data.items || data.data || [];
     return { products, total: data.total || products.length, page: data.page || 1, totalPages };
   } catch (err: any) {
     if (isBackendMissing(err)) {
@@ -78,8 +88,11 @@ export const fetchProducts = async (params?: ProductFilters): Promise<ProductLis
 // ──────────────────────────────────────────────────────────
 export const fetchProductBySlug = async (slug: string): Promise<StoreProduct> => {
   try {
-    const { data } = await client.get(`/api/items/${slug}`);
-    return (data.item || data.product || data) as StoreProduct;
+    const COMPANY_SLUG = process.env.EXPO_PUBLIC_COMPANY_SLUG || 'sudama01';
+    const { data } = await client.get(`/api/mobile/items/${slug}`, {
+      params: { companySlug: COMPANY_SLUG },
+    });
+    return (data.product || data.item || data) as StoreProduct;
   } catch (err: any) {
     if (isBackendMissing(err)) {
       console.info('[MOCK] fetchProductBySlug fallback active');
@@ -94,7 +107,10 @@ export const fetchProductBySlug = async (slug: string): Promise<StoreProduct> =>
 // ──────────────────────────────────────────────────────────
 export const fetchCategories = async (): Promise<string[]> => {
   try {
-    const { data } = await client.get('/api/items/categories');
+    const COMPANY_SLUG = process.env.EXPO_PUBLIC_COMPANY_SLUG || 'sudama01';
+    const { data } = await client.get('/api/mobile/categories', {
+      params: { companySlug: COMPANY_SLUG },
+    });
     return (Array.isArray(data) ? data : data.categories || []) as string[];
   } catch (err: any) {
     if (isBackendMissing(err)) {

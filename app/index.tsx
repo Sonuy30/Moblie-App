@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
-const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Pankaj Steel';
+const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
 
 export default function SplashScreen() {
   const { isLoading, restoreSession } = useAuthStore();

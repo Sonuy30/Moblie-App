@@ -17,7 +17,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function AuthModal() {
   const { isVisible, hide } = useAuthModalStore();
-  const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Pankaj Steel Pvt Ltd';
+  const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
 
   if (!isVisible) return null;
 

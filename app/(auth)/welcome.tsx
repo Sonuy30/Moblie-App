@@ -16,7 +16,7 @@ import { colors } from '@/constants/colors';
 import { spacing, borderRadius } from '@/constants/config';
 
 const { width, height } = Dimensions.get('window');
-const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Pankaj Steel';
+const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
 
 const slides = [
   {

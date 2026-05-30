@@ -46,3 +46,5 @@ read_*.js
 find_domain.js
 search_probe_output.js
 
+# Local scratch files
+scratch/

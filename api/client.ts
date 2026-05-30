@@ -1,18 +1,25 @@
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const STORE_TOKEN = process.env.EXPO_PUBLIC_STORE_TOKEN || 'AITS_STR_PNK8472XQ';
-
+/**
+ * API Client — JWT-only authentication (no hardcoded store token).
+ *
+ * Architecture:
+ *  - BEFORE login: company is identified via `companySlug` sent in request body
+ *  - AFTER login:  JWT payload contains `companyId`, so no extra header needed
+ *  - ERP reads companyId from the decoded JWT for every authenticated request
+ */
 const client = axios.create({
   baseURL: process.env.EXPO_PUBLIC_API_URL || 'https://aitserp-30072025.vercel.app',
   timeout: 15000,
   headers: {
     'Content-Type': 'application/json',
-    'X-Store-Token': STORE_TOKEN,
   },
 });
 
-// Add JWT when user is logged in
+// ── Request Interceptor ──────────────────────────────────────────
+// Attach JWT on every request (when user is logged in).
+// The ERP decodes this token to get userId + companyId — no store token needed.
 client.interceptors.request.use(async (config) => {
   try {
     const token = await SecureStore.getItemAsync('aits_auth_token');
@@ -20,15 +27,16 @@ client.interceptors.request.use(async (config) => {
       config.headers.Authorization = `Bearer ${token}`;
     }
   } catch (e) {
-    console.warn('SecureStore item retrieval failed:', e);
+    console.warn('[API] SecureStore read failed:', e);
   }
   return config;
 });
 
-// Handle expired token — only clear stored credentials, do NOT redirect.
-// Each screen/hook handles navigation on its own. Redirecting here caused
-// product detail pages to go back to home whenever the backend returned 401
-// for unauthenticated requests.
+// ── Response Interceptor ─────────────────────────────────────────
+// On 401: clear saved credentials (token expired / revoked).
+// Do NOT redirect here — screens handle their own navigation.
+// Redirecting from the interceptor caused product pages to jump to home
+// whenever the ERP returned 401 for unauthenticated browsing requests.
 client.interceptors.response.use(
   (res) => res,
   async (error) => {
@@ -36,11 +44,10 @@ client.interceptors.response.use(
       try {
         await SecureStore.deleteItemAsync('aits_auth_token');
         await SecureStore.deleteItemAsync('aits_auth_user');
+        console.info('[API] 401 received — credentials cleared');
       } catch (e) {
-        console.warn('SecureStore delete failed:', e);
+        console.warn('[API] SecureStore delete failed:', e);
       }
-      // NOTE: Do NOT call router.replace here — it triggers on product/API
-      // calls and sends the user back to the home tab unexpectedly.
     }
     return Promise.reject(error);
   }
@@ -48,14 +55,15 @@ client.interceptors.response.use(
 
 export default client;
 
-// Utility to extract a user-friendly error message from Axios errors
+// ── Error Utility ────────────────────────────────────────────────
+// Extracts a user-friendly message from Axios errors
 export const getErrorMessage = (err: unknown): string => {
   if (typeof err === 'string') return err;
   if (err && typeof err === 'object') {
     const e = err as any;
     if (e.response?.data?.message) return e.response.data.message;
-    if (e.response?.data?.error) return e.response.data.error;
-    if (e.message) return e.message;
+    if (e.response?.data?.error)   return e.response.data.error;
+    if (e.message)                 return e.message;
   }
   return 'Something went wrong. Please try again.';
 };

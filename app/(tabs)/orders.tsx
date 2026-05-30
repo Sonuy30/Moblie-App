@@ -37,7 +37,7 @@ export default function OrdersScreen() {
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Pankaj Steel Pvt Ltd';
+  const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
 
   const onRefresh = async () => {
     setRefreshing(true);

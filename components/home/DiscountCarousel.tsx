@@ -18,56 +18,59 @@ interface PromoCard {
   actionText: string;
 }
 
-const PROMOS: PromoCard[] = [
+const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
+
+const getPromos = (): PromoCard[] => [
   {
     id: 'promo-001',
-    title: 'Bulk Steel Bonanza',
-    subtitle: 'Flat 15% OFF on orders above ₹1,00,000. Valid for registered B2B buyers.',
-    badge: '🔥 HOT OFFER',
-    icon: 'cube-outline',
-    gradient: ['#0f2027', '#203a43'],
-    actionText: 'Shop Bulk Steel',
+    title: 'TMT Bar Mega Saver',
+    subtitle: 'Flat ₹7,500 OFF on full truckload orders. Upgrade your concrete reinforcement today.',
+    badge: '⚡ HOT DEAL',
+    icon: 'flame-outline',
+    gradient: ['#fc4a1a', '#f7b733'],
+    actionText: 'Shop TMT Bars',
   },
   {
     id: 'promo-002',
-    title: 'Factory-Direct TMT Bars',
-    subtitle: 'Certified Fe500D / Fe550D TMT rebars directly from mills at wholesale price.',
-    badge: '🏗️ FACTORY PRICE',
-    icon: 'construct-outline',
-    gradient: ['#e65c00', '#f9a825'],
-    actionText: 'View TMT Bars',
+    title: 'Binding Wire Combo',
+    subtitle: `Buy 15 Bundles of Premium 18G Annealed Binding Wire, get 1 Bundle completely FREE!`,
+    badge: '🎁 COMBO OFFER',
+    icon: 'gift-outline',
+    gradient: ['#1e3c72', '#2a5298'],
+    actionText: 'Grab Combo Offer',
   },
   {
     id: 'promo-003',
-    title: 'Free Site Delivery',
-    subtitle: 'Zero freight charges on orders above 10 Metric Tons within city limits.',
-    badge: '🚛 FREE FREIGHT',
-    icon: 'bus-outline',
+    title: 'GI Pipe Price Drop',
+    subtitle: 'Get up to 20% OFF on all 20mm & 25mm Light Grade Galvanized Iron Pipes.',
+    badge: '📉 PRICE DROP',
+    icon: 'trending-down-outline',
     gradient: ['#11998e', '#38ef7d'],
-    actionText: 'Estimate Weight',
+    actionText: 'View GI Pipes',
   },
   {
     id: 'promo-004',
-    title: '30-Day B2B Credit Line',
-    subtitle: 'Interest-free trade credit up to ₹5,00,000 for verified Pankaj Steel buyers.',
-    badge: '💼 BUSINESS CREDIT',
-    icon: 'business-outline',
-    gradient: ['#4e54c8', '#8f94fb'],
-    actionText: 'Apply for Credit',
+    title: 'MS Structural Angle Deals',
+    subtitle: 'Save ₹250 per piece on premium IS 2062 MS Angle Bars 40x40mm.',
+    badge: '💥 SPECIAL DEAL',
+    icon: 'pricetags-outline',
+    gradient: ['#833ab4', '#fd1d1d'],
+    actionText: 'Shop Structural Angle',
   },
 ];
 
 export default function DiscountCarousel() {
+  const promos = getPromos();
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>Exclusive Deals</Text>
+          <Text style={styles.title}>Today's Top Deals</Text>
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>Pankaj Steel Wholesale</Text>
+            <Text style={styles.badgeText}>LIMITED TIME</Text>
           </View>
         </View>
-        <Text style={styles.subtitle}>Direct from Pankaj Steel Private Limited</Text>
+        <Text style={styles.subtitle}>Direct from {companyName} Official Store</Text>
       </View>
 
 
@@ -78,7 +81,7 @@ export default function DiscountCarousel() {
         decelerationRate="fast"
         contentContainerStyle={styles.scrollContainer}
       >
-        {PROMOS.map((promo) => (
+        {promos.map((promo) => (
           <TouchableOpacity key={promo.id} activeOpacity={0.9} style={styles.card}>
             <LinearGradient
               colors={promo.gradient}

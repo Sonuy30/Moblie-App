@@ -8,22 +8,69 @@ import {
   mockGetProfile,
 } from './mock';
 
-const STORE_TOKEN = process.env.EXPO_PUBLIC_STORE_TOKEN || 'AITS_STR_PNK8472XQ';
+/**
+ * Company slug — identifies which company's ERP this app connects to.
+ * Used ONLY in pre-login calls (register, request-otp) so the ERP knows
+ * which company to look up. After login, companyId lives inside the JWT.
+ *
+ * This is NOT a secret — it's just a readable identifier like "pankaj-steel".
+ * Replace with: process.env.EXPO_PUBLIC_COMPANY_SLUG
+ */
+const COMPANY_SLUG = process.env.EXPO_PUBLIC_COMPANY_SLUG || 'sudama01';
 
-// Helper: check if error is a "backend not available" error
+// Helper: check if backend is truly unreachable or misconfigured → use mock data
+//
+// Fallback triggers:
+//   • No HTTP response at all — network error / CORS / server down
+//   • 405 — endpoint not implemented on this server
+//   • 404 — endpoint path doesn't exist on local dev server
+//   • 400 with a company/config error message — means the companySlug in .env.local
+//     doesn't match any company in the local DB (config problem, not user input error)
+//
+// Real user errors (wrong password, phone already registered, etc.) still surface normally.
 function isBackendMissing(err: any): boolean {
   const status = err?.response?.status;
-  return !status || status === 404 || status === 401 || status === 403 || status === 405 || status >= 500;
+
+  // No HTTP response = network error (server down, wrong IP, CORS, no internet)
+  if (!status) return true;
+
+  // 405 = endpoint doesn't exist at all
+  if (status === 405) return true;
+
+  // 404 = route not found on local dev server (endpoint not wired up yet)
+  if (status === 404) return true;
+
+  // 400 where the body indicates a company / configuration problem
+  // (e.g. "Company not found", "Invalid company", "companySlug is required")
+  // This is a dev setup issue, NOT a user input error — fall back to mock.
+  if (status === 400) {
+    const msg: string = (
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      ''
+    ).toLowerCase();
+    const isConfigError =
+      msg.includes('company') ||
+      msg.includes('not found') ||
+      msg.includes('invalid company') ||
+      msg.includes('companyslug') ||
+      msg.includes('slug');
+    if (isConfigError) return true;
+  }
+
+  // Everything else (400 user errors, 401, 403, 409, 500) = real backend
+  // response that should surface to the user.
+  return false;
 }
 
 // ──────────────────────────────────────────────────────────
-// Request OTP
+// Request OTP (pre-login — company identified by slug)
 // ──────────────────────────────────────────────────────────
 export const requestOTP = async (phone: string): Promise<{ message: string; companyName?: string; maskedPhone?: string }> => {
   try {
-    const { data } = await client.post('/api/customers/request-otp', {
+    const { data } = await client.post('/api/mobile/request-otp', {
       phone,
-      storeToken: STORE_TOKEN,
+      companySlug: COMPANY_SLUG,  // ERP uses this to find the company
     });
     return data as { message: string; companyName?: string; maskedPhone?: string };
   } catch (err: any) {
@@ -35,27 +82,27 @@ export const requestOTP = async (phone: string): Promise<{ message: string; comp
   }
 };
 
-// Alias for resendRegisterOTP
+// Alias
 export const resendRegisterOTP = requestOTP;
 
 // ──────────────────────────────────────────────────────────
-// Verify OTP (login/onboarding)
+// Verify OTP → ERP returns JWT with companyId embedded
 // ──────────────────────────────────────────────────────────
 export const verifyOTP = async (
   phone: string,
   otp: string
 ): Promise<{ token: string; authToken: string; customer: AuthUser | null; user: AuthUser | null }> => {
   try {
-    const { data } = await client.post('/api/customers/verify-otp', {
+    const { data } = await client.post('/api/mobile/verify-otp', {
       phone,
       otp,
-      storeToken: STORE_TOKEN,
+      companySlug: COMPANY_SLUG,
     });
     return {
-      token: data.authToken || data.token || '',
+      token:     data.authToken || data.token || '',
       authToken: data.authToken || data.token || '',
-      customer: data.user || data.customer || null,
-      user: data.user || data.customer || null,
+      customer:  data.user || data.customer || null,
+      user:      data.user || data.customer || null,
     };
   } catch (err: any) {
     if (isBackendMissing(err)) {
@@ -70,7 +117,7 @@ export const verifyOTP = async (
 export const verifyRegisterOTP = verifyOTP;
 
 // ──────────────────────────────────────────────────────────
-// Register new customer
+// Register new customer (pre-login)
 // ──────────────────────────────────────────────────────────
 export const registerUser = async (params: {
   fullName: string;
@@ -78,9 +125,9 @@ export const registerUser = async (params: {
   password?: string;
 }): Promise<{ message: string; phone: string }> => {
   try {
-    const { data } = await client.post('/api/customers/register', {
+    const { data } = await client.post('/api/mobile/register', {
       ...params,
-      storeToken: STORE_TOKEN,
+      companySlug: COMPANY_SLUG,  // ERP links this user to the company
     });
     return data as { message: string; phone: string };
   } catch (err: any) {
@@ -94,16 +141,17 @@ export const registerUser = async (params: {
 
 // ──────────────────────────────────────────────────────────
 // Login with phone + password
+// JWT returned will contain: { userId, companyId, role }
 // ──────────────────────────────────────────────────────────
 export const loginUser = async (params: {
   phone: string;
   password?: string;
 }): Promise<{ authToken: string; user: AuthUser }> => {
   try {
-    const { data } = await client.post('/api/customers/login', {
+    const { data } = await client.post('/api/mobile/login', {
       phone: params.phone,
       password: params.password,
-      storeToken: STORE_TOKEN,
+      companySlug: COMPANY_SLUG,  // needed to find user in the right company
     });
     return data as { authToken: string; user: AuthUser };
   } catch (err: any) {
@@ -116,7 +164,7 @@ export const loginUser = async (params: {
 };
 
 // ──────────────────────────────────────────────────────────
-// Profile
+// Profile — JWT carries companyId, no extra header needed
 // ──────────────────────────────────────────────────────────
 export const getProfile = async (): Promise<{ user: AuthUser; company?: any }> => {
   try {
@@ -125,7 +173,6 @@ export const getProfile = async (): Promise<{ user: AuthUser; company?: any }> =
   } catch (err: any) {
     if (isBackendMissing(err)) {
       console.info('[MOCK] getProfile fallback active');
-      // Return a generic guest profile shape
       return { user: { _id: 'guest', fullName: 'Guest', phone: '', role: 'customer', companyId: '', companyName: '' } };
     }
     throw err;
@@ -142,7 +189,7 @@ export const updateProfile = async (body: {
     return data;
   } catch (err: any) {
     if (isBackendMissing(err)) {
-      console.info('[MOCK] updateProfile no-op (backend not available)');
+      console.info('[MOCK] updateProfile no-op');
       return { success: true };
     }
     throw err;
@@ -154,7 +201,10 @@ export const updateProfile = async (body: {
 // ──────────────────────────────────────────────────────────
 export const forgotPasswordAPI = async (email: string): Promise<any> => {
   try {
-    const { data } = await client.post('/api/customers/forgot-password', { email });
+    const { data } = await client.post('/api/customers/forgot-password', {
+      email,
+      companySlug: COMPANY_SLUG,
+    });
     return data;
   } catch (err: any) {
     if (isBackendMissing(err)) {
@@ -166,7 +216,7 @@ export const forgotPasswordAPI = async (email: string): Promise<any> => {
 };
 
 // ──────────────────────────────────────────────────────────
-// Validate invite token from QR
+// Validate invite token from QR code
 // ──────────────────────────────────────────────────────────
 export const validateInviteToken = async (token: string): Promise<{
   maskedPhone: string;
@@ -179,7 +229,7 @@ export const validateInviteToken = async (token: string): Promise<{
   } catch (error) {
     return {
       maskedPhone: '******9999',
-      companyName: 'Pankaj Steel Pvt Ltd',
+      companyName: process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01',
       customerId: 'demo-customer-123',
     };
   }

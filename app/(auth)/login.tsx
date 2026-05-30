@@ -19,6 +19,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import Toast from 'react-native-toast-message';
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import { loginUser, updateProfile } from '@/api/auth';
 import { getErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/stores/authStore';
@@ -27,7 +28,7 @@ import { useCartStore } from '@/stores/cartStore';
 import { colors } from '@/constants/colors';
 import { spacing, borderRadius } from '@/constants/config';
 
-const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Pankaj Steel';
+const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
 
 const loginSchema = z.object({
   phone: z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit Indian mobile number'),
@@ -51,18 +52,14 @@ export default function LoginScreen() {
     defaultValues: { phone: '', password: '' },
   });
 
-  const handleDemoLogin = () => {
-    setValue('phone', '9876543210');
-    setValue('password', 'Demo@123');
-    setTimeout(() => {
-      handleSubmit(onSubmit)();
-    }, 100);
-  };
 
   const setupPushNotifications = async () => {
     try {
       const { status } = await Notifications.requestPermissionsAsync();
       if (status !== 'granted') return;
+      // Expo Go SDK 53+ removed native push — use a mock token to prevent crash
+      const isExpoGo = Constants.executionEnvironment === 'storeClient';
+      if (isExpoGo) return; // skip — no native push service in Expo Go
       const token = (await Notifications.getExpoPushTokenAsync()).data;
       await updateProfile({ pushToken: token });
     } catch (e) {
@@ -140,6 +137,16 @@ export default function LoginScreen() {
             <Text style={styles.errorBoxText}>{apiError}</Text>
           </View>
         ) : null}
+
+        {/* Demo Credentials Hint */}
+        <View style={styles.demoBox}>
+          <Ionicons name="flask-outline" size={16} color="#0C447C" />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.demoTitle}>Demo / Offline Mode Credentials</Text>
+            <Text style={styles.demoLine}>📱 Phone: <Text style={styles.demoBold}>9876543210</Text></Text>
+            <Text style={styles.demoLine}>🔑 Password: <Text style={styles.demoBold}>Demo@123</Text></Text>
+          </View>
+        </View>
 
         {/* Form */}
         <View style={styles.form}>
@@ -232,26 +239,7 @@ export default function LoginScreen() {
             </LinearGradient>
           </TouchableOpacity>
 
-          {/* OR Divider */}
-          <View style={styles.orRow}>
-            <View style={styles.orLine} />
-            <Text style={styles.orText}>OR</Text>
-            <View style={styles.orLine} />
-          </View>
 
-          {/* Demo Login */}
-          <TouchableOpacity style={styles.demoBtn} onPress={handleDemoLogin} disabled={loading} activeOpacity={0.8}>
-            <Ionicons name="flash-outline" size={18} color={colors.primary} />
-            <Text style={styles.demoText}>Quick Demo Login</Text>
-          </TouchableOpacity>
-
-          {/* Demo hint */}
-          <View style={styles.hintBox}>
-            <Ionicons name="information-circle-outline" size={16} color={colors.primaryDark} />
-            <Text style={styles.hintText}>
-              Demo: <Text style={{ fontWeight: '800' }}>9876543210</Text> / <Text style={{ fontWeight: '800' }}>Demo@123</Text>
-            </Text>
-          </View>
         </View>
 
         {/* Footer */}
@@ -354,24 +342,38 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center', gap: 10,
   },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  orRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 4 },
-  orLine: { flex: 1, height: 1, backgroundColor: colors.border },
-  orText: { fontSize: 12, color: colors.textMuted, fontWeight: '600' },
-  demoBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1.5, borderColor: colors.primary,
-    backgroundColor: colors.primaryLight,
-    height: 52, borderRadius: borderRadius.lg, gap: 8,
-  },
-  demoText: { color: colors.primary, fontSize: 15, fontWeight: '700' },
-  hintBox: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: '#F0F7FF',
-    padding: 10, borderRadius: borderRadius.md,
-    borderWidth: 1, borderColor: 'rgba(24,95,165,0.12)',
-  },
-  hintText: { flex: 1, fontSize: 12, color: colors.primaryDark, fontWeight: '500' },
+
   footer: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.xl },
   footerText: { fontSize: 14, color: colors.textSecondary, fontWeight: '500' },
   footerLink: { fontSize: 14, color: colors.primary, fontWeight: '800' },
+
+  // Demo credentials box
+  demoBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    backgroundColor: '#E8F4FD',
+    borderWidth: 1.5,
+    borderColor: '#185FA5',
+    borderRadius: borderRadius.md,
+    padding: 12,
+    marginBottom: spacing.lg,
+  },
+  demoTitle: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#0C447C',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  demoLine: {
+    fontSize: 13,
+    color: '#185FA5',
+    marginTop: 2,
+  },
+  demoBold: {
+    fontWeight: '800',
+    color: '#0C447C',
+  },
 });

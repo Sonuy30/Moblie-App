@@ -9,7 +9,7 @@ import { spacing, borderRadius } from '@/constants/config';
 
 export default function AccountScreen() {
   const { user, isAuthenticated, logout } = useAuthStore();
-  const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Pankaj Steel Pvt Ltd';
+  const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
 
   const menuItems = [
     { icon: 'cube-outline' as const, label: 'My orders', route: '/(tabs)/orders' as const },

@@ -1,7 +1,5 @@
 /**
- * Mock data layer for Pankaj Steel Pvt Ltd — ERP Shop App
- * Used when the backend API returns 404/401 (endpoints not built yet on ERP).
- * This lets the app be fully demoed and tested end-to-end.
+ * Mock data layer for ERP Shop App
  *
  * Demo account: phone=9876543210, password=Demo@123, OTP=123456
  */
@@ -9,6 +7,8 @@
 
 import type { AuthUser } from '@/stores/authStore';
 import type { StoreProduct, ProductListResponse } from './products';
+
+const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
 
 // ──────────────────────────────────────────────────────────
 // Demo users store (in-memory for session)
@@ -31,7 +31,7 @@ const MOCK_USERS: MockUser[] = [
       email: 'rahul.sharma@example.com',
       role: 'customer',
       companyId: 'AITS_COMP_001',
-      companyName: 'Pankaj Steel Pvt Ltd',
+      companyName: companyName,
       tier: 'premium',
       creditLimit: 50000,
       creditAvailable: 42000,
@@ -47,7 +47,7 @@ const MOCK_USERS: MockUser[] = [
       email: 'priya.patel@example.com',
       role: 'customer',
       companyId: 'AITS_COMP_001',
-      companyName: 'Pankaj Steel Pvt Ltd',
+      companyName: companyName,
       tier: 'regular',
       creditLimit: 20000,
       creditAvailable: 20000,
@@ -81,28 +81,33 @@ function generateMockJWT(user: AuthUser): string {
 // Mock Auth functions
 // ──────────────────────────────────────────────────────────
 
-/** Send OTP to phone — always succeeds, OTP is always 123456 in demo */
-export async function mockRequestOTP(phone: string): Promise<{ message: string; companyName: string; maskedPhone: string }> {
+/** Send OTP to phone — generates a fresh random 6-digit code each time */
+export async function mockRequestOTP(phone: string): Promise<{ message: string; companyName: string; maskedPhone: string; devOtp: string }> {
   await delay(600);
-  const otp = '123456'; // Fixed demo OTP
+
+  // Generate a random 6-digit OTP (100000 – 999999)
+  const otp = String(Math.floor(100000 + Math.random() * 900000));
   OTP_STORE[phone] = { otp, expiry: Date.now() + 5 * 60 * 1000, phone };
+
+  console.info(`[MOCK] OTP for ${phone}: ${otp}`);
 
   return {
     message: 'OTP sent successfully',
-    companyName: 'Pankaj Steel Pvt Ltd',
+    companyName: companyName,
     maskedPhone: `+91 ${phone.slice(0, 2)}****${phone.slice(-2)}`,
+    devOtp: otp,   // passed to OTP screen to display (since SMS is not live)
   };
 }
 
-/** Verify OTP — accepts 123456 always */
+/** Verify OTP — must match the exact code that was generated */
 export async function mockVerifyOTP(phone: string, otp: string): Promise<{ token: string; authToken: string; user: AuthUser; customer: AuthUser }> {
   await delay(800);
 
   const stored = OTP_STORE[phone];
 
-  // Accept 123456 as universal OTP, or exact match
-  if (otp !== '123456' && (!stored || stored.otp !== otp || Date.now() > stored.expiry)) {
-    throw new Error('Invalid or expired OTP. Use 123456 for demo.');
+  // Must match the stored OTP exactly
+  if (!stored || stored.otp !== otp || Date.now() > stored.expiry) {
+    throw new Error('Invalid or expired OTP. Please request a new one.');
   }
 
   delete OTP_STORE[phone];
@@ -119,7 +124,7 @@ export async function mockVerifyOTP(phone: string, otp: string): Promise<{ token
         phone,
         role: 'customer',
         companyId: 'AITS_COMP_001',
-        companyName: 'Pankaj Steel Pvt Ltd',
+        companyName: companyName,
         tier: 'regular',
         creditLimit: 10000,
         creditAvailable: 10000,
@@ -134,13 +139,17 @@ export async function mockVerifyOTP(phone: string, otp: string): Promise<{ token
 }
 
 /** Register user: sends OTP to verify phone */
-export async function mockRegisterUser(params: { fullName: string; phone: string; password?: string }): Promise<{ message: string; phone: string }> {
+export async function mockRegisterUser(params: { fullName: string; phone: string; password?: string }): Promise<{ message: string; phone: string; devOtp: string }> {
   await delay(700);
 
   if (findUser(params.phone)) {
     // User exists — treat as login flow
     throw new Error('Phone number already registered. Please login instead.');
   }
+
+  // Generate a fresh random 6-digit OTP
+  const otp = String(Math.floor(100000 + Math.random() * 900000));
+  console.info(`[MOCK] Register OTP for ${params.phone}: ${otp}`);
 
   // Pre-register without full profile yet (OTP verify will complete it)
   const pending: MockUser = {
@@ -152,16 +161,16 @@ export async function mockRegisterUser(params: { fullName: string; phone: string
       phone: params.phone,
       role: 'customer',
       companyId: 'AITS_COMP_001',
-      companyName: 'Pankaj Steel Pvt Ltd',
+      companyName: companyName,
       tier: 'regular',
       creditLimit: 10000,
       creditAvailable: 10000,
     },
   };
   REGISTERED_USERS.push(pending);
-  OTP_STORE[params.phone] = { otp: '123456', expiry: Date.now() + 5 * 60 * 1000, phone: params.phone };
+  OTP_STORE[params.phone] = { otp, expiry: Date.now() + 5 * 60 * 1000, phone: params.phone };
 
-  return { message: 'OTP sent to your mobile number', phone: params.phone };
+  return { message: 'OTP sent to your mobile number', phone: params.phone, devOtp: otp };
 }
 
 /** Login with phone + password */
@@ -203,7 +212,7 @@ const MOCK_PRODUCTS: StoreProduct[] = [
       'https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?w=600&auto=format&fit=crop&q=80',
     ],
     category: 'Structural Steel',
-    description: 'High-quality Pankaj Steel mild steel angle bar (L-section) for structural applications. Fabricated under IS 2062 standards with excellent mechanical strength and weldability. Ideal for construction, fabrication, and support frameworks.',
+    description: `High-quality ${companyName} mild steel angle bar (L-section) for structural applications. Fabricated under IS 2062 standards with excellent mechanical strength and weldability. Ideal for construction, fabrication, and support frameworks.`,
     tags: ['ms', 'angle', 'structural'], inStock: true, stockQty: 240,
     isFeatured: true, avgRating: 4.5, reviewCount: 38,
     weightPerPiece: 21,
@@ -213,7 +222,7 @@ const MOCK_PRODUCTS: StoreProduct[] = [
       { key: 'Thickness', value: '5 mm' },
       { key: 'Grade', value: 'E250' },
       { key: 'Est. Weight', value: '21 kg / piece' },
-      { key: 'Brand', value: 'Pankaj Steel' },
+      { key: 'Brand', value: companyName },
     ],
   },
   {
@@ -225,7 +234,7 @@ const MOCK_PRODUCTS: StoreProduct[] = [
       'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&auto=format&fit=crop&q=80',
     ],
     category: 'Structural Steel',
-    description: 'Standard mild steel channel (C-section) designed for industrial construction, bridges, and heavy-duty frame building. Sourced directly from primary steel mills and quality-checked at Pankaj Steel warehouse.',
+    description: `Standard mild steel channel (C-section) designed for industrial construction, bridges, and heavy-duty frame building. Sourced directly from primary steel mills and quality-checked at ${companyName} warehouse.`,
     tags: ['ms', 'channel', 'structural'], inStock: true, stockQty: 180,
     isFeatured: true, avgRating: 4.3, reviewCount: 22,
     weightPerPiece: 57,
@@ -235,7 +244,7 @@ const MOCK_PRODUCTS: StoreProduct[] = [
       { key: 'Length', value: '6 meters' },
       { key: 'Grade', value: 'E250 A' },
       { key: 'Est. Weight', value: '57 kg / piece' },
-      { key: 'Brand', value: 'Pankaj Steel' },
+      { key: 'Brand', value: companyName },
     ],
   },
   {
@@ -299,7 +308,7 @@ const MOCK_PRODUCTS: StoreProduct[] = [
       { key: 'Length', value: '12 meters' },
       { key: 'UTS/YS Ratio', value: '≥ 1.25' },
       { key: 'Est. Weight', value: '7.4 kg / piece' },
-      { key: 'Brand', value: 'Pankaj Steel' },
+      { key: 'Brand', value: companyName },
     ],
   },
   {
@@ -321,7 +330,7 @@ const MOCK_PRODUCTS: StoreProduct[] = [
       { key: 'Length', value: '12 meters' },
       { key: 'UTS/YS Ratio', value: '≥ 1.25' },
       { key: 'Est. Weight', value: '10.7 kg / piece' },
-      { key: 'Brand', value: 'Pankaj Steel' },
+      { key: 'Brand', value: companyName },
     ],
   },
   {

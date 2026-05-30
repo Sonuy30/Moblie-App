@@ -61,11 +61,14 @@ export default function CheckoutScreen() {
 
   const handlePlaceOrder = async () => {
     if (!selectedAddr) { Alert.alert('Select Address', 'Please select a delivery address'); return; }
+    const selectedAddress = addresses.find((a) => a._id === selectedAddr);
     setLoading(true);
     try {
       const response = await initiateCheckout({
         cartItems: items.map((i) => ({ productId: i.productId, name: i.name, price: i.price, quantity: i.quantity, image: i.image })),
         addressId: selectedAddr,
+        shippingAddress: selectedAddress,
+        paymentMethod: paymentMethod,
       });
       
       // Process payment based on method
@@ -178,7 +181,7 @@ export default function CheckoutScreen() {
             <View style={styles.payMethodSection}>
               <Text style={styles.sectionTitle}>Payment Method</Text>
               
-              {/* Pay Online - available to all */}
+              {/* Pay Online - Razorpay / UPI */}
               <TouchableOpacity 
                 style={[styles.payOption, paymentMethod === 'online' && styles.payOptionActive]} 
                 onPress={() => setPaymentMethod('online')}
@@ -187,7 +190,10 @@ export default function CheckoutScreen() {
                   {paymentMethod === 'online' && <View style={styles.radioDot} />}
                 </View>
                 <Ionicons name="card-outline" size={20} color={colors.text} />
-                <Text style={styles.payOptionText}>Pay Online (Card / UPI / NetBanking)</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.payOptionText}>Pay Online (Razorpay / UPI)</Text>
+                  <Text style={styles.payOptionSub}>Card, UPI, Net Banking — processed at delivery for now</Text>
+                </View>
               </TouchableOpacity>
 
               {/* Premium/Regular Customer payment options */}
@@ -252,7 +258,13 @@ export default function CheckoutScreen() {
               )}
             </View>
 
-            <Button title={`Place Order  ${formatINR(grandTotal)}`} onPress={handlePlaceOrder} loading={loading} fullWidth style={{ marginTop: spacing.xl }} />
+            <Button 
+              title={`Place Order  ·  ${formatINR(grandTotal)}`} 
+              onPress={handlePlaceOrder} 
+              loading={loading} 
+              fullWidth 
+              style={{ marginTop: spacing.xl }} 
+            />
           </View>
         )}
 

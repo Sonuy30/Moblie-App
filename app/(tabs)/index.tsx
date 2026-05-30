@@ -6,8 +6,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
-  SafeAreaView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -94,7 +94,7 @@ export default function HomeScreen() {
           activeOpacity={0.8}
         >
           <Ionicons name="search-outline" size={20} color={colors.textMuted} />
-          <Text style={styles.searchPlaceholder}>Search products, structural steel...</Text>
+          <Text style={styles.searchPlaceholder}>Search iPhone, laptops, headphones...</Text>
         </TouchableOpacity>
 
         {/* Hero banner */}

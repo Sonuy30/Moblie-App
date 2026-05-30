@@ -22,7 +22,7 @@ import { getErrorMessage } from '@/api/client';
 import { colors } from '@/constants/colors';
 import { spacing, borderRadius } from '@/constants/config';
 
-const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Pankaj Steel';
+const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
 
 const registerSchema = z
   .object({
@@ -54,27 +54,31 @@ export default function RegisterScreen() {
     defaultValues: { fullName: '', phone: '', password: '', confirmPassword: '' },
   });
 
-  const handleDemoPrefill = () => {
-    setValue('fullName', 'Rahul Sharma');
-    const randomSuffix = Math.floor(10000000 + Math.random() * 90000000);
-    setValue('phone', `98${randomSuffix.toString().slice(0, 8)}`);
-    setValue('password', 'Demo@123');
-    setValue('confirmPassword', 'Demo@123');
-  };
+
+  const [isMockMode, setIsMockMode] = useState(false);
 
   const onSubmit = async (data: RegisterForm) => {
     setLoading(true);
     setApiError('');
+    setIsMockMode(false);
     try {
-      await registerUser({
+      const result = await registerUser({
         fullName: data.fullName,
         phone: data.phone,
         password: data.password,
       });
       setLoading(false);
+      // Check if server returned a devOtp (dev mode)
+      const isMock = (result as any).isMock === true || !(result as any).companyName;
+      if (isMock) setIsMockMode(true);
+      // Pass devOtp (if returned by server in dev mode) to OTP screen
       router.push({
         pathname: '/(auth)/otp',
-        params: { phone: data.phone, fullName: data.fullName },
+        params: {
+          phone: data.phone,
+          fullName: data.fullName,
+          devOtp: (result as any).devOtp || '',
+        },
       });
     } catch (err: any) {
       setLoading(false);
@@ -263,30 +267,13 @@ export default function RegisterScreen() {
             </LinearGradient>
           </TouchableOpacity>
 
-          {/* OR Divider */}
-          <View style={styles.orRow}>
-            <View style={styles.orLine} />
-            <Text style={styles.orText}>OR</Text>
-            <View style={styles.orLine} />
-          </View>
 
-          {/* Demo Prefill */}
-          <TouchableOpacity
-            style={styles.demoBtn}
-            onPress={handleDemoPrefill}
-            disabled={loading}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="sparkles-outline" size={18} color={colors.primary} />
-            <Text style={styles.demoText}>Auto-fill Demo Details</Text>
-          </TouchableOpacity>
 
           {/* OTP Hint */}
           <View style={styles.hintBox}>
             <Ionicons name="information-circle-outline" size={16} color={colors.primaryDark} />
             <Text style={styles.hintText}>
-              After registering, enter OTP{' '}
-              <Text style={{ fontWeight: '800' }}>123456</Text> to verify (demo mode)
+              Your OTP will be displayed on the next screen (SMS not yet configured)
             </Text>
           </View>
         </View>
@@ -381,16 +368,7 @@ const styles = StyleSheet.create({
   },
   submitBtn: { height: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
   submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  orRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: 4 },
-  orLine: { flex: 1, height: 1, backgroundColor: colors.border },
-  orText: { fontSize: 12, color: colors.textMuted, fontWeight: '600' },
-  demoBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1.5, borderColor: colors.primary,
-    backgroundColor: colors.primaryLight,
-    height: 52, borderRadius: borderRadius.lg, gap: 8,
-  },
-  demoText: { color: colors.primary, fontSize: 15, fontWeight: '700' },
+
   hintBox: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: '#F0F7FF', padding: 10, borderRadius: borderRadius.md,
