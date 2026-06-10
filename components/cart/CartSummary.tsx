@@ -63,56 +63,56 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.white,
     borderRadius: borderRadius.lg,
+    elevation: 2,
     padding: spacing.lg,
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
-    elevation: 2,
   },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: spacing.md,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  label: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  value: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.text,
+  divider: {
+    backgroundColor: colors.border,
+    height: 1,
+    marginVertical: 8,
   },
   free: {
     color: colors.success,
     fontWeight: '600',
   },
   freeHint: {
-    fontSize: 11,
     color: colors.success,
+    fontSize: 11,
     marginBottom: 8,
   },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: 8,
+  label: {
+    color: colors.textSecondary,
+    fontSize: 14,
+  },
+  row: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  title: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: spacing.md,
   },
   totalLabel: {
+    color: colors.text,
     fontSize: 16,
     fontWeight: '700',
-    color: colors.text,
   },
   totalValue: {
+    color: colors.primary,
     fontSize: 18,
     fontWeight: '700',
-    color: colors.primary,
+  },
+  value: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

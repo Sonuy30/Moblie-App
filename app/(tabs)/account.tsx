@@ -1,14 +1,16 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Switch, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@/stores/authStore';
+import { useNotificationStore, NOTIFICATION_CATEGORY_META } from '@/stores/notificationStore';
 import { colors } from '@/constants/colors';
 import { spacing, borderRadius } from '@/constants/config';
 
 export default function AccountScreen() {
   const { user, isAuthenticated, logout } = useAuthStore();
+  const { preferences, toggleCategory } = useNotificationStore();
   const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
 
   const menuItems = [
@@ -30,9 +32,22 @@ export default function AccountScreen() {
       .toUpperCase();
   };
 
-  const handleLogout = async () => {
-    await logout();
-    router.replace('/(tabs)');
+  const handleLogout = () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            await logout();
+            router.replace('/(tabs)');
+          },
+        },
+      ]
+    );
   };
 
   if (!isAuthenticated || !user) {
@@ -100,21 +115,69 @@ export default function AccountScreen() {
 
         {/* Menu Items */}
         <View style={styles.menu}>
-          {menuItems.map((item, i) => (
+          {menuItems.map((item) => (
             <TouchableOpacity
-              key={i}
-              style={[styles.menuItem, i === menuItems.length - 1 && { borderBottomWidth: 0 }]}
-              onPress={() => item.route && router.push(item.route as any)}
-              activeOpacity={0.6}
+              key={item.label}
+              style={[styles.menuItem, item === menuItems[menuItems.length - 1] && { borderBottomWidth: 0 }]}
+              onPress={() => item.route && router.push(item.route)}
+              activeOpacity={item.route ? 0.6 : 0.9}
+              disabled={!item.route}
             >
               <View style={styles.menuItemLeft}>
-                <Ionicons name={item.icon} size={22} color={colors.textSecondary} />
-                <Text style={styles.menuLabel}>{item.label}</Text>
+                <Ionicons name={item.icon} size={22} color={item.route ? colors.textSecondary : colors.textMuted} />
+                <Text style={[styles.menuLabel, !item.route && { color: colors.textMuted }]}>{item.label}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              {item.route && <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />}
+              {!item.route && <Text style={styles.comingSoon}>Soon</Text>}
             </TouchableOpacity>
           ))}
         </View>
+
+        {/* ── Notification Preferences ─────────────────────────────── */}
+        {isAuthenticated && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="notifications-outline" size={18} color={colors.primary} />
+              <Text style={styles.sectionHeaderText}>Notification Preferences</Text>
+            </View>
+            <View style={styles.menu}>
+              {NOTIFICATION_CATEGORY_META.map((meta, index) => (
+                <View
+                  key={meta.category}
+                  style={[
+                    styles.prefRow,
+                    index === NOTIFICATION_CATEGORY_META.length - 1 && { borderBottomWidth: 0 },
+                  ]}
+                >
+                  <View style={styles.prefIcon}>
+                    <Ionicons
+                      name={meta.icon as React.ComponentProps<typeof Ionicons>['name']}
+                      size={20}
+                      color={preferences[meta.category] ? colors.primary : colors.textMuted}
+                    />
+                  </View>
+                  <View style={styles.prefInfo}>
+                    <Text style={styles.prefLabel}>{meta.label}</Text>
+                    <Text style={styles.prefDesc}>{meta.description}</Text>
+                  </View>
+                  <Switch
+                    value={preferences[meta.category]}
+                    onValueChange={() => { void toggleCategory(meta.category); }}
+                    trackColor={{ false: colors.border, true: colors.primaryLight }}
+                    thumbColor={
+                      preferences[meta.category]
+                        ? colors.primary
+                        : Platform.OS === 'android'
+                          ? colors.textMuted
+                          : '#fff'
+                    }
+                    ios_backgroundColor={colors.border}
+                  />
+                </View>
+              ))}
+            </View>
+          </>
+        )}
 
         {/* Logout Button */}
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.7}>
@@ -129,81 +192,63 @@ export default function AccountScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
+  avatar: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: 32,
+    height: 64,
+    justifyContent: 'center',
+    width: 64,
   },
-  header: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-  },
-  screenTitle: {
+  avatarText: {
+    color: colors.white,
     fontSize: 22,
     fontWeight: '800',
-    color: colors.text,
+  },
+  comingSoon: {
+    backgroundColor: colors.surface,
+    borderRadius: 6,
+    color: colors.textMuted,
+    fontSize: 10,
+    fontWeight: '700',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+  },
+  companyBadge: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: colors.primaryLight,
+    borderRadius: 6,
+    flexDirection: 'row',
+    gap: 4,
+    marginTop: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  companyBadgeText: {
+    color: colors.primaryDark,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  guestActionContainer: {
+    gap: 12,
+    marginTop: 32,
+    width: '100%',
   },
   guestContainer: {
-    flex: 1,
     alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 28,
   },
   guestIcon: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: colors.primaryLight,
     alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    borderRadius: 48,
+    height: 96,
     justifyContent: 'center',
     marginBottom: 24,
-  },
-  guestTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: colors.text,
-    textAlign: 'center',
-  },
-  guestSub: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 20,
-  },
-  guestActionContainer: {
-    width: '100%',
-    marginTop: 32,
-    gap: 12,
-  },
-  guestPrimaryBtn: {
-    backgroundColor: colors.primary,
-    height: 52,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  guestPrimaryBtnText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  guestSecondaryBtn: {
-    backgroundColor: colors.primaryLight,
-    height: 52,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  guestSecondaryBtnText: {
-    color: colors.primaryDark,
-    fontSize: 16,
-    fontWeight: '700',
+    width: 96,
   },
   guestLink: {
     alignItems: 'center',
@@ -211,123 +256,196 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   guestLinkText: {
+    color: colors.textSecondary,
     fontSize: 14,
     fontWeight: '700',
-    color: colors.textSecondary,
   },
-  profileCard: {
-    flexDirection: 'row',
+  guestPrimaryBtn: {
     alignItems: 'center',
-    backgroundColor: colors.white,
+    backgroundColor: colors.primary,
+    borderRadius: 14,
+    elevation: 4,
+    height: 52,
+    justifyContent: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+  },
+  guestPrimaryBtnText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  guestSecondaryBtn: {
+    alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    borderRadius: 14,
+    height: 52,
+    justifyContent: 'center',
+  },
+  guestSecondaryBtnText: {
+    color: colors.primaryDark,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  guestSub: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  guestTitle: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  header: {
+    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+  },
+  logoutBtn: {
+    alignItems: 'center',
+    backgroundColor: colors.errorLight,
+    borderRadius: 14,
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
     marginHorizontal: spacing.lg,
+    marginTop: 32,
+    paddingVertical: 14,
+  },
+  logoutText: {
+    color: colors.error,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  menu: {
+    backgroundColor: colors.white,
+    borderColor: colors.surface,
     borderRadius: borderRadius.xl,
-    padding: spacing.lg,
-    gap: spacing.lg,
+    borderWidth: 1,
+    elevation: 3,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.xl,
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: colors.surface,
   },
-  avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.primary,
+  menuItem: {
     alignItems: 'center',
-    justifyContent: 'center',
+    borderBottomColor: colors.surface,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 16,
   },
-  avatarText: {
-    color: colors.white,
-    fontSize: 22,
-    fontWeight: '800',
+  menuItemLeft: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+  },
+  menuLabel: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  profileCard: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.surface,
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    elevation: 3,
+    flexDirection: 'row',
+    gap: spacing.lg,
+    marginHorizontal: spacing.lg,
+    padding: spacing.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
   },
   profileInfo: {
     flex: 1,
     gap: 3,
   },
   profileName: {
+    color: colors.text,
     fontSize: 18,
     fontWeight: '800',
-    color: colors.text,
   },
   profilePhone: {
-    fontSize: 13,
     color: colors.textSecondary,
+    fontSize: 13,
     fontWeight: '600',
   },
-  companyBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primaryLight,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-    marginTop: 2,
-    gap: 4,
+  safe: {
+    backgroundColor: colors.background,
+    flex: 1,
   },
-  companyBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.primaryDark,
-  },
-  menu: {
-    marginTop: spacing.xl,
-    marginHorizontal: spacing.lg,
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.xl,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: colors.surface,
-  },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-  },
-  menuItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  menuLabel: {
-    fontSize: 14,
+  screenTitle: {
     color: colors.text,
-    fontWeight: '600',
-  },
-  logoutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 32,
-    paddingVertical: 14,
-    marginHorizontal: spacing.lg,
-    backgroundColor: colors.errorLight,
-    borderRadius: 14,
-  },
-  logoutText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.error,
+    fontSize: 22,
+    fontWeight: '800',
   },
   version: {
-    textAlign: 'center',
-    fontSize: 11,
     color: colors.textMuted,
-    marginTop: spacing.lg,
+    fontSize: 11,
     fontWeight: '500',
+    marginTop: spacing.lg,
+    textAlign: 'center',
+  },
+  // ── Notification preferences ─────────────────────────────────────────────
+  sectionHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: spacing.sm,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.xl + 4,
+  },
+  sectionHeaderText: {
+    color: colors.text,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  prefRow: {
+    alignItems: 'center',
+    borderBottomColor: colors.surface,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 14,
+  },
+  prefIcon: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 10,
+    height: 38,
+    justifyContent: 'center',
+    width: 38,
+  },
+  prefInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  prefLabel: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  prefDesc: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '400',
+    lineHeight: 16,
   },
 });

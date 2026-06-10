@@ -3,8 +3,8 @@ import { create } from 'zustand';
 interface AuthModalStore {
   isVisible: boolean;
   pendingAction: 'cart' | 'checkout' | 'wishlist' | 'account' | null;
-  pendingData: any; // Dynamic data for completing the action (like product details)
-  show: (action: AuthModalStore['pendingAction'], data?: any) => void;
+  pendingData: unknown; // Dynamic data for completing the action (like product details)
+  show: (action: AuthModalStore['pendingAction'], data?: unknown) => void;
   hide: () => void;
 }
 

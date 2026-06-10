@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, RefreshControl } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { fetchAssignedDeliveries, DeliveryOrder } from '@/api/delivery';
+import { fetchAssignedDeliveries, type DeliveryOrder } from '@/api/delivery';
 import { colors } from '@/constants/colors';
 import { spacing, borderRadius } from '@/constants/config';
 import { formatRelativeDate } from '@/utils/date';
@@ -112,26 +112,26 @@ export default function DeliveryHistory() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  title: { fontSize: 22, fontWeight: '700', color: colors.text, paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.md },
-  tabRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, gap: 8, marginBottom: spacing.md },
-  tab: { flex: 1, paddingVertical: 10, borderRadius: borderRadius.md, backgroundColor: colors.surface, alignItems: 'center' },
-  tabActive: { backgroundColor: colors.primaryLight },
-  tabText: { fontSize: 14, fontWeight: '500', color: colors.textSecondary },
-  tabTextActive: { color: colors.primary, fontWeight: '700' },
-  list: { paddingHorizontal: spacing.lg, paddingBottom: 100 },
-  card: { backgroundColor: colors.white, borderRadius: borderRadius.lg, padding: spacing.lg, marginBottom: spacing.md, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  orderNumRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  orderNum: { fontSize: 15, fontWeight: '700', color: colors.text },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: borderRadius.full },
-  statusText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+  card: { backgroundColor: colors.white, borderRadius: borderRadius.lg, elevation: 3, marginBottom: spacing.md, padding: spacing.lg, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
   cardBody: { gap: 8, marginBottom: 12 },
-  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  infoText: { fontSize: 13, color: colors.textSecondary },
-  cardFooter: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.surface },
-  footerText: { fontSize: 12, color: colors.textSecondary },
-  empty: { alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: 8 },
-  emptyTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
-  emptySub: { fontSize: 14, color: colors.textSecondary },
+  cardFooter: { alignItems: 'center', borderTopColor: colors.surface, borderTopWidth: 1, flexDirection: 'row', gap: 6, paddingTop: 12 },
+  cardHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
+  empty: { alignItems: 'center', gap: 8, justifyContent: 'center', paddingTop: 80 },
+  emptySub: { color: colors.textSecondary, fontSize: 14 },
+  emptyTitle: { color: colors.text, fontSize: 18, fontWeight: '600' },
+  footerText: { color: colors.textSecondary, fontSize: 12 },
+  infoRow: { alignItems: 'center', flexDirection: 'row', gap: 8 },
+  infoText: { color: colors.textSecondary, fontSize: 13 },
+  list: { paddingBottom: 100, paddingHorizontal: spacing.lg },
+  orderNum: { color: colors.text, fontSize: 15, fontWeight: '700' },
+  orderNumRow: { alignItems: 'center', flexDirection: 'row', gap: 6 },
+  safe: { backgroundColor: colors.background, flex: 1 },
+  statusBadge: { borderRadius: borderRadius.full, paddingHorizontal: 10, paddingVertical: 4 },
+  statusText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+  tab: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: borderRadius.md, flex: 1, paddingVertical: 10 },
+  tabActive: { backgroundColor: colors.primaryLight },
+  tabRow: { flexDirection: 'row', gap: 8, marginBottom: spacing.md, paddingHorizontal: spacing.lg },
+  tabText: { color: colors.textSecondary, fontSize: 14, fontWeight: '500' },
+  tabTextActive: { color: colors.primary, fontWeight: '700' },
+  title: { color: colors.text, fontSize: 22, fontWeight: '700', paddingBottom: spacing.md, paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
 });

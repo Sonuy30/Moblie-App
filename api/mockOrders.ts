@@ -1,4 +1,3 @@
-import client from './client';
 import type { EcomOrder, Address } from './orders';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -92,13 +91,7 @@ export function addMockOrder(order: EcomOrder) {
   SESSION_ORDERS.unshift(order);
 }
 
-// Helper: should we use mock data?
-function shouldUseMock(err: any): boolean {
-  if (!err?.response) return true;
-  const status = err.response.status;
-  // 401 = not authenticated (use mock so user sees their data), 403, 404, 405 = not implemented
-  return status === 401 || status === 403 || status === 404 || status === 405;
-}
+
 
 async function delay(ms: number) {
   return new Promise((r) => setTimeout(r, ms));

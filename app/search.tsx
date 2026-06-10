@@ -4,8 +4,9 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getProducts, StoreProduct } from '@/api/products';
+import { getProducts, type StoreProduct } from '@/api/products';
 import ProductCardWide from '@/components/product/ProductCardWide';
+import { SearchResultSkeleton } from '@/components/skeletons/SearchResultSkeleton';
 import { colors } from '@/constants/colors';
 import { spacing, borderRadius } from '@/constants/config';
 
@@ -18,22 +19,33 @@ export default function SearchScreen() {
   const [searching, setSearching] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(RECENT_KEY).then((v) => { if (v) setRecent(JSON.parse(v)); });
+    void AsyncStorage.getItem(RECENT_KEY).then((v) => {
+      if (v) setRecent(JSON.parse(v) as string[]);
+    });
   }, []);
 
   const search = useCallback(async (q: string) => {
-    if (!q.trim()) { setResults([]); return; }
+    if (!q.trim()) {
+      setResults([]);
+      return;
+    }
     setSearching(true);
     try {
       const data = await getProducts({ search: q, limit: 15 });
       setResults(data.products || []);
-    } catch {} finally { setSearching(false); }
+    } catch {
+      /* empty */
+    } finally {
+      setSearching(false);
+    }
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => search(query), 300);
+    const timer = setTimeout(() => {
+      void search(query);
+    }, 300);
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, search]);
 
   const saveRecent = async (q: string) => {
     const updated = [q, ...recent.filter((r) => r !== q)].slice(0, 5);
@@ -53,7 +65,7 @@ export default function SearchScreen() {
           <Ionicons name="search-outline" size={20} color={colors.textMuted} />
           <TextInput style={styles.input} placeholder="Search products..." placeholderTextColor={colors.textMuted}
             value={query} onChangeText={setQuery} autoFocus returnKeyType="search"
-            onSubmitEditing={() => { if (query.trim()) { saveRecent(query.trim()); router.push({ pathname: '/(customer)/explore', params: { search: query } } as any); } }} />
+            onSubmitEditing={() => { if (query.trim()) { void saveRecent(query.trim()); router.push({ pathname: '/(customer)/explore', params: { search: query } }); } }} />
           {query.length > 0 && (
             <TouchableOpacity onPress={() => setQuery('')}>
               <Ionicons name="close-circle" size={20} color={colors.textMuted} />
@@ -71,7 +83,7 @@ export default function SearchScreen() {
             <>
               <View style={styles.sugHeader}>
                 <Text style={styles.sugTitle}>Recent Searches</Text>
-                <TouchableOpacity onPress={clearRecent}><Text style={styles.clearText}>Clear</Text></TouchableOpacity>
+                <TouchableOpacity onPress={() => { void clearRecent(); }}><Text style={styles.clearText}>Clear</Text></TouchableOpacity>
               </View>
               <View style={styles.chips}>
                 {recent.map((r) => (
@@ -93,11 +105,16 @@ export default function SearchScreen() {
             ))}
           </View>
         </View>
+      ) : searching ? (
+        <FlatList data={[1, 2, 3, 4, 5, 6]} keyExtractor={(item) => String(item)}
+          contentContainerStyle={styles.resultList}
+          renderItem={() => <SearchResultSkeleton />}
+        />
       ) : (
         <FlatList data={results} keyExtractor={(item) => item._id}
           contentContainerStyle={styles.resultList}
           renderItem={({ item }) => <ProductCardWide {...item} />}
-          ListEmptyComponent={!searching ? <Text style={styles.noResults}>No results for "{query}"</Text> : null}
+          ListEmptyComponent={<Text style={styles.noResults}>No results for &quot;{query}&quot;</Text>}
         />
       )}
     </SafeAreaView>
@@ -105,18 +122,18 @@ export default function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.md },
-  searchBar: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: spacing.md, height: 44, gap: 8 },
-  input: { flex: 1, fontSize: 15, color: colors.text },
-  cancel: { fontSize: 15, fontWeight: '500', color: colors.primary },
-  suggestions: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg, gap: spacing.lg },
-  sugHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sugTitle: { fontSize: 15, fontWeight: '600', color: colors.text },
-  clearText: { fontSize: 13, color: colors.primary, fontWeight: '500' },
+  cancel: { color: colors.primary, fontSize: 15, fontWeight: '500' },
+  chip: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: borderRadius.full, flexDirection: 'row', gap: 6, paddingHorizontal: 14, paddingVertical: 8 },
+  chipText: { color: colors.textSecondary, fontSize: 13 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: colors.surface, paddingHorizontal: 14, paddingVertical: 8, borderRadius: borderRadius.full },
-  chipText: { fontSize: 13, color: colors.textSecondary },
+  clearText: { color: colors.primary, fontSize: 13, fontWeight: '500' },
+  header: { alignItems: 'center', flexDirection: 'row', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  input: { color: colors.text, flex: 1, fontSize: 15 },
+  noResults: { color: colors.textMuted, fontSize: 14, marginTop: spacing['4xl'], textAlign: 'center' },
   resultList: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
-  noResults: { textAlign: 'center', fontSize: 14, color: colors.textMuted, marginTop: spacing['4xl'] },
+  safe: { backgroundColor: colors.background, flex: 1 },
+  searchBar: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: 12, flex: 1, flexDirection: 'row', gap: 8, height: 44, paddingHorizontal: spacing.md },
+  sugHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  sugTitle: { color: colors.text, fontSize: 15, fontWeight: '600' },
+  suggestions: { gap: spacing.lg, paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
 });

@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   RefreshControl,
-  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -15,11 +14,13 @@ import { FlashList as OriginalFlashList } from '@shopify/flash-list';
 import { useAuthStore } from '@/stores/authStore';
 import { useOrders } from '@/hooks/useOrders';
 import OrderCard from '@/components/order/OrderCard';
+import { OrderCardSkeleton } from '@/components/skeletons/OrderCardSkeleton';
 import EmptyState from '@/components/ui/EmptyState';
 import { colors } from '@/constants/colors';
-import { spacing, borderRadius } from '@/constants/config';
+import { spacing } from '@/constants/config';
 import { StatusBar } from 'expo-status-bar';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const FlashList = OriginalFlashList as any;
 
 const STATUS_FILTERS = [
@@ -36,8 +37,6 @@ export default function OrdersScreen() {
   const { data: orders, isLoading, isError, refetch } = useOrders();
   const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-
-  const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -134,9 +133,15 @@ export default function OrdersScreen() {
 
       {/* Orders Content */}
       {isLoading ? (
-        <View style={styles.loaderContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loaderText}>Loading your orders...</Text>
+        <View style={{ flex: 1, paddingHorizontal: spacing.lg }}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 40, paddingTop: spacing.xs }}
+          >
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <OrderCardSkeleton key={i} />
+            ))}
+          </ScrollView>
         </View>
       ) : isError ? (
         <EmptyState
@@ -144,7 +149,7 @@ export default function OrdersScreen() {
           title="Couldn't load orders"
           subtitle="An error occurred while fetching your order history. Please try again."
           actionLabel="Retry"
-          onAction={refetch}
+          onAction={() => { void refetch(); }}
         />
       ) : filteredOrders.length === 0 ? (
         <View style={{ flex: 1 }}>
@@ -153,7 +158,7 @@ export default function OrdersScreen() {
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
-                onRefresh={onRefresh}
+                onRefresh={() => { void onRefresh(); }}
                 colors={[colors.primary]}
                 tintColor={colors.primary}
               />
@@ -184,11 +189,11 @@ export default function OrdersScreen() {
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 40, paddingTop: spacing.xs }}
             renderItem={({ item }: { item: any }) => <OrderCard order={item} />}
-            keyExtractor={(item: any) => item._id}
+            keyExtractor={(item: any) => (item as { _id: string })._id}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
-                onRefresh={onRefresh}
+                onRefresh={() => { void onRefresh(); }}
                 colors={[colors.primary]}
                 tintColor={colors.primary}
               />
@@ -201,105 +206,65 @@ export default function OrdersScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-  },
-  screenTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: colors.text,
-  },
   filterContainer: {
     paddingVertical: spacing.md,
   },
-  filterScroll: {
-    paddingHorizontal: spacing.lg,
-    gap: 8,
-  },
   filterPill: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: 99,
+    borderWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 99,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   filterPillActive: {
     backgroundColor: colors.primaryLight,
     borderColor: colors.primary,
   },
+  filterScroll: {
+    gap: 8,
+    paddingHorizontal: spacing.lg,
+  },
   filterText: {
+    color: colors.textSecondary,
     fontSize: 13,
     fontWeight: '600',
-    color: colors.textSecondary,
   },
   filterTextActive: {
     color: colors.primary,
     fontWeight: '700',
   },
-  loaderContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+  guestActionContainer: {
     gap: 12,
-  },
-  loaderText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontWeight: '500',
+    marginTop: 32,
+    width: '100%',
   },
   guestContainer: {
-    flex: 1,
     alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 28,
   },
   guestIcon: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: colors.primaryLight,
     alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    borderRadius: 48,
+    height: 96,
     justifyContent: 'center',
     marginBottom: 24,
-  },
-  guestTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: colors.text,
-    textAlign: 'center',
-  },
-  guestSub: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 20,
-  },
-  guestActionContainer: {
-    width: '100%',
-    marginTop: 32,
-    gap: 12,
+    width: 96,
   },
   guestPrimaryBtn: {
-    backgroundColor: colors.primary,
-    height: 52,
-    borderRadius: 14,
     alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: 14,
+    elevation: 4,
+    height: 52,
     justifyContent: 'center',
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 6,
-    elevation: 4,
   },
   guestPrimaryBtnText: {
     color: colors.white,
@@ -307,15 +272,44 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   guestSecondaryBtn: {
-    backgroundColor: colors.primaryLight,
-    height: 52,
-    borderRadius: 14,
     alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    borderRadius: 14,
+    height: 52,
     justifyContent: 'center',
   },
   guestSecondaryBtnText: {
     color: colors.primaryDark,
     fontSize: 16,
     fontWeight: '700',
+  },
+  guestSub: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  guestTitle: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  header: {
+    borderBottomColor: colors.surface,
+    borderBottomWidth: 1,
+    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+  },
+  safe: {
+    backgroundColor: colors.background,
+    flex: 1,
+  },
+  screenTitle: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '800',
   },
 });

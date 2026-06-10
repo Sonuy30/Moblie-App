@@ -4,8 +4,8 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
-  ViewStyle,
-  TextStyle,
+  type ViewStyle,
+  type TextStyle,
 } from 'react-native';
 import { colors } from '@/constants/colors';
 import { borderRadius, spacing } from '@/constants/config';
@@ -78,10 +78,10 @@ export default function Button({
 
 const styles = StyleSheet.create({
   base: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     borderRadius: borderRadius.md,
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   fullWidth: {
     width: '100%',
@@ -99,8 +99,8 @@ const styles = StyleSheet.create({
   },
   outline: {
     backgroundColor: 'transparent',
-    borderWidth: 1.5,
     borderColor: colors.primary,
+    borderWidth: 1.5,
   },
   ghost: {
     backgroundColor: 'transparent',
@@ -111,19 +111,19 @@ const styles = StyleSheet.create({
 
   // Sizes
   size_sm: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
     minHeight: 36,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
   },
   size_md: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
     minHeight: 48,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
   },
   size_lg: {
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing['2xl'],
     minHeight: 56,
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: spacing.lg,
   },
 
   // Text

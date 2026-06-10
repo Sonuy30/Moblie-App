@@ -4,8 +4,9 @@ import {
   FlatList,
   StyleSheet,
   Dimensions,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
+  ScrollView,
+  type NativeSyntheticEvent,
+  type NativeScrollEvent,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { colors } from '@/constants/colors';
@@ -42,14 +43,21 @@ export default function ImageCarousel({ images, height = 350 }: ImageCarouselPro
         scrollEventThrottle={16}
         keyExtractor={(_, i) => i.toString()}
         renderItem={({ item }) => (
-          <View style={[styles.imageWrapper, { width: SCREEN_WIDTH, height }]}>
+          <ScrollView
+            maximumZoomScale={3}
+            minimumZoomScale={1}
+            bouncesZoom
+            showsHorizontalScrollIndicator={false}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[styles.imageWrapper, { width: SCREEN_WIDTH, height }]}
+          >
             <Image
               source={{ uri: item }}
               style={styles.image}
-              contentFit="cover"
+              contentFit="contain"
               transition={300}
             />
-          </View>
+          </ScrollView>
         )}
       />
       {imageList.length > 1 && (
@@ -70,36 +78,36 @@ export default function ImageCarousel({ images, height = 350 }: ImageCarouselPro
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.surface,
-  },
-  imageWrapper: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  dots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 12,
-    gap: 6,
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
   activeDot: {
     backgroundColor: colors.primary,
     width: 24,
+  },
+  container: {
+    backgroundColor: colors.surface,
+  },
+  dot: {
+    borderRadius: 4,
+    height: 8,
+    width: 8,
+  },
+  dots: {
+    alignItems: 'center',
+    bottom: 0,
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'center',
+    left: 0,
+    paddingVertical: 12,
+    position: 'absolute',
+    right: 0,
+  },
+  image: {
+    height: '100%',
+    width: '100%',
+  },
+  imageWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   inactiveDot: {
     backgroundColor: colors.border,

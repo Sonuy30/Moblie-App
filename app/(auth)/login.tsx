@@ -45,7 +45,6 @@ export default function LoginScreen() {
   const {
     control,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -56,9 +55,9 @@ export default function LoginScreen() {
   const setupPushNotifications = async () => {
     try {
       const { status } = await Notifications.requestPermissionsAsync();
-      if (status !== 'granted') return;
+      if ((status as string) !== 'granted') return;
       // Expo Go SDK 53+ removed native push — use a mock token to prevent crash
-      const isExpoGo = Constants.executionEnvironment === 'storeClient';
+      const isExpoGo = (Constants.executionEnvironment as string) === 'storeClient';
       if (isExpoGo) return; // skip — no native push service in Expo Go
       const token = (await Notifications.getExpoPushTokenAsync()).data;
       await updateProfile({ pushToken: token });
@@ -85,18 +84,18 @@ export default function LoginScreen() {
         position: 'bottom',
       });
 
-      setupPushNotifications();
+      void setupPushNotifications();
 
       const pendingAction = useAuthModalStore.getState().pendingAction;
       const pendingData = useAuthModalStore.getState().pendingData;
 
       if (pendingAction === 'cart' && pendingData) {
-        useCartStore.getState().addItem(pendingData);
+        useCartStore.getState().addItem(pendingData as any);
       }
       useAuthModalStore.getState().hide();
 
       if (pendingAction === 'checkout') {
-        if (pendingData) useCartStore.getState().addItem(pendingData);
+        if (pendingData) useCartStore.getState().addItem(pendingData as any);
         router.replace('/checkout');
       } else {
         router.replace('/(tabs)');
@@ -138,15 +137,7 @@ export default function LoginScreen() {
           </View>
         ) : null}
 
-        {/* Demo Credentials Hint */}
-        <View style={styles.demoBox}>
-          <Ionicons name="flask-outline" size={16} color="#0C447C" />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.demoTitle}>Demo / Offline Mode Credentials</Text>
-            <Text style={styles.demoLine}>📱 Phone: <Text style={styles.demoBold}>9876543210</Text></Text>
-            <Text style={styles.demoLine}>🔑 Password: <Text style={styles.demoBold}>Demo@123</Text></Text>
-          </View>
-        </View>
+
 
         {/* Form */}
         <View style={styles.form}>
@@ -217,7 +208,7 @@ export default function LoginScreen() {
 
           {/* Sign In Button */}
           <TouchableOpacity
-            onPress={handleSubmit(onSubmit)}
+            onPress={() => { void handleSubmit(onSubmit)(); }}
             disabled={loading}
             activeOpacity={0.85}
             style={styles.submitBtnWrapper}
@@ -255,125 +246,97 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#FFFFFF' },
-  scroll: { flexGrow: 1, paddingHorizontal: spacing.xl, paddingTop: 52, paddingBottom: 40 },
   backBtn: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: colors.surface,
-    alignItems: 'center', justifyContent: 'center',
-    marginBottom: spacing.xl,
+    alignItems: 'center', backgroundColor: colors.surface, borderRadius: 22,
+    height: 44,
+    justifyContent: 'center', marginBottom: spacing.xl,
+    width: 44,
+  },
+  companyLabel: {
+    color: colors.primary,
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: 0.5,
+  },
+  companySubLabel: {
+    color: colors.textMuted,
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 3,
+    marginTop: 2,
+  },
+  countryCode: { color: colors.text, fontSize: 14, fontWeight: '700' },
+  divider: { backgroundColor: colors.border, height: '60%', width: 1 },
+  errorBox: {
+    alignItems: 'center', backgroundColor: colors.errorLight, borderColor: 'rgba(163,45,45,0.1)',
+    borderRadius: borderRadius.md, borderWidth: 1,
+    flexDirection: 'row', gap: 8,
+    marginBottom: spacing.lg, padding: spacing.md,
+  },
+  errorBoxText: { color: colors.error, flex: 1, fontSize: 13, fontWeight: '600' },
+  eyeBtn: { height: '100%', justifyContent: 'center', paddingHorizontal: 14 },
+  field: { gap: 6 },
+  fieldError: { color: colors.error, fontSize: 12, fontWeight: '600', marginTop: 2 },
+  flex: { backgroundColor: '#FFFFFF', flex: 1 },
+  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.xl },
+  footerLink: { color: colors.primary, fontSize: 14, fontWeight: '800' },
+  footerText: { color: colors.textSecondary, fontSize: 14, fontWeight: '500' },
+  forgotLink: { color: colors.primary, fontSize: 12, fontWeight: '700' },
+  form: { gap: spacing.lg },
+  input: { color: colors.text, flex: 1, fontSize: 15, fontWeight: '500', height: '100%', paddingHorizontal: 12 },
+  inputContainer: {
+    alignItems: 'center', backgroundColor: colors.surface,
+    borderColor: colors.border, borderRadius: borderRadius.lg,
+    borderWidth: 1.5, flexDirection: 'row', height: 52,
+    overflow: 'hidden',
+  },
+  inputError: { backgroundColor: colors.errorLight, borderColor: colors.error },
+  inputIcon: { marginLeft: 14 },
+  inputPrefix: {
+    backgroundColor: '#F0F4F8',
+    height: '100%',
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+  },
+  label: { color: colors.text, fontSize: 13, fontWeight: '700' },
+  labelRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  logoCircle: {
+    alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    borderRadius: 44,
+    elevation: 6,
+    height: 88,
+    justifyContent: 'center',
+    marginBottom: 10,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    width: 88,
   },
   logoSection: {
     alignItems: 'center',
     marginBottom: 28,
   },
-  logoCircle: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 6,
-    marginBottom: 10,
+  scroll: { flexGrow: 1, paddingBottom: 40, paddingHorizontal: spacing.xl, paddingTop: 52 },
+  submitBtn: {
+    alignItems: 'center', flexDirection: 'row',
+    gap: 10, height: 54, justifyContent: 'center',
   },
-  companyLabel: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: colors.primary,
-    letterSpacing: 0.5,
-  },
-  companySubLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: colors.textMuted,
-    letterSpacing: 3,
-    marginTop: 2,
-  },
-  title: { fontSize: 24, fontWeight: '800', color: colors.text, marginBottom: 6, textAlign: 'center' },
-  subtitle: { fontSize: 13, color: colors.textSecondary, marginBottom: spacing.xl, textAlign: 'center', lineHeight: 19 },
-  errorBox: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: colors.errorLight, padding: spacing.md,
-    borderRadius: borderRadius.md, marginBottom: spacing.lg,
-    borderWidth: 1, borderColor: 'rgba(163,45,45,0.1)',
-  },
-  errorBoxText: { flex: 1, fontSize: 13, color: colors.error, fontWeight: '600' },
-  form: { gap: spacing.lg },
-  field: { gap: 6 },
-  label: { fontSize: 13, fontWeight: '700', color: colors.text },
-  labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  forgotLink: { fontSize: 12, color: colors.primary, fontWeight: '700' },
-  inputContainer: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.surface, borderRadius: borderRadius.lg,
-    height: 52, borderWidth: 1.5, borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  inputError: { borderColor: colors.error, backgroundColor: colors.errorLight },
-  inputPrefix: {
-    paddingHorizontal: 14,
-    height: '100%',
-    justifyContent: 'center',
-    backgroundColor: '#F0F4F8',
-  },
-  countryCode: { fontSize: 14, fontWeight: '700', color: colors.text },
-  divider: { width: 1, height: '60%', backgroundColor: colors.border },
-  inputIcon: { marginLeft: 14 },
-  input: { flex: 1, fontSize: 15, color: colors.text, fontWeight: '500', paddingHorizontal: 12, height: '100%' },
-  eyeBtn: { paddingHorizontal: 14, height: '100%', justifyContent: 'center' },
-  fieldError: { fontSize: 12, color: colors.error, fontWeight: '600', marginTop: 2 },
   submitBtnWrapper: {
     borderRadius: borderRadius.lg,
-    overflow: 'hidden',
+    elevation: 6,
     marginTop: spacing.sm,
+    overflow: 'hidden',
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 10,
-    elevation: 6,
   },
-  submitBtn: {
-    height: 54, flexDirection: 'row',
-    alignItems: 'center', justifyContent: 'center', gap: 10,
-  },
+
   submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  subtitle: { color: colors.textSecondary, fontSize: 13, lineHeight: 19, marginBottom: spacing.xl, textAlign: 'center' },
+  title: { color: colors.text, fontSize: 24, fontWeight: '800', marginBottom: 6, textAlign: 'center' },
 
-  footer: { flexDirection: 'row', justifyContent: 'center', marginTop: spacing.xl },
-  footerText: { fontSize: 14, color: colors.textSecondary, fontWeight: '500' },
-  footerLink: { fontSize: 14, color: colors.primary, fontWeight: '800' },
 
-  // Demo credentials box
-  demoBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-    backgroundColor: '#E8F4FD',
-    borderWidth: 1.5,
-    borderColor: '#185FA5',
-    borderRadius: borderRadius.md,
-    padding: 12,
-    marginBottom: spacing.lg,
-  },
-  demoTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#0C447C',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  demoLine: {
-    fontSize: 13,
-    color: '#185FA5',
-    marginTop: 2,
-  },
-  demoBold: {
-    fontWeight: '800',
-    color: '#0C447C',
-  },
 });

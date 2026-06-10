@@ -74,14 +74,14 @@ export default function OrdersScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  title: { fontSize: 22, fontWeight: '700', color: colors.text, paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.md },
-  filterRow: { paddingHorizontal: spacing.lg, gap: 8, paddingBottom: spacing.md },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: borderRadius.full, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  chip: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: borderRadius.full, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 8 },
   chipActive: { backgroundColor: colors.primaryLight, borderColor: colors.primary },
-  chipText: { fontSize: 12, fontWeight: '500', color: colors.textSecondary },
+  chipText: { color: colors.textSecondary, fontSize: 12, fontWeight: '500' },
   chipTextActive: { color: colors.primary, fontWeight: '600' },
-  list: { paddingHorizontal: spacing.lg, paddingBottom: 100 },
-  loadingContainer: { paddingHorizontal: spacing.lg, gap: spacing.md },
+  filterRow: { gap: 8, paddingBottom: spacing.md, paddingHorizontal: spacing.lg },
+  list: { paddingBottom: 100, paddingHorizontal: spacing.lg },
+  loadingContainer: { gap: spacing.md, paddingHorizontal: spacing.lg },
+  safe: { backgroundColor: colors.background, flex: 1 },
   skeletonCard: { height: 120 },
+  title: { color: colors.text, fontSize: 22, fontWeight: '700', paddingBottom: spacing.md, paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
 });

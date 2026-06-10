@@ -1,0 +1,242 @@
+# ════════════════════════════════════════════════════════════════════════════
+# .github/workflows/deploy.yml — EAS Build & Deploy
+#
+# Triggers:
+#   • Push to `main`                → Preview build  (internal testers, APK)
+#   • Push of a version tag v*.*.*  → Production build (Play Store / App Store)
+#   • Manual dispatch               → Choose profile interactively
+#
+# EAS Build profiles (eas.json):
+#   preview    — internal distribution, no dev client, real API
+#   production — store submission via EAS Submit
+#
+# Secrets required (GitHub → Settings → Secrets → Actions):
+#   EXPO_TOKEN                    — EAS authentication token
+#     Get it: npx eas-cli whoami (after eas login)
+#     Or:     expo.dev → Account Settings → Access Tokens
+#
+#   EXPO_PUBLIC_API_URL           — Production backend URL
+#   EXPO_PUBLIC_COMPANY_SLUG      — Tenant slug
+#   EXPO_PUBLIC_COMPANY_NAME      — Display name
+#   EXPO_PUBLIC_RAZORPAY_KEY      — Razorpay LIVE key (prod) or test key (preview)
+#   EXPO_PUBLIC_SENTRY_DSN        — Sentry DSN for crash reporting
+#
+#   For production iOS submission:
+#   APPLE_ID                      — Apple ID email
+#   APPLE_TEAM_ID                 — 10-character team ID
+#   ASC_APP_ID                    — App Store Connect numeric app ID
+#
+#   For production Android submission:
+#   GOOGLE_SERVICE_ACCOUNT_JSON   — contents of google-service-account.json
+# ════════════════════════════════════════════════════════════════════════════
+
+name: Deploy — EAS Build & Submit
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'aits-shop/**'
+      - '.github/workflows/deploy.yml'
+    tags:
+      - 'v*.*.*'    # e.g. v1.2.0 → triggers production build
+
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'EAS build profile'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - development
+          - preview
+          - production
+      platform:
+        description: 'Target platform'
+        required: true
+        default: 'android'
+        type: choice
+        options:
+          - android
+          - ios
+          - all
+
+# One deploy at a time — don't overlap builds (EAS concurrency limits)
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false   # let the in-progress deploy finish
+
+# ─────────────────────────────────────────────────────────────────────────────
+jobs:
+# ─────────────────────────────────────────────────────────────────────────────
+
+  # ── Determine build profile ────────────────────────────────────────────────
+  setup:
+    name: 🔧 Determine Build Profile
+    runs-on: ubuntu-latest
+    outputs:
+      profile:  ${{ steps.resolve.outputs.profile }}
+      platform: ${{ steps.resolve.outputs.platform }}
+
+    steps:
+      - name: Resolve profile and platform
+        id: resolve
+        run: |
+          # Tag push → always production
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            echo "profile=production"  >> $GITHUB_OUTPUT
+            echo "platform=all"        >> $GITHUB_OUTPUT
+
+          # Manual dispatch → use input values
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "profile=${{ inputs.profile }}"   >> $GITHUB_OUTPUT
+            echo "platform=${{ inputs.platform }}" >> $GITHUB_OUTPUT
+
+          # Push to main → preview build
+          else
+            echo "profile=preview"   >> $GITHUB_OUTPUT
+            echo "platform=android"  >> $GITHUB_OUTPUT
+          fi
+
+
+  # ── EAS Build ─────────────────────────────────────────────────────────────
+  build:
+    name: 🏗️ EAS Build (${{ needs.setup.outputs.profile }} / ${{ needs.setup.outputs.platform }})
+    runs-on: ubuntu-latest
+    needs: setup
+    defaults:
+      run:
+        working-directory: aits-shop
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: aits-shop/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Setup EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      # Write env vars that EAS injects via eas.json `env` block
+      # These are also available to the Metro bundler during EAS Build.
+      - name: Write .env for EAS build
+        env:
+          EXPO_PUBLIC_API_URL:       ${{ secrets.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_COMPANY_SLUG:  ${{ secrets.EXPO_PUBLIC_COMPANY_SLUG }}
+          EXPO_PUBLIC_COMPANY_NAME:  ${{ secrets.EXPO_PUBLIC_COMPANY_NAME }}
+          EXPO_PUBLIC_RAZORPAY_KEY:  ${{ secrets.EXPO_PUBLIC_RAZORPAY_KEY }}
+          EXPO_PUBLIC_SENTRY_DSN:    ${{ secrets.EXPO_PUBLIC_SENTRY_DSN }}
+        run: |
+          cat > .env.local << EOF
+          EXPO_PUBLIC_API_URL=${EXPO_PUBLIC_API_URL}
+          EXPO_PUBLIC_API_TIMEOUT=15000
+          EXPO_PUBLIC_COMPANY_SLUG=${EXPO_PUBLIC_COMPANY_SLUG}
+          EXPO_PUBLIC_COMPANY_NAME=${EXPO_PUBLIC_COMPANY_NAME}
+          EXPO_PUBLIC_RAZORPAY_KEY=${EXPO_PUBLIC_RAZORPAY_KEY}
+          EXPO_PUBLIC_USE_MOCK_API=false
+          EXPO_PUBLIC_WS_URL=
+          EXPO_PUBLIC_SENTRY_DSN=${EXPO_PUBLIC_SENTRY_DSN}
+          EOF
+
+      # Write Google service account key for Android production submission
+      - name: Write Google service account key
+        if: needs.setup.outputs.profile == 'production'
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+        run: echo "$GOOGLE_SERVICE_ACCOUNT_JSON" > google-service-account.json
+
+      - name: Run EAS Build
+        run: |
+          eas build \
+            --profile ${{ needs.setup.outputs.profile }} \
+            --platform ${{ needs.setup.outputs.platform }} \
+            --non-interactive \
+            --no-wait
+        # --non-interactive: required for CI (no stdin)
+        # --no-wait:         trigger build and let it run on EAS servers;
+        #                    GitHub Action exits immediately (avoids 6h timeout)
+
+
+  # ── EAS Submit (production only) ───────────────────────────────────────────
+  submit:
+    name: 🚀 EAS Submit to Stores
+    runs-on: ubuntu-latest
+    needs: [setup, build]
+    if: needs.setup.outputs.profile == 'production'
+    defaults:
+      run:
+        working-directory: aits-shop
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: aits-shop/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Setup EAS CLI
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Write Google service account key
+        env:
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+        run: echo "$GOOGLE_SERVICE_ACCOUNT_JSON" > google-service-account.json
+
+      - name: Submit to Google Play (Android)
+        if: needs.setup.outputs.platform == 'android' || needs.setup.outputs.platform == 'all'
+        run: |
+          eas submit \
+            --platform android \
+            --profile production \
+            --non-interactive \
+            --latest
+
+      - name: Submit to App Store (iOS)
+        if: needs.setup.outputs.platform == 'ios' || needs.setup.outputs.platform == 'all'
+        env:
+          APPLE_ID:     ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_APP_ID:   ${{ secrets.ASC_APP_ID }}
+        run: |
+          eas submit \
+            --platform ios \
+            --profile production \
+            --non-interactive \
+            --latest
+
+  # ── Notify on failure ──────────────────────────────────────────────────────
+  notify-failure:
+    name: 🔔 Notify on Build Failure
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: failure()
+
+    steps:
+      - name: Log failure notice
+        run: |
+          echo "::error::EAS Build failed for profile: ${{ needs.setup.outputs.profile }}"
+          echo "Check the EAS dashboard: https://expo.dev/accounts/[your-account]/projects/aits-shop/builds"
+        # TODO: replace with Slack/email notification when team channels are set up

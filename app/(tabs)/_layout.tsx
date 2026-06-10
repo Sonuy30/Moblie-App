@@ -4,7 +4,22 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/constants/colors';
 import { useCartStore } from '@/stores/cartStore';
+import { useWishlistStore } from '@/stores/wishlistStore';
 import AuthModal from '@/components/AuthModal';
+
+function WishlistIcon({ color, size }: { color: string; size: number }) {
+  const count = useWishlistStore((s) => s.items.length);
+  return (
+    <View>
+      <Ionicons name="heart-outline" size={size} color={color} />
+      {count > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{count > 99 ? '99+' : count}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
 
 export default function TabsLayout() {
   const totalItems = useCartStore((s) => s.totalItems());
@@ -40,7 +55,28 @@ export default function TabsLayout() {
           name="explore"
           options={{
             title: 'Explore',
+            tabBarIcon: ({ color, size }) => <Ionicons name="compass-outline" size={size} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="sale"
+          options={{
+            title: 'Deals',
+            tabBarIcon: ({ color, size }) => <Ionicons name="flame-outline" size={size} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="search"
+          options={{
+            title: 'Search',
             tabBarIcon: ({ color, size }) => <Ionicons name="search-outline" size={size} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="wishlist"
+          options={{
+            title: 'Wishlist',
+            tabBarIcon: ({ color, size }) => <WishlistIcon color={color} size={size} />,
           }}
         />
         <Tabs.Screen
@@ -83,16 +119,16 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   badge: {
-    position: 'absolute',
-    top: -4,
-    right: -10,
+    alignItems: 'center',
     backgroundColor: colors.error,
     borderRadius: 999,
-    minWidth: 18,
     height: 18,
-    alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 18,
     paddingHorizontal: 4,
+    position: 'absolute',
+    right: -10,
+    top: -4,
   },
   badgeText: {
     color: colors.white,

@@ -117,23 +117,38 @@ export default function TrackingTimeline({
 }
 
 const styles = StyleSheet.create({
+  cancelled: {
+    alignItems: 'center',
+    backgroundColor: colors.errorLight,
+    borderRadius: 10,
+    flexDirection: 'row',
+    gap: 8,
+    padding: spacing.lg,
+  },
+  cancelledText: {
+    color: colors.error,
+    fontSize: 15,
+    fontWeight: '600',
+  },
   container: {
     paddingVertical: spacing.md,
   },
-  step: {
-    flexDirection: 'row',
-    minHeight: 60,
+  content: {
+    flex: 1,
+    marginLeft: spacing.md,
+    paddingBottom: spacing.lg,
   },
-  indicator: {
-    alignItems: 'center',
-    width: 32,
+  date: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    marginTop: 2,
   },
   dot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
     alignItems: 'center',
+    borderRadius: 12,
+    height: 24,
     justifyContent: 'center',
+    width: 24,
   },
   dotCompleted: {
     backgroundColor: colors.success,
@@ -141,21 +156,9 @@ const styles = StyleSheet.create({
   dotPending: {
     backgroundColor: colors.border,
   },
-  line: {
-    width: 2,
-    flex: 1,
-    marginVertical: 4,
-  },
-  lineCompleted: {
-    backgroundColor: colors.success,
-  },
-  linePending: {
-    backgroundColor: colors.border,
-  },
-  content: {
-    flex: 1,
-    marginLeft: spacing.md,
-    paddingBottom: spacing.lg,
+  indicator: {
+    alignItems: 'center',
+    width: 32,
   },
   label: {
     fontSize: 14,
@@ -167,28 +170,25 @@ const styles = StyleSheet.create({
   labelPending: {
     color: colors.textMuted,
   },
-  date: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 2,
+  line: {
+    flex: 1,
+    marginVertical: 4,
+    width: 2,
+  },
+  lineCompleted: {
+    backgroundColor: colors.success,
+  },
+  linePending: {
+    backgroundColor: colors.border,
+  },
+  step: {
+    flexDirection: 'row',
+    minHeight: 60,
   },
   tracking: {
-    fontSize: 12,
     color: colors.primary,
+    fontSize: 12,
     fontWeight: '500',
     marginTop: 4,
-  },
-  cancelled: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    padding: spacing.lg,
-    backgroundColor: colors.errorLight,
-    borderRadius: 10,
-  },
-  cancelledText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.error,
   },
 });

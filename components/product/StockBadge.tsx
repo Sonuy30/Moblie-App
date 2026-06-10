@@ -41,22 +41,18 @@ export default function StockBadge({ inStock, stockQty }: StockBadgeProps) {
 
 const styles = StyleSheet.create({
   badge: {
-    flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-start',
+    borderRadius: borderRadius.sm,
+    flexDirection: 'row',
+    gap: 6,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: borderRadius.sm,
-    gap: 6,
-    alignSelf: 'flex-start',
   },
   dot: {
-    width: 6,
-    height: 6,
     borderRadius: 3,
-  },
-  text: {
-    fontSize: 12,
-    fontWeight: '600',
+    height: 6,
+    width: 6,
   },
   inStockBadge: {
     backgroundColor: colors.successLight,
@@ -66,5 +62,9 @@ const styles = StyleSheet.create({
   },
   outOfStock: {
     backgroundColor: colors.errorLight,
+  },
+  text: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

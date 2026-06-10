@@ -7,7 +7,7 @@ import { FlashList } from '@shopify/flash-list';
 import { useInfiniteProducts } from '@/hooks/useProducts';
 import ProductCard from '@/components/product/ProductCard';
 import EmptyState from '@/components/ui/EmptyState';
-import { ProductCardSkeleton } from '@/components/ui/Skeleton';
+import { ProductCardSkeleton } from '@/components/skeletons/ProductCardSkeleton';
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/config';
 
@@ -47,10 +47,10 @@ export default function CategoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 18, fontWeight: '700', color: colors.text },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing.lg, gap: spacing.lg },
+  backBtn: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: 20, height: 40, justifyContent: 'center', width: 40 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg, paddingHorizontal: spacing.lg },
   gridItem: { width: '47%' },
+  header: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  safe: { backgroundColor: colors.background, flex: 1 },
+  title: { color: colors.text, fontSize: 18, fontWeight: '700' },
 });

@@ -31,35 +31,35 @@ export default function OrderItemRow({ name, image, quantity, price }: OrderItem
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
     alignItems: 'center',
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
     gap: spacing.md,
     paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   image: {
-    width: 56,
-    height: 56,
-    borderRadius: borderRadius.sm,
     backgroundColor: colors.surface,
+    borderRadius: borderRadius.sm,
+    height: 56,
+    width: 56,
   },
   info: {
     flex: 1,
     gap: 4,
   },
   name: {
+    color: colors.text,
     fontSize: 14,
     fontWeight: '500',
-    color: colors.text,
   },
   qty: {
-    fontSize: 12,
     color: colors.textSecondary,
+    fontSize: 12,
   },
   total: {
+    color: colors.text,
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text,
   },
 });

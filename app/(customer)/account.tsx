@@ -61,7 +61,7 @@ export default function AccountScreen() {
         <View style={styles.menu}>
           {menuItems.map((item, i) => (
             <TouchableOpacity key={i} style={styles.menuItem}
-              onPress={() => item.route && router.push(item.route as any)}
+              onPress={() => item.route && router.push(item.route)}
               activeOpacity={0.6}>
               <Ionicons name={item.icon} size={22} color={colors.textSecondary} />
               <Text style={styles.menuLabel}>{item.label}</Text>
@@ -84,22 +84,22 @@ export default function AccountScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  title: { fontSize: 22, fontWeight: '700', color: colors.text, paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.md },
-  guestContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing['3xl'] },
-  guestIcon: { width: 100, height: 100, borderRadius: 50, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginBottom: spacing['2xl'] },
-  guestTitle: { fontSize: 20, fontWeight: '700', color: colors.text, textAlign: 'center' },
-  guestSub: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginTop: 8 },
-  profileCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.white, marginHorizontal: spacing.lg, borderRadius: borderRadius.xl, padding: spacing.xl, gap: spacing.lg, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
+  editBtn: { alignItems: 'center', backgroundColor: colors.primaryLight, borderRadius: 20, height: 40, justifyContent: 'center', width: 40 },
+  guestContainer: { alignItems: 'center', flex: 1, justifyContent: 'center', paddingHorizontal: spacing['3xl'] },
+  guestIcon: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: 50, height: 100, justifyContent: 'center', marginBottom: spacing['2xl'], width: 100 },
+  guestSub: { color: colors.textSecondary, fontSize: 14, marginTop: 8, textAlign: 'center' },
+  guestTitle: { color: colors.text, fontSize: 20, fontWeight: '700', textAlign: 'center' },
+  logoutBtn: { alignItems: 'center', flexDirection: 'row', gap: 8, justifyContent: 'center', marginTop: spacing['2xl'], paddingVertical: spacing.lg },
+  logoutText: { color: colors.error, fontSize: 15, fontWeight: '600' },
+  menu: { backgroundColor: colors.white, borderRadius: borderRadius.xl, elevation: 3, marginHorizontal: spacing.lg, marginTop: spacing['2xl'], overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
+  menuItem: { alignItems: 'center', borderBottomColor: colors.surface, borderBottomWidth: 1, flexDirection: 'row', gap: spacing.lg, paddingHorizontal: spacing.xl, paddingVertical: 16 },
+  menuLabel: { color: colors.text, flex: 1, fontSize: 15, fontWeight: '500' },
+  profileCard: { alignItems: 'center', backgroundColor: colors.white, borderRadius: borderRadius.xl, elevation: 3, flexDirection: 'row', gap: spacing.lg, marginHorizontal: spacing.lg, padding: spacing.xl, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8 },
+  profileEmail: { color: colors.textSecondary, fontSize: 13 },
   profileInfo: { flex: 1, gap: 2 },
-  profileName: { fontSize: 18, fontWeight: '700', color: colors.text },
-  profileEmail: { fontSize: 13, color: colors.textSecondary },
-  profilePhone: { fontSize: 13, color: colors.textSecondary },
-  editBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
-  menu: { marginTop: spacing['2xl'], marginHorizontal: spacing.lg, backgroundColor: colors.white, borderRadius: borderRadius.xl, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
-  menuItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: spacing.xl, gap: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.surface },
-  menuLabel: { flex: 1, fontSize: 15, color: colors.text, fontWeight: '500' },
-  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: spacing['2xl'], paddingVertical: spacing.lg },
-  logoutText: { fontSize: 15, fontWeight: '600', color: colors.error },
-  version: { textAlign: 'center', fontSize: 12, color: colors.textMuted, marginTop: spacing.lg },
+  profileName: { color: colors.text, fontSize: 18, fontWeight: '700' },
+  profilePhone: { color: colors.textSecondary, fontSize: 13 },
+  safe: { backgroundColor: colors.background, flex: 1 },
+  title: { color: colors.text, fontSize: 22, fontWeight: '700', paddingBottom: spacing.md, paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
+  version: { color: colors.textMuted, fontSize: 12, marginTop: spacing.lg, textAlign: 'center' },
 });

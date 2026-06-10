@@ -7,11 +7,11 @@ import { FlashList as OriginalFlashList } from '@shopify/flash-list';
 import { useInfiniteProducts } from '@/hooks/useProducts';
 import ProductCard from '@/components/product/ProductCard';
 import ProductCardWide from '@/components/product/ProductCardWide';
-import { ProductCardSkeleton } from '@/components/ui/Skeleton';
+import { ProductCardSkeleton } from '@/components/skeletons/ProductCardSkeleton';
 import EmptyState from '@/components/ui/EmptyState';
 import { colors } from '@/constants/colors';
 import { spacing, borderRadius } from '@/constants/config';
-import { ProductFilters } from '@/api/products';
+import { type ProductFilters } from '@/api/products';
 
 const FlashList = OriginalFlashList as any;
 
@@ -57,7 +57,7 @@ export default function ExploreScreen() {
     search: search || undefined,
     category: params.category || undefined,
     featured: params.featured === 'true' ? true : undefined,
-    sort: SORT_OPTIONS[sortIndex].value as any,
+    sort: SORT_OPTIONS[sortIndex].value,
   };
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, refetch } = useInfiniteProducts(filters);
@@ -210,136 +210,136 @@ export default function ExploreScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  searchRow: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 14,
-    paddingHorizontal: spacing.lg,
-    height: 50,
-    gap: 10,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: colors.text,
-    fontWeight: '500',
-  },
-  chipRow: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    gap: 8,
-  },
   chip: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: borderRadius.full,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
   },
   chipActive: {
     backgroundColor: colors.primaryLight,
     borderColor: colors.primary,
   },
+  chipRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+  },
   chipText: {
+    color: colors.textSecondary,
     fontSize: 12,
     fontWeight: '600',
-    color: colors.textSecondary,
   },
   chipTextActive: {
     color: colors.primary,
     fontWeight: '700',
   },
+  controlRight: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+  },
   controlRow: {
+    alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+  },
+  gridItem: {
+    marginBottom: spacing.lg,
+    width: '48%',
+  },
   resultCount: {
-    fontSize: 13,
     color: colors.textSecondary,
+    fontSize: 13,
     fontWeight: '500',
   },
-  controlRight: {
-    flexDirection: 'row',
+  safe: {
+    backgroundColor: colors.background,
+    flex: 1,
+  },
+  searchBar: {
     alignItems: 'center',
-    gap: 12,
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    flexDirection: 'row',
+    gap: 10,
+    height: 50,
+    paddingHorizontal: spacing.lg,
+  },
+  searchInput: {
+    color: colors.text,
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  searchRow: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
   },
   sortBtn: {
-    flexDirection: 'row',
     alignItems: 'center',
+    flexDirection: 'row',
     gap: 4,
   },
-  sortText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  viewBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   sortDropdown: {
-    position: 'absolute',
-    top: 144,
-    right: spacing.lg,
     backgroundColor: colors.white,
+    borderColor: colors.surface,
     borderRadius: borderRadius.md,
+    borderWidth: 1,
+    elevation: 8,
     padding: 8,
-    zIndex: 100,
+    position: 'absolute',
+    right: spacing.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 10,
-    elevation: 8,
+    top: 144,
     width: 200,
-    borderWidth: 1,
-    borderColor: colors.surface,
+    zIndex: 100,
   },
   sortOption: {
+    alignItems: 'center',
+    borderRadius: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
     paddingHorizontal: 12,
-    borderRadius: 8,
+    paddingVertical: 10,
   },
   sortOptionActive: {
     backgroundColor: colors.primaryLight,
   },
   sortOptionText: {
-    fontSize: 13,
     color: colors.text,
+    fontSize: 13,
     fontWeight: '500',
   },
   sortOptionTextActive: {
     color: colors.primary,
     fontWeight: '700',
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: spacing.lg,
-    justifyContent: 'space-between',
+  sortText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '700',
   },
-  gridItem: {
-    width: '48%',
-    marginBottom: spacing.lg,
+  viewBtn: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
   },
 });

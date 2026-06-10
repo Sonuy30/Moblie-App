@@ -62,16 +62,16 @@ export default function CustomerLayout() {
 
 const styles = StyleSheet.create({
   badge: {
-    position: 'absolute',
-    top: -4,
-    right: -10,
+    alignItems: 'center',
     backgroundColor: colors.error,
     borderRadius: 999,
-    minWidth: 18,
     height: 18,
-    alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 18,
     paddingHorizontal: 4,
+    position: 'absolute',
+    right: -10,
+    top: -4,
   },
   badgeText: {
     color: colors.white,

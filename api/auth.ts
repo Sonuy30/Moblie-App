@@ -1,5 +1,25 @@
+/**
+ * api/auth.ts — Authentication API calls
+ *
+ * Responsibilities:
+ *  - All HTTP calls related to identity (OTP, login, register, profile)
+ *  - refreshToken()  — called by authStore.refreshAccessToken() indirectly
+ *  - serverLogout()  — server-side session invalidation (best-effort)
+ *  - Mock fallback   — when local backend is unavailable, serves mock data
+ *
+ * What this file does NOT do:
+ *  - Manage SecureStore — that's authStore's job
+ *  - Import from api/client's interceptor (would be circular)
+ *  - Handle the queuing/mutex for concurrent refreshes (that's api/client.ts)
+ *
+ * COMPANY_SLUG is sent ONLY in pre-login calls (request-otp, register, login).
+ * After login, companyId is embedded in the JWT — no slug needed.
+ */
+
 import client from './client';
+import { Config } from '@/utils/config';
 import type { AuthUser } from '@/stores/authStore';
+import type { AxiosError } from 'axios';
 import {
   mockRequestOTP,
   mockVerifyOTP,
@@ -8,72 +28,111 @@ import {
   mockGetProfile,
 } from './mock';
 
-/**
- * Company slug — identifies which company's ERP this app connects to.
- * Used ONLY in pre-login calls (register, request-otp) so the ERP knows
- * which company to look up. After login, companyId lives inside the JWT.
- *
- * This is NOT a secret — it's just a readable identifier like "pankaj-steel".
- * Replace with: process.env.EXPO_PUBLIC_COMPANY_SLUG
- */
-const COMPANY_SLUG = process.env.EXPO_PUBLIC_COMPANY_SLUG || 'sudama01';
+// ── Types ──────────────────────────────────────────────────────────────────
 
-// Helper: check if backend is truly unreachable or misconfigured → use mock data
-//
-// Fallback triggers:
-//   • No HTTP response at all — network error / CORS / server down
-//   • 405 — endpoint not implemented on this server
-//   • 404 — endpoint path doesn't exist on local dev server
-//   • 400 with a company/config error message — means the companySlug in .env.local
-//     doesn't match any company in the local DB (config problem, not user input error)
-//
-// Real user errors (wrong password, phone already registered, etc.) still surface normally.
-function isBackendMissing(err: any): boolean {
-  const status = err?.response?.status;
-
-  // No HTTP response = network error (server down, wrong IP, CORS, no internet)
-  if (!status) return true;
-
-  // 405 = endpoint doesn't exist at all
-  if (status === 405) return true;
-
-  // 404 = route not found on local dev server (endpoint not wired up yet)
-  if (status === 404) return true;
-
-  // 400 where the body indicates a company / configuration problem
-  // (e.g. "Company not found", "Invalid company", "companySlug is required")
-  // This is a dev setup issue, NOT a user input error — fall back to mock.
-  if (status === 400) {
-    const msg: string = (
-      err?.response?.data?.message ||
-      err?.response?.data?.error ||
-      ''
-    ).toLowerCase();
-    const isConfigError =
-      msg.includes('company') ||
-      msg.includes('not found') ||
-      msg.includes('invalid company') ||
-      msg.includes('companyslug') ||
-      msg.includes('slug');
-    if (isConfigError) return true;
-  }
-
-  // Everything else (400 user errors, 401, 403, 409, 500) = real backend
-  // response that should surface to the user.
-  return false;
+export interface OTPRequestResponse {
+  message: string;
+  companyName?: string;
+  maskedPhone?: string;
 }
 
-// ──────────────────────────────────────────────────────────
-// Request OTP (pre-login — company identified by slug)
-// ──────────────────────────────────────────────────────────
-export const requestOTP = async (phone: string): Promise<{ message: string; companyName?: string; maskedPhone?: string }> => {
+export interface OTPVerifyResponse {
+  token: string;
+  authToken: string;
+  refreshToken?: string;  // server may issue a refresh token alongside the JWT
+  customer: AuthUser | null;
+  user: AuthUser | null;
+}
+
+export interface RegisterResponse {
+  message: string;
+  phone: string;
+}
+
+export interface LoginResponse {
+  authToken: string;
+  refreshToken?: string;  // long-lived token for silent re-auth
+  user: AuthUser;
+}
+
+export interface ProfileResponse {
+  user: AuthUser;
+  company?: Record<string, unknown>;
+}
+
+export interface RefreshTokenResponse {
+  accessToken?: string;
+  authToken?: string;
+  token?: string;
+  refreshToken?: string;  // server may rotate refresh tokens
+}
+
+export interface InviteTokenResponse {
+  maskedPhone: string;
+  companyName: string;
+  customerId: string;
+}
+
+// ── Server error response shape ────────────────────────────────────────────
+
+interface ServerErrorBody {
+  message?: string;
+  error?: string;
+}
+
+// ── Backend availability detection ─────────────────────────────────────────
+/**
+ * Determines whether the backend is truly unreachable (vs. a user-input error).
+ *
+ * Fallback triggers:
+ *   • No HTTP response — network error / CORS / server down / wrong IP
+ *   • 405 — endpoint not implemented on this version of the server
+ *   • HTML 404 — path doesn't exist (Vercel/CDN edge response, not our API)
+ *   • 400 with company/slug/not-found — local DB isn't seeded for this slug
+ *
+ * Real user errors (wrong password, phone already registered) do NOT trigger
+ * the fallback — those propagate as-is so the UI can show the right message.
+ */
+function isBackendMissing(err: unknown): boolean {
+  const axiosErr = err as AxiosError<ServerErrorBody>;
+
+  // No HTTP response = network error (server down, wrong IP, CORS, no internet)
+  if (!axiosErr?.response) return true;
+
+  const { status, data } = axiosErr.response;
+
+  // Endpoint doesn't exist at all on this server
+  if (status === 405) return true;
+
+  // HTML error page from CDN/edge (not our JSON API)
+  const isHtmlBody = !data || typeof data === 'string';
+  if (status === 404 && isHtmlBody) return true;
+
+  // Server returned JSON but it's a configuration problem, not a user error
+  const msg = ((data?.message ?? '') + (data?.error ?? '')).toLowerCase();
+
+  const isConfigProblem =
+    msg.includes('company') ||
+    msg.includes('slug') ||
+    msg.includes('not found');
+
+  return isConfigProblem;
+}
+
+// ── Request OTP ────────────────────────────────────────────────────────────
+/** Send an OTP to the given phone number. */
+export const requestOTP = async (phone: string): Promise<OTPRequestResponse> => {
+  if (Config.USE_MOCK_API) {
+    console.info('[MOCK] requestOTP active');
+    return mockRequestOTP(phone);
+  }
   try {
-    const { data } = await client.post('/api/mobile/request-otp', {
+    const { data } = await client.post<OTPRequestResponse>('/api/mobile/request-otp', {
       phone,
-      companySlug: COMPANY_SLUG,  // ERP uses this to find the company
+      companySlug: Config.COMPANY_SLUG,
     });
-    return data as { message: string; companyName?: string; maskedPhone?: string };
-  } catch (err: any) {
+    return data;
+  } catch (err) {
     if (isBackendMissing(err)) {
       console.info('[MOCK] requestOTP fallback active');
       return mockRequestOTP(phone);
@@ -82,29 +141,46 @@ export const requestOTP = async (phone: string): Promise<{ message: string; comp
   }
 };
 
-// Alias
+/** Alias — same as requestOTP. */
 export const resendRegisterOTP = requestOTP;
 
-// ──────────────────────────────────────────────────────────
-// Verify OTP → ERP returns JWT with companyId embedded
-// ──────────────────────────────────────────────────────────
+// ── Verify OTP ─────────────────────────────────────────────────────────────
+/**
+ * Verify the OTP entered by the user.
+ * Returns both the access token and (if issued) the refresh token.
+ */
 export const verifyOTP = async (
   phone: string,
   otp: string
-): Promise<{ token: string; authToken: string; customer: AuthUser | null; user: AuthUser | null }> => {
+): Promise<OTPVerifyResponse> => {
+  if (Config.USE_MOCK_API) {
+    console.info('[MOCK] verifyOTP active');
+    return mockVerifyOTP(phone, otp);
+  }
   try {
-    const { data } = await client.post('/api/mobile/verify-otp', {
+    const { data } = await client.post<{
+      authToken?: string;
+      token?: string;
+      refreshToken?: string;
+      user?: AuthUser;
+      customer?: AuthUser;
+    }>('/api/mobile/verify-otp', {
       phone,
       otp,
-      companySlug: COMPANY_SLUG,
+      companySlug: Config.COMPANY_SLUG,
     });
+
+    const accessToken = data.authToken ?? data.token ?? '';
+    const user = data.user ?? data.customer ?? null;
+
     return {
-      token:     data.authToken || data.token || '',
-      authToken: data.authToken || data.token || '',
-      customer:  data.user || data.customer || null,
-      user:      data.user || data.customer || null,
+      token:        accessToken,
+      authToken:    accessToken,
+      refreshToken: data.refreshToken,
+      customer:     user,
+      user,
     };
-  } catch (err: any) {
+  } catch (err) {
     if (isBackendMissing(err)) {
       console.info('[MOCK] verifyOTP fallback active');
       return mockVerifyOTP(phone, otp);
@@ -113,24 +189,26 @@ export const verifyOTP = async (
   }
 };
 
-// Alias
+/** Alias. */
 export const verifyRegisterOTP = verifyOTP;
 
-// ──────────────────────────────────────────────────────────
-// Register new customer (pre-login)
-// ──────────────────────────────────────────────────────────
+// ── Register ───────────────────────────────────────────────────────────────
 export const registerUser = async (params: {
   fullName: string;
   phone: string;
   password?: string;
-}): Promise<{ message: string; phone: string }> => {
+}): Promise<RegisterResponse> => {
+  if (Config.USE_MOCK_API) {
+    console.info('[MOCK] registerUser active');
+    return mockRegisterUser(params);
+  }
   try {
-    const { data } = await client.post('/api/mobile/register', {
+    const { data } = await client.post<RegisterResponse>('/api/mobile/register', {
       ...params,
-      companySlug: COMPANY_SLUG,  // ERP links this user to the company
+      companySlug: Config.COMPANY_SLUG,
     });
-    return data as { message: string; phone: string };
-  } catch (err: any) {
+    return data;
+  } catch (err) {
     if (isBackendMissing(err)) {
       console.info('[MOCK] registerUser fallback active');
       return mockRegisterUser(params);
@@ -139,22 +217,27 @@ export const registerUser = async (params: {
   }
 };
 
-// ──────────────────────────────────────────────────────────
-// Login with phone + password
-// JWT returned will contain: { userId, companyId, role }
-// ──────────────────────────────────────────────────────────
+// ── Login ──────────────────────────────────────────────────────────────────
+/**
+ * Authenticate with phone + password.
+ * Returns both the access token and (if issued) the refresh token.
+ */
 export const loginUser = async (params: {
   phone: string;
   password?: string;
-}): Promise<{ authToken: string; user: AuthUser }> => {
+}): Promise<LoginResponse> => {
+  if (Config.USE_MOCK_API) {
+    console.info('[MOCK] loginUser active');
+    return mockLoginUser(params);
+  }
   try {
-    const { data } = await client.post('/api/mobile/login', {
+    const { data } = await client.post<LoginResponse>('/api/mobile/login', {
       phone: params.phone,
       password: params.password,
-      companySlug: COMPANY_SLUG,  // needed to find user in the right company
+      companySlug: Config.COMPANY_SLUG,
     });
-    return data as { authToken: string; user: AuthUser };
-  } catch (err: any) {
+    return data;
+  } catch (err) {
     if (isBackendMissing(err)) {
       console.info('[MOCK] loginUser fallback active');
       return mockLoginUser(params);
@@ -163,31 +246,115 @@ export const loginUser = async (params: {
   }
 };
 
-// ──────────────────────────────────────────────────────────
-// Profile — JWT carries companyId, no extra header needed
-// ──────────────────────────────────────────────────────────
-export const getProfile = async (): Promise<{ user: AuthUser; company?: any }> => {
+// ── Token refresh ──────────────────────────────────────────────────────────
+/**
+ * Exchange a refresh token for a new access token.
+ *
+ * NOTE: This function is exposed here for documentation/testing purposes.
+ * In production the actual refresh call is made inside authStore.refreshAccessToken()
+ * using bare fetch() to avoid Axios interceptor recursion. If your backend
+ * refresh endpoint has CORS or extra header requirements, update both here
+ * AND in authStore.refreshAccessToken().
+ *
+ * @param refreshToken - The long-lived refresh token from SecureStore.
+ */
+export const refreshTokenApi = async (
+  refreshToken: string
+): Promise<RefreshTokenResponse> => {
+  // Use a raw fetch so this never gets caught by the Axios refresh interceptor.
+  // (If we used the Axios client here, a 401 would trigger a recursive refresh.)
+  const response = await fetch(`${Config.API_URL}/api/mobile/refresh-token`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-App-Client': 'aits-shop',
+    },
+    body: JSON.stringify({ refreshToken }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Refresh failed: HTTP ${response.status}`);
+  }
+
+  return response.json() as Promise<RefreshTokenResponse>;
+};
+
+// ── Server logout ──────────────────────────────────────────────────────────
+/**
+ * Invalidate the refresh token on the server (best-effort).
+ * Always resolves — a network failure here should not block the local logout.
+ * The Zustand store's logout() clears SecureStore regardless.
+ */
+export const serverLogout = async (refreshToken: string): Promise<void> => {
   try {
-    const { data } = await client.get('/api/customers/profile');
-    return data as { user: AuthUser; company?: any };
-  } catch (err: any) {
+    await client.post('/api/mobile/logout', { refreshToken });
+  } catch (err) {
+    // Best-effort only. Log in dev, silently ignore in prod.
+    if (__DEV__) {
+      console.warn('[Auth] Server-side logout failed (non-critical):', err);
+    }
+  }
+};
+
+// ── Profile ────────────────────────────────────────────────────────────────
+export const getProfile = async (): Promise<ProfileResponse> => {
+  if (Config.USE_MOCK_API) {
+    console.info('[MOCK] getProfile active');
+    try {
+      return await mockGetProfile('demo-user-001');
+    } catch {
+      return {
+        user: {
+          _id: 'guest',
+          fullName: 'Guest',
+          phone: '',
+          role: 'customer',
+          companyId: '',
+          companyName: Config.COMPANY_NAME,
+        },
+      };
+    }
+  }
+  try {
+    const { data } = await client.get<ProfileResponse>('/api/customers/profile');
+    return data;
+  } catch (err) {
     if (isBackendMissing(err)) {
       console.info('[MOCK] getProfile fallback active');
-      return { user: { _id: 'guest', fullName: 'Guest', phone: '', role: 'customer', companyId: '', companyName: '' } };
+      try {
+        // mockGetProfile requires a userId; pass empty string to get first mock user
+        return await mockGetProfile('demo-user-001');
+      } catch {
+        return {
+          user: {
+            _id: 'guest',
+            fullName: 'Guest',
+            phone: '',
+            role: 'customer',
+            companyId: '',
+            companyName: Config.COMPANY_NAME,
+          },
+        };
+      }
     }
     throw err;
   }
 };
 
+
 export const updateProfile = async (body: {
   pushToken?: string;
   fullName?: string;
-  addresses?: any[];
-}): Promise<any> => {
+  addresses?: Record<string, unknown>[];
+}): Promise<{ success: boolean }> => {
+  if (Config.USE_MOCK_API) {
+    console.info('[MOCK] updateProfile no-op');
+    return { success: true };
+  }
   try {
-    const { data } = await client.put('/api/customers/profile', body);
+    const { data } = await client.put<{ success: boolean }>('/api/customers/profile', body);
     return data;
-  } catch (err: any) {
+  } catch (err) {
     if (isBackendMissing(err)) {
       console.info('[MOCK] updateProfile no-op');
       return { success: true };
@@ -196,17 +363,21 @@ export const updateProfile = async (body: {
   }
 };
 
-// ──────────────────────────────────────────────────────────
-// Forgot password
-// ──────────────────────────────────────────────────────────
-export const forgotPasswordAPI = async (email: string): Promise<any> => {
+// ── Forgot password ────────────────────────────────────────────────────────
+export const forgotPasswordAPI = async (
+  email: string
+): Promise<{ message: string }> => {
+  if (Config.USE_MOCK_API) {
+    console.info('[MOCK] forgotPassword — simulated success');
+    return { message: 'If this email is registered, a reset link has been sent.' };
+  }
   try {
-    const { data } = await client.post('/api/customers/forgot-password', {
-      email,
-      companySlug: COMPANY_SLUG,
-    });
+    const { data } = await client.post<{ message: string }>(
+      '/api/customers/forgot-password',
+      { email, companySlug: Config.COMPANY_SLUG }
+    );
     return data;
-  } catch (err: any) {
+  } catch (err) {
     if (isBackendMissing(err)) {
       console.info('[MOCK] forgotPassword — simulated success');
       return { message: 'If this email is registered, a reset link has been sent.' };
@@ -215,22 +386,33 @@ export const forgotPasswordAPI = async (email: string): Promise<any> => {
   }
 };
 
-// ──────────────────────────────────────────────────────────
-// Validate invite token from QR code
-// ──────────────────────────────────────────────────────────
-export const validateInviteToken = async (token: string): Promise<{
-  maskedPhone: string;
-  companyName: string;
-  customerId: string;
-}> => {
-  try {
-    const { data } = await client.get(`/api/customers/invite/${token}`);
-    return data as { maskedPhone: string; companyName: string; customerId: string };
-  } catch (error) {
+// ── Invite token validation ────────────────────────────────────────────────
+export const validateInviteToken = async (
+  token: string
+): Promise<InviteTokenResponse> => {
+  if (Config.USE_MOCK_API) {
     return {
-      maskedPhone: '******9999',
-      companyName: process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01',
-      customerId: 'demo-customer-123',
+      maskedPhone:  '******9999',
+      companyName:  Config.COMPANY_NAME,
+      customerId:   'demo-customer-123',
     };
+  }
+  try {
+    const { data } = await client.get<InviteTokenResponse>(
+      `/api/customers/invite/${token}`
+    );
+    return data;
+  } catch (err) {
+    const axiosErr = err as AxiosError<ServerErrorBody>;
+    if (!axiosErr?.response) {
+      // Network error — return safe fallback so onboarding can still proceed
+      return {
+        maskedPhone:  '******9999',
+        companyName:  Config.COMPANY_NAME,
+        customerId:   'demo-customer-123',
+      };
+    }
+    // Server error (invalid/expired invite token) — propagate it
+    throw err;
   }
 };

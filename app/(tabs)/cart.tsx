@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, LayoutAnimation, Platform, UIManager, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,7 +11,8 @@ import CartSummary from '@/components/cart/CartSummary';
 import EmptyState from '@/components/ui/EmptyState';
 import { formatINR } from '@/utils/currency';
 import { colors } from '@/constants/colors';
-import { spacing, borderRadius } from '@/constants/config';
+import { spacing } from '@/constants/config';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -23,11 +24,31 @@ export default function CartScreen() {
   const showAuthModal = useAuthModalStore((s) => s.show);
   const isEmpty = items.length === 0;
 
+  const handleClearCart = () => {
+    Alert.alert(
+      'Clear Cart',
+      'Are you sure you want to remove all items from your cart?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Clear', style: 'destructive', onPress: clearCart },
+      ]
+    );
+  };
+
   useEffect(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   }, [items.length]);
 
+  const { isOnline } = useNetworkStatus();
+
   const handleCheckout = () => {
+    if (!isOnline) {
+      Alert.alert(
+        'Offline Mode',
+        'Checkout is not available while you are offline. Please check your internet connection.'
+      );
+      return;
+    }
     if (!isAuthenticated) {
       showAuthModal('checkout');
       return;
@@ -60,7 +81,7 @@ export default function CartScreen() {
           <Text style={styles.screenTitle}>My Cart</Text>
           <Text style={styles.countText}>{totalItems()} items selected</Text>
         </View>
-        <TouchableOpacity style={styles.clearBtn} onPress={clearCart} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.clearBtn} onPress={handleClearCart} activeOpacity={0.7}>
           <Ionicons name="trash-outline" size={18} color={colors.error} />
           <Text style={styles.clearBtnText}>Clear</Text>
         </TouchableOpacity>
@@ -69,7 +90,10 @@ export default function CartScreen() {
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Cart Item Cards */}
         {items.map((item) => (
-          <CartItemComponent key={item.productId} item={item} />
+          <CartItemComponent
+            key={item.variantId ? `${item.productId}::${item.variantId}` : item.productId}
+            item={item}
+          />
         ))}
 
         {/* GST / Charges Summary Card */}
@@ -102,97 +126,97 @@ export default function CartScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-  },
-  screenTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: colors.text,
-  },
-  countText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    fontWeight: '500',
-    marginTop: 2,
-  },
-  clearBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    backgroundColor: colors.errorLight,
-  },
-  clearBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.error,
-  },
-  scroll: {
-    flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: colors.white,
-    padding: spacing.lg,
-    paddingBottom: spacing.xl,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
   checkoutBtn: {
+    alignItems: 'center',
     backgroundColor: colors.primary,
     borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
+    elevation: 5,
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 14,
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
-    elevation: 5,
   },
   checkoutBtnLeft: {
     alignItems: 'flex-start',
   },
-  checkoutText: {
-    color: colors.white,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  subtext: {
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 10,
-    fontWeight: '500',
-    marginTop: 2,
-  },
   checkoutBtnRight: {
-    flexDirection: 'row',
     alignItems: 'center',
+    flexDirection: 'row',
     gap: 6,
   },
   checkoutPrice: {
     color: colors.white,
     fontSize: 16,
     fontWeight: '800',
+  },
+  checkoutText: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  clearBtn: {
+    alignItems: 'center',
+    backgroundColor: colors.errorLight,
+    borderRadius: 8,
+    flexDirection: 'row',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  clearBtnText: {
+    color: colors.error,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  countText: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 2,
+  },
+  footer: {
+    backgroundColor: colors.white,
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    bottom: 0,
+    left: 0,
+    padding: spacing.lg,
+    paddingBottom: spacing.xl,
+    position: 'absolute',
+    right: 0,
+  },
+  header: {
+    alignItems: 'center',
+    borderBottomColor: colors.surface,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingBottom: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+  },
+  safe: {
+    backgroundColor: colors.background,
+    flex: 1,
+  },
+  screenTitle: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  scroll: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+  },
+  subtext: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 10,
+    fontWeight: '500',
+    marginTop: 2,
   },
 });

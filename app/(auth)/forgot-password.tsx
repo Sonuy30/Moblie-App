@@ -4,7 +4,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { forgotPasswordSchema, ForgotPasswordForm } from '@/utils/validation';
+import { forgotPasswordSchema, type ForgotPasswordForm } from '@/utils/validation';
 import { forgotPasswordAPI } from '@/api/auth';
 import { getErrorMessage } from '@/api/client';
 import { colors } from '@/constants/colors';
@@ -43,7 +43,7 @@ export default function ForgotPasswordScreen() {
         </View>
 
         <Text style={styles.title}>Forgot password?</Text>
-        <Text style={styles.subtitle}>Enter your email and we'll send you a reset link</Text>
+        <Text style={styles.subtitle}>{"Enter your email and we'll send you a reset link"}</Text>
 
         <View style={styles.field}>
           <Text style={styles.label}>Email</Text>
@@ -57,7 +57,7 @@ export default function ForgotPasswordScreen() {
           {errors.email && <Text style={styles.fieldError}>{errors.email.message}</Text>}
         </View>
 
-        <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit(onSubmit)} disabled={loading}>
+        <TouchableOpacity style={styles.submitBtn} onPress={() => { void handleSubmit(onSubmit)(); }} disabled={loading}>
           {loading ? <ActivityIndicator color={colors.white} /> : <Text style={styles.submitText}>Send Reset Link</Text>}
         </TouchableOpacity>
       </ScrollView>
@@ -66,18 +66,18 @@ export default function ForgotPasswordScreen() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: colors.background },
-  scroll: { flexGrow: 1, padding: spacing['2xl'], paddingTop: spacing['5xl'] },
-  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', marginBottom: spacing['3xl'] },
-  iconCircle: { width: 80, height: 80, borderRadius: 40, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: spacing['2xl'] },
-  title: { fontSize: 24, fontWeight: '800', color: colors.text, textAlign: 'center', marginBottom: 8 },
-  subtitle: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing['3xl'], lineHeight: 20 },
+  backBtn: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: 20, height: 40, justifyContent: 'center', marginBottom: spacing['3xl'], width: 40 },
   field: { gap: 6, marginBottom: spacing.xl },
-  label: { fontSize: 14, fontWeight: '600', color: colors.text },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: borderRadius.md, paddingHorizontal: spacing.lg, height: 52, gap: 10, borderWidth: 1.5, borderColor: 'transparent' },
+  fieldError: { color: colors.error, fontSize: 12, fontWeight: '500' },
+  flex: { backgroundColor: colors.background, flex: 1 },
+  iconCircle: { alignItems: 'center', alignSelf: 'center', backgroundColor: colors.primaryLight, borderRadius: 40, height: 80, justifyContent: 'center', marginBottom: spacing['2xl'], width: 80 },
+  input: { color: colors.text, flex: 1, fontSize: 15 },
+  inputContainer: { alignItems: 'center', backgroundColor: colors.surface, borderColor: 'transparent', borderRadius: borderRadius.md, borderWidth: 1.5, flexDirection: 'row', gap: 10, height: 52, paddingHorizontal: spacing.lg },
   inputError: { borderColor: colors.error },
-  input: { flex: 1, fontSize: 15, color: colors.text },
-  fieldError: { fontSize: 12, color: colors.error, fontWeight: '500' },
-  submitBtn: { backgroundColor: colors.primary, height: 52, borderRadius: borderRadius.md, alignItems: 'center', justifyContent: 'center' },
+  label: { color: colors.text, fontSize: 14, fontWeight: '600' },
+  scroll: { flexGrow: 1, padding: spacing['2xl'], paddingTop: spacing['5xl'] },
+  submitBtn: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: borderRadius.md, height: 52, justifyContent: 'center' },
   submitText: { color: colors.white, fontSize: 16, fontWeight: '700' },
+  subtitle: { color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: spacing['3xl'], textAlign: 'center' },
+  title: { color: colors.text, fontSize: 24, fontWeight: '800', marginBottom: 8, textAlign: 'center' },
 });

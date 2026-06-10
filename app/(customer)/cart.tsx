@@ -56,7 +56,7 @@ export default function CartScreen() {
 
       {/* Fixed Footer */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.checkoutBtn} onPress={() => router.push('/checkout' as any)}>
+        <TouchableOpacity style={styles.checkoutBtn} onPress={() => router.push('/checkout')}>
           <Text style={styles.checkoutText}>Proceed to Checkout</Text>
           <Text style={styles.checkoutPrice}>{formatINR(grandTotal)}</Text>
         </TouchableOpacity>
@@ -66,18 +66,18 @@ export default function CartScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  screenTitle: { fontSize: 22, fontWeight: '700', color: colors.text, paddingHorizontal: spacing.lg, paddingTop: spacing.lg, paddingBottom: spacing.md },
-  count: { fontSize: 16, fontWeight: '400', color: colors.textSecondary },
-  scroll: { flex: 1, paddingHorizontal: spacing.lg },
-  promoCard: { backgroundColor: colors.white, borderRadius: borderRadius.lg, padding: spacing.lg, marginBottom: spacing.lg, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
-  promoLabel: { fontSize: 14, fontWeight: '600', color: colors.text, marginBottom: 8 },
-  promoRow: { flexDirection: 'row', gap: 8 },
-  promoInput: { flex: 1, backgroundColor: colors.surface, borderRadius: borderRadius.sm, paddingHorizontal: 12, height: 44, fontSize: 14, color: colors.text },
-  promoBtn: { backgroundColor: colors.primary, paddingHorizontal: 20, borderRadius: borderRadius.sm, justifyContent: 'center' },
-  promoBtnText: { color: colors.white, fontSize: 14, fontWeight: '600' },
-  footer: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: colors.white, padding: spacing.lg, paddingBottom: spacing['3xl'], borderTopWidth: 1, borderTopColor: colors.border },
-  checkoutBtn: { backgroundColor: colors.primary, borderRadius: borderRadius.lg, paddingVertical: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  checkoutText: { color: colors.white, fontSize: 16, fontWeight: '700' },
+  checkoutBtn: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: borderRadius.lg, flexDirection: 'row', gap: 8, justifyContent: 'center', paddingVertical: 16 },
   checkoutPrice: { color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: '500' },
+  checkoutText: { color: colors.white, fontSize: 16, fontWeight: '700' },
+  count: { color: colors.textSecondary, fontSize: 16, fontWeight: '400' },
+  footer: { backgroundColor: colors.white, borderTopColor: colors.border, borderTopWidth: 1, bottom: 0, left: 0, padding: spacing.lg, paddingBottom: spacing['3xl'], position: 'absolute', right: 0 },
+  promoBtn: { backgroundColor: colors.primary, borderRadius: borderRadius.sm, justifyContent: 'center', paddingHorizontal: 20 },
+  promoBtnText: { color: colors.white, fontSize: 14, fontWeight: '600' },
+  promoCard: { backgroundColor: colors.white, borderRadius: borderRadius.lg, elevation: 2, marginBottom: spacing.lg, padding: spacing.lg, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
+  promoInput: { backgroundColor: colors.surface, borderRadius: borderRadius.sm, color: colors.text, flex: 1, fontSize: 14, height: 44, paddingHorizontal: 12 },
+  promoLabel: { color: colors.text, fontSize: 14, fontWeight: '600', marginBottom: 8 },
+  promoRow: { flexDirection: 'row', gap: 8 },
+  safe: { backgroundColor: colors.background, flex: 1 },
+  screenTitle: { color: colors.text, fontSize: 22, fontWeight: '700', paddingBottom: spacing.md, paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
+  scroll: { flex: 1, paddingHorizontal: spacing.lg },
 });

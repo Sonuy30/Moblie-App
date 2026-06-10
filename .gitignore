@@ -30,8 +30,12 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# local env files — NEVER commit these
+# Note: .env.example is intentionally NOT listed here — it should be committed
+#       as a template for team members. Only files with real secrets are ignored.
 .env*.local
+.env.production
+.env.staging
 
 # typescript
 *.tsbuildinfo
@@ -48,3 +52,6 @@ search_probe_output.js
 
 # Local scratch files
 scratch/
+
+# Lint and temp logs
+*lint_output*.txt

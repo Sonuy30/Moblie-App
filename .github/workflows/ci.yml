@@ -1,0 +1,188 @@
+# ════════════════════════════════════════════════════════════════════════════
+# .github/workflows/ci.yml — Continuous Integration
+#
+# Runs on every pull request to `main` or `develop`.
+# Gate: PR cannot be merged until ALL jobs pass.
+#
+# Jobs:
+#   1. type-check   — TypeScript strict mode (tsc --noEmit)
+#   2. lint         — ESLint (all .ts/.tsx files)
+#   3. test         — Jest tests with coverage report
+#
+# Secrets required (set in GitHub → Settings → Secrets → Actions):
+#   EXPO_PUBLIC_API_URL          — backend URL for CI (can be mock/placeholder)
+#   EXPO_PUBLIC_COMPANY_SLUG     — tenant slug
+#   EXPO_PUBLIC_COMPANY_NAME     — display name
+#   EXPO_PUBLIC_RAZORPAY_KEY     — Razorpay test key
+# ════════════════════════════════════════════════════════════════════════════
+
+name: CI — Type Check · Lint · Test
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      # Only run CI when app source changes (not docs, not workflows themselves)
+      - 'aits-shop/**'
+      - '.github/workflows/ci.yml'
+
+  # Allow manual trigger from the GitHub Actions UI
+  workflow_dispatch:
+
+# Cancel in-progress runs for the same PR to save runner minutes
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# ─────────────────────────────────────────────────────────────────────────────
+jobs:
+# ─────────────────────────────────────────────────────────────────────────────
+
+  # ── Job 1: TypeScript type check ─────────────────────────────────────────
+  type-check:
+    name: 🔷 TypeScript (strict)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: aits-shop
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: aits-shop/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Write .env for type checking
+        env:
+          EXPO_PUBLIC_API_URL:         ${{ secrets.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_API_TIMEOUT:     '15000'
+          EXPO_PUBLIC_COMPANY_SLUG:    ${{ secrets.EXPO_PUBLIC_COMPANY_SLUG }}
+          EXPO_PUBLIC_COMPANY_NAME:    ${{ secrets.EXPO_PUBLIC_COMPANY_NAME }}
+          EXPO_PUBLIC_RAZORPAY_KEY:    ${{ secrets.EXPO_PUBLIC_RAZORPAY_KEY }}
+          EXPO_PUBLIC_USE_MOCK_API:    'true'
+          EXPO_PUBLIC_WS_URL:          'ws://localhost:3001'
+          EXPO_PUBLIC_SENTRY_DSN:      ''
+        run: |
+          cat > .env.local << EOF
+          EXPO_PUBLIC_API_URL=${EXPO_PUBLIC_API_URL:-http://localhost:3000}
+          EXPO_PUBLIC_API_TIMEOUT=15000
+          EXPO_PUBLIC_COMPANY_SLUG=${EXPO_PUBLIC_COMPANY_SLUG:-ci-company}
+          EXPO_PUBLIC_COMPANY_NAME=${EXPO_PUBLIC_COMPANY_NAME:-CI Company}
+          EXPO_PUBLIC_RAZORPAY_KEY=${EXPO_PUBLIC_RAZORPAY_KEY:-rzp_test_ci}
+          EXPO_PUBLIC_USE_MOCK_API=true
+          EXPO_PUBLIC_WS_URL=ws://localhost:3001
+          EXPO_PUBLIC_SENTRY_DSN=
+          EOF
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+        # tsc exits 1 on any type error — fails the job and blocks the PR
+
+
+  # ── Job 2: ESLint ─────────────────────────────────────────────────────────
+  lint:
+    name: 🔍 ESLint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: aits-shop
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: aits-shop/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Write .env for lint
+        run: |
+          cat > .env.local << 'EOF'
+          EXPO_PUBLIC_API_URL=http://localhost:3000
+          EXPO_PUBLIC_API_TIMEOUT=15000
+          EXPO_PUBLIC_COMPANY_SLUG=ci-company
+          EXPO_PUBLIC_COMPANY_NAME=CI Company
+          EXPO_PUBLIC_RAZORPAY_KEY=rzp_test_ci
+          EXPO_PUBLIC_USE_MOCK_API=true
+          EXPO_PUBLIC_WS_URL=ws://localhost:3001
+          EXPO_PUBLIC_SENTRY_DSN=
+          EOF
+
+      - name: Run ESLint
+        run: npx eslint . --ext .ts,.tsx --max-warnings 0
+        # --max-warnings 0: any ESLint warning also fails the PR (strict mode)
+
+
+  # ── Job 3: Jest tests ─────────────────────────────────────────────────────
+  test:
+    name: 🧪 Jest Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: aits-shop
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: aits-shop/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Write .env for tests
+        run: |
+          cat > .env.local << 'EOF'
+          EXPO_PUBLIC_API_URL=http://localhost:3000
+          EXPO_PUBLIC_API_TIMEOUT=15000
+          EXPO_PUBLIC_COMPANY_SLUG=ci-company
+          EXPO_PUBLIC_COMPANY_NAME=CI Company
+          EXPO_PUBLIC_RAZORPAY_KEY=rzp_test_ci
+          EXPO_PUBLIC_USE_MOCK_API=true
+          EXPO_PUBLIC_WS_URL=ws://localhost:3001
+          EXPO_PUBLIC_SENTRY_DSN=
+          EOF
+
+      - name: Run Jest tests with coverage
+        run: npx jest --coverage --ci --forceExit --passWithNoTests
+        # --ci:            no interactive prompts, deterministic output
+        # --forceExit:     exits after tests complete (prevents hanging async)
+        # --passWithNoTests: won't fail when no tests exist yet (early project)
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()   # upload even if tests fail — useful for debugging
+        with:
+          name: coverage-report
+          path: aits-shop/coverage/
+          retention-days: 14
+
+      # Optional: post coverage summary as a PR comment
+      - name: Coverage summary comment
+        uses: davelosert/vitest-coverage-report-action@v2
+        if: github.event_name == 'pull_request'
+        with:
+          working-directory: aits-shop
+          json-summary-path: aits-shop/coverage/coverage-summary.json
+        continue-on-error: true   # don't fail CI if the comment action errors

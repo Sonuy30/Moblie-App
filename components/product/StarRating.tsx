@@ -51,20 +51,20 @@ export default function StarRating({
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
     alignItems: 'center',
+    flexDirection: 'row',
     gap: 4,
   },
-  stars: {
-    flexDirection: 'row',
-    gap: 1,
-  },
   count: {
-    fontSize: 13,
     color: colors.textSecondary,
+    fontSize: 13,
     fontWeight: '500',
   },
   countSmall: {
     fontSize: 11,
+  },
+  stars: {
+    flexDirection: 'row',
+    gap: 1,
   },
 });

@@ -54,53 +54,6 @@ export default function PhoneScreen() {
     }
   };
 
-  const handleDemoLogin = async () => {
-    setIsLoading(true);
-    setErrorMsg('');
-
-    try {
-      // Demo account: phone=9876543210, OTP=123456
-      const demoPhone = '9876543210';
-      
-      // 1. Request OTP (triggers mock or real backend)
-      await requestOTP(demoPhone);
-
-      // 2. Verify with bypass OTP 123456
-      const { token, user } = await verifyOTP(demoPhone, '123456');
-      
-      if (!token || !user) {
-        throw new Error('Demo login failed — could not get user session.');
-      }
-
-      const authenticatedUser = { 
-        ...user, 
-        role: (user.role || 'customer') as 'customer' | 'delivery_staff' | 'warehouse_staff' | 'admin'
-      };
-      
-      // Store JWT session in SecureStore and Zustand
-      await useAuthStore.getState().setSession(token, authenticatedUser);
-
-      Toast.show({
-        type: 'success',
-        text1: '🎉 Demo Login Successful',
-        text2: `Welcome, ${user.fullName || 'Demo Customer'}!`,
-      });
-
-      // All customers go to tabs (guest-browsing works without auth anyway)
-      router.replace('/(tabs)');
-    } catch (err: any) {
-      const msg = err?.message || 'Demo login failed. Please try manually.';
-      setErrorMsg(msg);
-      Toast.show({
-        type: 'error',
-        text1: 'Demo Login Failed',
-        text2: msg,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
@@ -165,14 +118,6 @@ export default function PhoneScreen() {
             </View>
           ) : null}
 
-          {/* Development Demo Helper Tip */}
-          <View style={styles.demoTipBox}>
-            <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
-            <Text style={styles.demoTipText}>
-              <Text style={{ fontWeight: 'bold' }}>Demo Mode Active:</Text> Enter any valid 10-digit number & use code <Text style={{ fontWeight: 'bold', color: colors.primary }}>123456</Text> to log in instantly.
-            </Text>
-          </View>
-
           {/* Manual Submit Button */}
           <Pressable 
             style={({ pressed }) => [
@@ -197,33 +142,6 @@ export default function PhoneScreen() {
               </LinearGradient>
             )}
           </Pressable>
-
-          <View style={styles.orDividerRow}>
-            <View style={styles.orLine} />
-            <Text style={styles.orText}>OR</Text>
-            <View style={styles.orLine} />
-          </View>
-
-          {/* One-Tap Demo Login Button */}
-          <Pressable 
-            style={({ pressed }) => [
-              styles.demoButton,
-              isLoading && styles.buttonDisabled,
-              pressed && styles.buttonPressed
-            ]} 
-            onPress={handleDemoLogin}
-            disabled={isLoading}
-          >
-            <LinearGradient 
-              colors={['#2E7D32', '#1B5E20']} 
-              style={styles.gradientBtn}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <Ionicons name="flash" size={18} color="#fff" />
-              <Text style={styles.buttonText}>One-Tap Demo Login</Text>
-            </LinearGradient>
-          </Pressable>
         </View>
 
         <Text style={styles.securityText}>
@@ -235,167 +153,36 @@ export default function PhoneScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#FFFFFF' 
-  },
-  scrollContainer: { 
-    flexGrow: 1, 
-    paddingHorizontal: 24, 
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    paddingBottom: 24,
-    justifyContent: 'space-between'
-  },
   backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    alignItems: 'center',
     backgroundColor: '#F8F9FA',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.05)',
-    marginBottom: 20
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 32,
-    marginTop: 10
+    borderRadius: 22,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: 'center',
+    marginBottom: 20,
+    width: 44
   },
   badgeGradient: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 36,
+    elevation: 3,
+    height: 72,
+    justifyContent: 'center',
     marginBottom: 16,
     shadowColor: '#185FA5',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
-    elevation: 3
-  },
-  title: { 
-    fontSize: 26, 
-    fontWeight: '800', 
-    color: '#1A1A18',
-    textAlign: 'center',
-    marginBottom: 12
-  },
-  subtitle: { 
-    fontSize: 14, 
-    color: '#5F5E5A', 
-    textAlign: 'center', 
-    lineHeight: 21,
-    paddingHorizontal: 12
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.xl,
-    padding: 20,
-    shadowColor: '#185FA5',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.05,
-    shadowRadius: 20,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: 'rgba(24, 95, 165, 0.05)',
-    marginBottom: 40
-  },
-  inputLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.primary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 8
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8F9FA',
-    borderRadius: borderRadius.lg,
-    borderWidth: 1.5,
-    borderColor: 'rgba(24, 95, 165, 0.15)',
-    height: 58,
-    paddingHorizontal: 16
-  },
-  inputWrapperFocused: {
-    borderColor: colors.primary,
-    backgroundColor: '#FFFFFF'
-  },
-  inputWrapperError: {
-    borderColor: colors.error
-  },
-  countryCode: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  flag: {
-    fontSize: 18,
-    marginRight: 6
-  },
-  code: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1A1A18'
-  },
-  divider: {
-    width: 1,
-    height: 24,
-    backgroundColor: 'rgba(0,0,0,0.1)',
-    marginHorizontal: 12
-  },
-  input: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1A1A18',
-    letterSpacing: 1
-  },
-  successIcon: {
-    marginLeft: 8
-  },
-  errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: colors.errorLight,
-    padding: 12,
-    borderRadius: borderRadius.md,
-    marginTop: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(163, 45, 45, 0.1)'
-  },
-  errorText: {
-    flex: 1,
-    fontSize: 13,
-    color: colors.error,
-    fontWeight: '500'
-  },
-  demoTipBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    backgroundColor: colors.primaryLight,
-    padding: 12,
-    borderRadius: borderRadius.md,
-    marginTop: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(24, 95, 165, 0.1)'
-  },
-  demoTipText: {
-    flex: 1,
-    fontSize: 12,
-    color: '#333333',
-    lineHeight: 17
+    width: 72
   },
   button: {
-    height: 56,
     borderRadius: borderRadius.lg,
-    overflow: 'hidden',
+    height: 56,
+    justifyContent: 'center',
     marginTop: 20,
-    justifyContent: 'center'
+    overflow: 'hidden'
   },
   buttonDisabled: {
     opacity: 0.95
@@ -403,48 +190,139 @@ const styles = StyleSheet.create({
   buttonPressed: {
     transform: [{ scale: 0.98 }]
   },
-  gradientBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '100%',
-    gap: 10
-  },
   buttonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700'
   },
-  securityText: {
-    fontSize: 12,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 18,
-    marginTop: 'auto',
-    paddingHorizontal: 20
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderColor: 'rgba(24, 95, 165, 0.05)',
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    elevation: 5,
+    marginBottom: 40,
+    padding: 20,
+    shadowColor: '#185FA5',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.05,
+    shadowRadius: 20
   },
-  orDividerRow: {
-    flexDirection: 'row',
+  code: {
+    color: '#1A1A18',
+    fontSize: 16,
+    fontWeight: '600'
+  },
+  container: { 
+    backgroundColor: '#FFFFFF', 
+    flex: 1 
+  },
+  countryCode: {
     alignItems: 'center',
-    marginVertical: 16,
-    gap: 8
+    flexDirection: 'row',
   },
-  orLine: {
+  divider: {
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    height: 24,
+    marginHorizontal: 12,
+    width: 1
+  },
+  errorBox: {
+    alignItems: 'center',
+    backgroundColor: colors.errorLight,
+    borderColor: 'rgba(163, 45, 45, 0.1)',
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 14,
+    padding: 12
+  },
+  errorText: {
+    color: colors.error,
     flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(0,0,0,0.08)'
+    fontSize: 13,
+    fontWeight: '500'
   },
-  orText: {
+  flag: {
+    fontSize: 18,
+    marginRight: 6
+  },
+  gradientBtn: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+    height: '100%',
+    justifyContent: 'center'
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 32,
+    marginTop: 10
+  },
+  input: {
+    color: '#1A1A18',
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '600',
+    letterSpacing: 1
+  },
+  inputLabel: {
+    color: colors.primary,
     fontSize: 12,
     fontWeight: '700',
-    color: colors.textMuted,
-    letterSpacing: 0.5
+    letterSpacing: 0.5,
+    marginBottom: 8,
+    textTransform: 'uppercase'
   },
-  demoButton: {
-    height: 56,
+  inputWrapper: {
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    borderColor: 'rgba(24, 95, 165, 0.15)',
     borderRadius: borderRadius.lg,
-    overflow: 'hidden',
-    justifyContent: 'center'
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    height: 58,
+    paddingHorizontal: 16
+  },
+  inputWrapperError: {
+    borderColor: colors.error
+  },
+  inputWrapperFocused: {
+    backgroundColor: '#FFFFFF',
+    borderColor: colors.primary
+  },
+  scrollContainer: { 
+    flexGrow: 1, 
+    justifyContent: 'space-between', 
+    paddingBottom: 24,
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40
+  },
+  securityText: {
+    color: colors.textMuted,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 'auto',
+    paddingHorizontal: 20,
+    textAlign: 'center'
+  },
+  subtitle: { 
+    color: '#5F5E5A', 
+    fontSize: 14, 
+    lineHeight: 21, 
+    paddingHorizontal: 12,
+    textAlign: 'center'
+  },
+  successIcon: {
+    marginLeft: 8
+  },
+  title: { 
+    color: '#1A1A18', 
+    fontSize: 26, 
+    fontWeight: '800',
+    marginBottom: 12,
+    textAlign: 'center'
   }
 });
 

@@ -13,14 +13,17 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList as OriginalFlashList } from '@shopify/flash-list';
 import { useProducts, useCategories } from '@/hooks/useProducts';
+import type { StoreProduct } from '@/api/products';
 import { useCartStore } from '@/stores/cartStore';
 import ProductCard from '@/components/product/ProductCard';
 import HeroBanner from '@/components/home/HeroBanner';
 import DiscountCarousel from '@/components/home/DiscountCarousel';
-import { ProductCardSkeleton } from '@/components/ui/Skeleton';
+import FlashSaleBanner from '@/components/sales/FlashSaleBanner';
+import { ProductCardSkeleton } from '@/components/skeletons/ProductCardSkeleton';
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/config';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const FlashList = OriginalFlashList as any;
 
 export default function HomeScreen() {
@@ -84,7 +87,7 @@ export default function HomeScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { onRefresh().catch(() => {}); }} tintColor={colors.primary} />}
         contentContainerStyle={{ paddingBottom: 40 }}
       >
         {/* Tappable Search Bar */}
@@ -94,7 +97,7 @@ export default function HomeScreen() {
           activeOpacity={0.8}
         >
           <Ionicons name="search-outline" size={20} color={colors.textMuted} />
-          <Text style={styles.searchPlaceholder}>Search iPhone, laptops, headphones...</Text>
+          <Text style={styles.searchPlaceholder}>Search steel, pipes, TMT bars...</Text>
         </TouchableOpacity>
 
         {/* Hero banner */}
@@ -102,6 +105,9 @@ export default function HomeScreen() {
 
         {/* Exclusive discount carousel */}
         <DiscountCarousel />
+
+        {/* Flash Sale Banner */}
+        <FlashSaleBanner />
 
         {/* Category horizontal scroll pills */}
         <View style={styles.categoryContainer}>
@@ -153,12 +159,12 @@ export default function HomeScreen() {
                 estimatedItemSize={170}
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ paddingHorizontal: spacing.lg }}
-                renderItem={({ item }: { item: any }) => (
+                renderItem={({ item }: { item: StoreProduct }) => (
                   <View style={styles.cardWrapper}>
                     <ProductCard {...item} />
                   </View>
                 )}
-                keyExtractor={(item: any) => item._id}
+                keyExtractor={(item: StoreProduct) => item._id}
               />
             </View>
           )}
@@ -189,12 +195,12 @@ export default function HomeScreen() {
                 estimatedItemSize={170}
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ paddingHorizontal: spacing.lg }}
-                renderItem={({ item }: { item: any }) => (
+                renderItem={({ item }: { item: StoreProduct }) => (
                   <View style={styles.cardWrapper}>
                     <ProductCard {...item} />
                   </View>
                 )}
-                keyExtractor={(item: any) => item._id}
+                keyExtractor={(item: StoreProduct) => item._id}
               />
             </View>
           )}
@@ -220,12 +226,12 @@ export default function HomeScreen() {
                 data={allProducts}
                 numColumns={2}
                 estimatedItemSize={260}
-                renderItem={({ item }: { item: any }) => (
+                renderItem={({ item }: { item: StoreProduct }) => (
                   <View style={styles.gridItem}>
                     <ProductCard {...item} />
                   </View>
                 )}
-                keyExtractor={(item: any) => item._id}
+                keyExtractor={(item: StoreProduct) => item._id}
                 scrollEnabled={false}
               />
             </View>
@@ -237,151 +243,151 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.surface,
-  },
   brandContainer: {
     flexDirection: 'column',
   },
-  brandTitle: {
-    fontSize: 20,
-    fontWeight: '900',
-    color: colors.primary,
-    letterSpacing: 0.5,
-  },
   brandSubtitle: {
+    color: colors.textMuted,
     fontSize: 9,
     fontWeight: '700',
-    color: colors.textMuted,
     letterSpacing: 2,
     marginTop: -2,
   },
-  headerRight: {
-    flexDirection: 'row',
-    gap: 8,
+  brandTitle: {
+    color: colors.primary,
+    fontSize: 20,
+    fontWeight: '900',
+    letterSpacing: 0.5,
   },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
+  cardSkeletonWidth: {
+    width: 170,
+  },
+  cardWrapper: {
+    marginRight: 12,
+    width: 170,
   },
   cartBadge: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
+    alignItems: 'center',
     backgroundColor: colors.error,
     borderRadius: 99,
-    minWidth: 16,
     height: 16,
-    alignItems: 'center',
     justifyContent: 'center',
+    minWidth: 16,
     paddingHorizontal: 3,
+    position: 'absolute',
+    right: -2,
+    top: -2,
   },
   cartBadgeText: {
     color: colors.white,
     fontSize: 8,
     fontWeight: '900',
   },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.md,
-    borderRadius: 14,
-    paddingHorizontal: spacing.lg,
-    height: 50,
-    gap: 10,
-  },
-  searchPlaceholder: {
-    fontSize: 14,
-    color: colors.textMuted,
-    fontWeight: '500',
-  },
   categoryContainer: {
-    marginTop: spacing.lg,
     marginBottom: spacing.xs,
-  },
-  categoryScroll: {
-    paddingHorizontal: spacing.lg,
-    gap: 8,
+    marginTop: spacing.lg,
   },
   categoryPill: {
+    backgroundColor: colors.surface,
+    borderRadius: 99,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 99,
-    backgroundColor: colors.surface,
   },
   categoryPillActive: {
     backgroundColor: colors.primary,
   },
+  categoryScroll: {
+    gap: 8,
+    paddingHorizontal: spacing.lg,
+  },
   categoryText: {
-    fontSize: 13,
     color: colors.textSecondary,
+    fontSize: 13,
     fontWeight: '600',
   },
   categoryTextActive: {
     color: colors.white,
   },
-  section: {
-    marginTop: spacing.xl,
-  },
-  sectionHeader: {
+  grid: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: colors.text,
-  },
-  seeAllText: {
-    fontSize: 13,
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  skeletonList: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing.lg,
-    gap: 12,
-  },
-  cardSkeletonWidth: {
-    width: 170,
-  },
-  cardWrapper: {
-    width: 170,
-    marginRight: 12,
   },
   gridContainer: {
     minHeight: 300,
     paddingHorizontal: spacing.lg - 4,
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: spacing.lg,
-    justifyContent: 'space-between',
-  },
   gridItem: {
     flex: 1,
-    marginHorizontal: 4,
     marginBottom: spacing.lg,
+    marginHorizontal: 4,
+  },
+  header: {
+    alignItems: 'center',
+    borderBottomColor: colors.surface,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  headerRight: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  iconBtn: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 20,
+    height: 40,
+    justifyContent: 'center',
+    position: 'relative',
+    width: 40,
+  },
+  safe: {
+    backgroundColor: colors.background,
+    flex: 1,
+  },
+  searchBar: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 14,
+    flexDirection: 'row',
+    gap: 10,
+    height: 50,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  searchPlaceholder: {
+    color: colors.textMuted,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  section: {
+    marginTop: spacing.xl,
+  },
+  sectionHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  sectionTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  seeAllText: {
+    color: colors.primary,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  skeletonList: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: spacing.lg,
   },
 });

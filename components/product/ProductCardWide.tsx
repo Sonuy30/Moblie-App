@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useCartStore } from '@/stores/cartStore';
 import { useWishlistStore } from '@/stores/wishlistStore';
 import StarRating from './StarRating';
+import SaleBadge from '@/components/sales/SaleBadge';
 import { formatINR } from '@/utils/currency';
 import { colors } from '@/constants/colors';
 import { borderRadius, spacing } from '@/constants/config';
@@ -32,7 +33,7 @@ export default function ProductCardWide(props: ProductCardWideProps) {
 
   return (
     <TouchableOpacity
-      onPress={() => router.push(`/product/${props.slug}` as any)}
+      onPress={() => router.push(`/product/${props.slug}`)}
       activeOpacity={0.7}
       style={styles.card}
     >
@@ -44,9 +45,7 @@ export default function ProductCardWide(props: ProductCardWideProps) {
           transition={200}
         />
         {props.discount && props.discount > 0 ? (
-          <View style={styles.discountBadge}>
-            <Text style={styles.discountText}>{props.discount}% OFF</Text>
-          </View>
+          <SaleBadge discount={props.discount} style={styles.discountBadgePosition} isFlash={false} />
         ) : null}
       </View>
 
@@ -83,7 +82,7 @@ export default function ProductCardWide(props: ProductCardWideProps) {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => toggle(props._id)} style={styles.heartBtn}>
+          <TouchableOpacity onPress={() => { void toggle(props._id); }} style={styles.heartBtn}>
             <Ionicons
               name={isWishlisted ? 'heart' : 'heart-outline'}
               size={20}
@@ -97,95 +96,86 @@ export default function ProductCardWide(props: ProductCardWideProps) {
 }
 
 const styles = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    overflow: 'hidden',
-    marginBottom: spacing.md,
-    shadowColor: colors.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  imageContainer: {
-    width: 120,
-    height: 140,
-    backgroundColor: colors.surface,
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  discountBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: colors.discount,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: borderRadius.sm,
-  },
-  discountText: {
-    color: colors.white,
-    fontSize: 9,
-    fontWeight: '700',
-  },
-  info: {
-    flex: 1,
-    padding: spacing.md,
-    justifyContent: 'space-between',
-  },
-  name: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.text,
-    lineHeight: 20,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 4,
-  },
-  price: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  mrp: {
-    fontSize: 12,
-    color: colors.textMuted,
-    textDecorationLine: 'line-through',
-  },
   actions: {
-    flexDirection: 'row',
     alignItems: 'center',
+    flexDirection: 'row',
     gap: 8,
     marginTop: 8,
   },
   addToCart: {
-    flex: 1,
-    backgroundColor: colors.primaryLight,
-    paddingVertical: 8,
-    borderRadius: borderRadius.sm,
     alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    borderRadius: borderRadius.sm,
+    flex: 1,
+    paddingVertical: 8,
+  },
+  addToCartText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  card: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    elevation: 3,
+    flexDirection: 'row',
+    marginBottom: spacing.md,
+    overflow: 'hidden',
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
   },
   disabledBtn: {
     backgroundColor: colors.errorLight,
   },
-  addToCartText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.primary,
+  discountBadgePosition: {
+    left: 8,
+    position: 'absolute',
+    top: 8,
   },
   heartBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.surface,
     alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    height: 36,
     justifyContent: 'center',
+    width: 36,
+  },
+  image: {
+    height: '100%',
+    width: '100%',
+  },
+  imageContainer: {
+    backgroundColor: colors.surface,
+    height: 140,
+    width: 120,
+  },
+  info: {
+    flex: 1,
+    justifyContent: 'space-between',
+    padding: spacing.md,
+  },
+  mrp: {
+    color: colors.textMuted,
+    fontSize: 12,
+    textDecorationLine: 'line-through',
+  },
+  name: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '500',
+    lineHeight: 20,
+  },
+  price: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  priceRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    marginTop: 4,
   },
 });

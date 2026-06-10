@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, Alert } from 'react-native';
-import { updateDeliveryStatus, DeliveryStatus } from '@/api/delivery';
+import { updateDeliveryStatus, type DeliveryStatus } from '@/api/delivery';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface Props {
@@ -70,29 +70,11 @@ export default function StatusUpdateSheet({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 24,
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
-  },
   button: {
-    backgroundColor: '#185FA5',
-    padding: 16,
-    borderRadius: 8,
     alignItems: 'center',
+    backgroundColor: '#185FA5',
+    borderRadius: 8,
+    padding: 16,
   },
   buttonDisabled: {
     opacity: 0.7,
@@ -100,5 +82,23 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontWeight: 'bold',
+  },
+  container: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    padding: 24,
+  },
+  input: {
+    borderColor: '#ddd',
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 16,
+    padding: 16,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
   },
 });

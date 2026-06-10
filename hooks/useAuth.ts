@@ -24,7 +24,7 @@ export const useAuth = () => {
         _id: user._id || '',
         fullName: user.fullName || '',
         phone: user.phone || phone,
-        role: (user.role || 'customer') as AuthUser['role'],
+        role: (user.role || 'customer'),
         companyId: user.companyId || '',
         companyName: user.companyName || '',
       };
@@ -33,7 +33,7 @@ export const useAuth = () => {
     } catch (err) {
       return { success: false, error: getErrorMessage(err) };
     }
-  }, []);
+  }, [store]);
 
   // Legacy register — not supported in OTP-only flow
   const register = useCallback(async (_data: {
@@ -42,6 +42,7 @@ export const useAuth = () => {
     phone: string;
     password: string;
   }) => {
+    await Promise.resolve();
     return {
       success: false,
       error: 'Registration is done via invite QR code. Please scan the QR from your supplier.',

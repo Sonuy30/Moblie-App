@@ -12,7 +12,7 @@ import { ProductCardSkeleton } from '@/components/ui/Skeleton';
 import EmptyState from '@/components/ui/EmptyState';
 import { colors } from '@/constants/colors';
 import { spacing, borderRadius } from '@/constants/config';
-import { ProductFilters } from '@/api/products';
+import { type ProductFilters } from '@/api/products';
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -56,7 +56,7 @@ export default function ExploreScreen() {
     search: search || undefined,
     category: params.category || undefined,
     featured: params.featured === 'true' ? true : undefined,
-    sort: SORT_OPTIONS[sortIndex].value as any,
+    sort: SORT_OPTIONS[sortIndex].value,
   };
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading, isError, refetch } = useInfiniteProducts(filters);
@@ -160,26 +160,26 @@ export default function ExploreScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  searchRow: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
-  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: 12, paddingHorizontal: spacing.lg, height: 48, gap: 10 },
-  searchInput: { flex: 1, fontSize: 15, color: colors.text },
-  chipRow: { flexDirection: 'row', paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: borderRadius.full, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
+  chip: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: borderRadius.full, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 8 },
   chipActive: { backgroundColor: colors.primaryLight, borderColor: colors.primary },
-  chipText: { fontSize: 12, fontWeight: '500', color: colors.textSecondary },
+  chipRow: { flexDirection: 'row', gap: 8, paddingHorizontal: spacing.lg, paddingTop: spacing.md },
+  chipText: { color: colors.textSecondary, fontSize: 12, fontWeight: '500' },
   chipTextActive: { color: colors.primary, fontWeight: '600' },
-  controlRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  resultCount: { fontSize: 13, color: colors.textSecondary },
-  controlRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  sortBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  sortText: { fontSize: 12, fontWeight: '600', color: colors.primary },
-  viewBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  sortDropdown: { position: 'absolute', top: 140, right: spacing.lg, backgroundColor: colors.white, borderRadius: borderRadius.md, padding: 8, zIndex: 100, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 8, width: 200 },
-  sortOption: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 12, borderRadius: 6 },
+  controlRight: { alignItems: 'center', flexDirection: 'row', gap: 8 },
+  controlRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', paddingHorizontal: spacing.lg },
+  gridItem: { marginBottom: spacing.lg, width: '48%' },
+  resultCount: { color: colors.textSecondary, fontSize: 13 },
+  safe: { backgroundColor: colors.background, flex: 1 },
+  searchBar: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: 12, flexDirection: 'row', gap: 10, height: 48, paddingHorizontal: spacing.lg },
+  searchInput: { color: colors.text, flex: 1, fontSize: 15 },
+  searchRow: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
+  sortBtn: { alignItems: 'center', flexDirection: 'row', gap: 4 },
+  sortDropdown: { backgroundColor: colors.white, borderRadius: borderRadius.md, elevation: 8, padding: 8, position: 'absolute', right: spacing.lg, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, top: 140, width: 200, zIndex: 100 },
+  sortOption: { alignItems: 'center', borderRadius: 6, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 10 },
   sortOptionActive: { backgroundColor: colors.primaryLight },
-  sortOptionText: { fontSize: 14, color: colors.text },
+  sortOptionText: { color: colors.text, fontSize: 14 },
   sortOptionTextActive: { color: colors.primary, fontWeight: '600' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing.lg, justifyContent: 'space-between' },
-  gridItem: { width: '48%', marginBottom: spacing.lg },
+  sortText: { color: colors.primary, fontSize: 12, fontWeight: '600' },
+  viewBtn: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: 18, height: 36, justifyContent: 'center', width: 36 },
 });

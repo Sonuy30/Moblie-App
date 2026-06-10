@@ -42,32 +42,32 @@ export default function EmptyState({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
     alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
-    padding: spacing['3xl'],
     minHeight: 300,
+    padding: spacing['3xl'],
   },
   iconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: colors.surface,
     alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 60,
+    height: 120,
     justifyContent: 'center',
     marginBottom: spacing['2xl'],
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    textAlign: 'center',
+    width: 120,
   },
   subtitle: {
-    fontSize: 14,
     color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: spacing.sm,
+    fontSize: 14,
     lineHeight: 20,
+    marginTop: spacing.sm,
+    textAlign: 'center',
+  },
+  title: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });

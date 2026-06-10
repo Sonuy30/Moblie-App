@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,12 +11,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { postReview } from '@/api/reviews';
 import { colors } from '@/constants/colors';
 import { borderRadius, spacing } from '@/constants/config';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 
 interface WriteReviewModalProps {
   visible: boolean;
@@ -34,6 +36,7 @@ interface WriteReviewModalProps {
     createdAt: string;
   }) => void;
   userName: string;
+  userId?: string;
 }
 
 const STAR_LABELS = ['Terrible', 'Poor', 'Average', 'Good', 'Excellent'];
@@ -45,14 +48,16 @@ export default function WriteReviewModal({
   productName,
   onReviewSubmitted,
   userName,
+  userId,
 }: WriteReviewModalProps) {
+  const { isOnline } = useNetworkStatus();
   const [rating, setRating] = useState(0);
   const [hoveredStar, setHoveredStar] = useState(0);
   const [title, setTitle] = useState('');
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const checkScale = useRef(new Animated.Value(0)).current;
+  const [checkScale] = useState(() => new Animated.Value(0));
 
   const activeStar = hoveredStar || rating;
 
@@ -72,6 +77,13 @@ export default function WriteReviewModal({
   };
 
   const handleSubmit = async () => {
+    if (!isOnline) {
+      Alert.alert(
+        'Offline Mode',
+        'Submitting reviews is not available while you are offline. Please check your internet connection.'
+      );
+      return;
+    }
     if (rating === 0) {
       Toast.show({ type: 'error', text1: 'Please select a star rating', position: 'bottom' });
       return;
@@ -83,29 +95,35 @@ export default function WriteReviewModal({
 
     setSubmitting(true);
     try {
-      await postReview({ productId, rating, title: title.trim() || undefined, comment: comment.trim() });
+      const savedReview = await postReview({
+        productId,
+        rating,
+        title: title.trim() || undefined,
+        comment: comment.trim(),
+        userName,
+        userId: userId || 'me',
+      });
 
       // Animate success check
       setSubmitted(true);
       Animated.spring(checkScale, { toValue: 1, useNativeDriver: true, friction: 5 }).start();
 
-      // Notify parent to add the review immediately (optimistic)
+      // Notify parent with the persisted review object
       onReviewSubmitted({
-        _id: `rev-new-${Date.now()}`,
-        userName,
-        userId: 'me',
+        _id: savedReview._id || `rev-new-${Date.now()}`,
+        userName: savedReview.userName || userName,
+        userId: savedReview.userId || userId || 'me',
         productId,
         rating,
         title: title.trim() || undefined,
         comment: comment.trim(),
-        createdAt: new Date().toISOString(),
+        createdAt: savedReview.createdAt || new Date().toISOString(),
       });
 
       setTimeout(() => {
         handleClose();
-        Toast.show({ type: 'success', text1: '🙏 Thank you for your feedback!', text2: 'Your review has been submitted.', position: 'bottom' });
       }, 1600);
-    } catch (e: any) {
+    } catch {
       Toast.show({ type: 'error', text1: 'Failed to submit review', text2: 'Please try again.', position: 'bottom' });
     } finally {
       setSubmitting(false);
@@ -218,14 +236,14 @@ export default function WriteReviewModal({
               <View style={styles.tipsBox}>
                 <Ionicons name="bulb-outline" size={14} color={colors.primary} />
                 <Text style={styles.tipsText}>
-                  Mention quality, delivery speed, and whether you'd order again.
+                  {"Mention quality, delivery speed, and whether you'd order again."}
                 </Text>
               </View>
 
               {/* Submit */}
               <TouchableOpacity
                 style={[styles.submitBtn, (submitting || rating === 0) && styles.submitBtnDisabled]}
-                onPress={handleSubmit}
+                onPress={() => { void handleSubmit(); }}
                 disabled={submitting || rating === 0}
                 activeOpacity={0.85}
               >
@@ -249,201 +267,198 @@ export default function WriteReviewModal({
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.55)',
   },
-  sheet: {
-    backgroundColor: colors.white,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '90%',
-    paddingHorizontal: spacing.lg,
-    paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 20,
+  charCount: {
+    color: colors.textMuted,
+    fontSize: 11,
+    marginTop: 4,
+    textAlign: 'right',
   },
-  handle: {
-    width: 40,
-    height: 4,
+  checkCircle: {
+    marginBottom: 8,
+  },
+  closeBtn: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 18,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
+  commentInput: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    borderWidth: 1.5,
+    color: colors.text,
+    fontSize: 14,
+    lineHeight: 22,
+    minHeight: 120,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 12,
+  },
+  dot: {
     backgroundColor: colors.border,
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 16,
+    borderRadius: 3,
+    height: 6,
+    width: 6,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+  dotActive: {
+    backgroundColor: colors.star,
+    width: 18,
+  },
+  fieldLabel: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  fieldSection: {
     marginBottom: spacing.lg,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: colors.text,
+  handle: {
+    alignSelf: 'center',
+    backgroundColor: colors.border,
+    borderRadius: 2,
+    height: 4,
+    marginBottom: 16,
+    width: 40,
+  },
+  header: {
+    alignItems: 'flex-start',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: spacing.lg,
   },
   headerSub: {
-    fontSize: 13,
     color: colors.textMuted,
+    fontSize: 13,
     marginTop: 2,
     maxWidth: 240,
   },
-  closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
+  headerTitle: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: '800',
   },
-  // Star picker
-  starSection: {
-    alignItems: 'center',
-    paddingVertical: spacing.xl,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    marginBottom: spacing.lg,
+  optional: {
+    color: colors.textMuted,
+    fontWeight: '500',
   },
-  starLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.textSecondary,
-    marginBottom: 12,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  starRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  starBtn: {
-    padding: 4,
+  overlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
   },
   ratingDots: {
     flexDirection: 'row',
     gap: 6,
     marginTop: 12,
   },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.border,
-  },
-  dotActive: {
-    backgroundColor: colors.star,
-    width: 18,
-  },
-  // Fields
-  fieldSection: {
-    marginBottom: spacing.lg,
-  },
-  fieldLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 8,
-  },
-  optional: {
-    fontWeight: '500',
-    color: colors.textMuted,
-  },
   required: {
     color: colors.error,
   },
-  titleInput: {
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: colors.text,
-    backgroundColor: colors.surface,
+  sheet: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    elevation: 20,
+    maxHeight: '90%',
+    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
+    paddingHorizontal: spacing.lg,
+    paddingTop: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
   },
-  commentInput: {
-    borderWidth: 1.5,
-    borderColor: colors.border,
-    borderRadius: borderRadius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 12,
+  starBtn: {
+    padding: 4,
+  },
+  starLabel: {
+    color: colors.textSecondary,
     fontSize: 14,
-    color: colors.text,
-    minHeight: 120,
-    backgroundColor: colors.surface,
-    lineHeight: 22,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    marginBottom: 12,
+    textTransform: 'uppercase',
   },
-  charCount: {
-    fontSize: 11,
-    color: colors.textMuted,
-    textAlign: 'right',
-    marginTop: 4,
-  },
-  tipsBox: {
+  starRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     gap: 8,
-    backgroundColor: colors.primaryLight,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    borderRadius: borderRadius.md,
-    marginBottom: spacing.lg,
   },
-  tipsText: {
-    flex: 1,
-    fontSize: 12,
-    color: colors.primary,
-    fontWeight: '600',
-    lineHeight: 18,
+  starSection: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    marginBottom: spacing.lg,
+    paddingVertical: spacing.xl,
   },
   submitBtn: {
+    alignItems: 'center',
     backgroundColor: colors.primary,
     borderRadius: borderRadius.lg,
-    height: 52,
+    elevation: 6,
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
     gap: 10,
+    height: 52,
+    justifyContent: 'center',
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 6,
   },
   submitBtnDisabled: {
+    elevation: 0,
     opacity: 0.55,
     shadowOpacity: 0,
-    elevation: 0,
   },
   submitText: {
+    color: colors.white,
     fontSize: 16,
     fontWeight: '800',
-    color: colors.white,
   },
-  // Success
   successBox: {
     alignItems: 'center',
-    paddingVertical: 40,
     gap: 12,
-  },
-  checkCircle: {
-    marginBottom: 8,
-  },
-  successTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: colors.text,
+    paddingVertical: 40,
   },
   successSub: {
-    fontSize: 14,
     color: colors.textSecondary,
+    fontSize: 14,
+  },
+  successTitle: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '800',
+  },
+  tipsBox: {
+    alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    borderRadius: borderRadius.md,
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 10,
+  },
+  tipsText: {
+    color: colors.primary,
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    lineHeight: 18,
+  },
+  titleInput: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    borderWidth: 1.5,
+    color: colors.text,
+    fontSize: 15,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 12,
   },
 });

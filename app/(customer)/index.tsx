@@ -62,7 +62,7 @@ export default function HomeScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
       >
         {/* Search bar */}
-        <TouchableOpacity style={styles.searchBar} onPress={() => router.push('/search' as any)} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.searchBar} onPress={() => router.push('/search')} activeOpacity={0.7}>
           <Ionicons name="search-outline" size={20} color={colors.textMuted} />
           <Text style={styles.searchPlaceholder}>Search for products...</Text>
         </TouchableOpacity>
@@ -80,7 +80,7 @@ export default function HomeScreen() {
 
         {/* Featured */}
         <View style={styles.section}>
-          <SectionHeader title="Featured" onSeeAll={() => router.push({ pathname: '/(customer)/explore', params: { featured: 'true' } } as any)} />
+          <SectionHeader title="Featured" onSeeAll={() => router.push({ pathname: '/(customer)/explore', params: { featured: 'true' } })} />
           {loadFeat ? (
             <FlatList data={[1,2,3]} horizontal showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.hList} keyExtractor={(i) => i.toString()}
@@ -100,7 +100,7 @@ export default function HomeScreen() {
 
         {/* New Arrivals */}
         <View style={styles.section}>
-          <SectionHeader title="New Arrivals" onSeeAll={() => router.push({ pathname: '/(customer)/explore', params: { sort: 'newest' } } as any)} />
+          <SectionHeader title="New Arrivals" onSeeAll={() => router.push({ pathname: '/(customer)/explore', params: { sort: 'newest' } })} />
           {loadNew ? (
             <FlatList data={[1,2,3]} horizontal showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.hList} keyExtractor={(i) => i.toString()}
@@ -143,18 +143,18 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  logo: { fontSize: 22, fontWeight: '900', color: colors.primary, letterSpacing: 2 },
-  logoSub: { fontSize: 10, fontWeight: '600', color: colors.textMuted, letterSpacing: 4, marginTop: -2 },
-  headerRight: { flexDirection: 'row', gap: 8 },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  cartBadge: { position: 'absolute', top: -2, right: -2, backgroundColor: colors.error, borderRadius: 99, minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3 },
+  cartBadge: { alignItems: 'center', backgroundColor: colors.error, borderRadius: 99, height: 16, justifyContent: 'center', minWidth: 16, paddingHorizontal: 3, position: 'absolute', right: -2, top: -2 },
   cartBadgeText: { color: colors.white, fontSize: 9, fontWeight: '700' },
-  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, marginHorizontal: spacing.lg, borderRadius: 12, paddingHorizontal: spacing.lg, height: 48, gap: 10 },
-  searchPlaceholder: { fontSize: 14, color: colors.textMuted },
-  section: { marginTop: spacing['2xl'] },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', paddingHorizontal: spacing.lg },
+  gridItem: { marginBottom: spacing.lg, width: '48%' },
   hList: { paddingHorizontal: spacing.lg },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing.lg, justifyContent: 'space-between' },
-  gridItem: { width: '48%', marginBottom: spacing.lg },
+  header: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  headerRight: { flexDirection: 'row', gap: 8 },
+  iconBtn: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: 20, height: 40, justifyContent: 'center', width: 40 },
+  logo: { color: colors.primary, fontSize: 22, fontWeight: '900', letterSpacing: 2 },
+  logoSub: { color: colors.textMuted, fontSize: 10, fontWeight: '600', letterSpacing: 4, marginTop: -2 },
+  safe: { backgroundColor: colors.background, flex: 1 },
+  searchBar: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: 12, flexDirection: 'row', gap: 10, height: 48, marginHorizontal: spacing.lg, paddingHorizontal: spacing.lg },
+  searchPlaceholder: { color: colors.textMuted, fontSize: 14 },
+  section: { marginTop: spacing['2xl'] },
 });

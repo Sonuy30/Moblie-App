@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Linking, Modal, Alert, RefreshControl, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { fetchAssignedDeliveries, DeliveryOrder } from '@/api/delivery';
+import { fetchAssignedDeliveries, type DeliveryOrder } from '@/api/delivery';
 import { useQuery } from '@tanstack/react-query';
 import { FlashList } from '@shopify/flash-list';
 import StatusUpdateSheet from '@/components/delivery/StatusUpdateSheet';
@@ -200,52 +200,52 @@ export default function DeliveryDashboard() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.surface },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.lg, paddingTop: spacing.md },
-  greeting: { fontSize: 22, fontWeight: '800', color: colors.text },
-  subtitle: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
-  syncBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.border },
-  
-  statsContainer: { flexDirection: 'row', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  statCard: { flex: 1, padding: spacing.md, borderRadius: borderRadius.lg, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.02, shadowRadius: 2, elevation: 1 },
-  statNum: { fontSize: 20, fontWeight: '800' },
-  statLabel: { fontSize: 11, fontWeight: '600', color: colors.textSecondary, marginTop: 2 },
-
-  list: { paddingHorizontal: spacing.lg, paddingBottom: 100 },
-  card: { backgroundColor: colors.white, borderRadius: borderRadius.lg, padding: spacing.lg, marginBottom: spacing.lg, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 3, borderWidth: 1, borderColor: 'rgba(0,0,0,0.02)' },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  orderNumRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  orderNum: { fontSize: 16, fontWeight: '800', color: colors.text },
-  statusBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: borderRadius.full },
-  statusText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
-
-  cardBody: { gap: 10, marginBottom: 16 },
-  customerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  customerName: { fontSize: 15, fontWeight: '700', color: colors.text },
-  customerPhone: { fontSize: 13, color: colors.textSecondary, marginTop: 1 },
-  callBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primaryLight, alignItems: 'center', justifyContent: 'center' },
-  
-  divider: { height: 1, backgroundColor: colors.surface, marginVertical: 2 },
-  
-  addressRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12 },
-  addressTextCol: { flex: 1, flexDirection: 'row', gap: 6 },
-  locIcon: { marginTop: 2 },
-  addressText: { flex: 1, fontSize: 13, color: colors.textSecondary, lineHeight: 18 },
-  directionBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.primaryLight, paddingHorizontal: 10, paddingVertical: 6, borderRadius: borderRadius.sm },
-  directionText: { fontSize: 12, fontWeight: '600', color: colors.primary },
-
-  itemsRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  itemsText: { flex: 1, fontSize: 13, color: colors.textSecondary },
-
-  actionBtn: { backgroundColor: colors.primary, height: 44, borderRadius: borderRadius.md, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  actionBtn: { alignItems: 'center', backgroundColor: colors.primary, borderRadius: borderRadius.md, flexDirection: 'row', gap: 8, height: 44, justifyContent: 'center' },
   actionBtnText: { color: colors.white, fontSize: 14, fontWeight: '700' },
+  addressRow: { alignItems: 'center', flexDirection: 'row', gap: 12, justifyContent: 'space-between' },
+  addressText: { color: colors.textSecondary, flex: 1, fontSize: 13, lineHeight: 18 },
+  addressTextCol: { flex: 1, flexDirection: 'row', gap: 6 },
+  
+  callBtn: { alignItems: 'center', backgroundColor: colors.primaryLight, borderRadius: 18, height: 36, justifyContent: 'center', width: 36 },
+  card: { backgroundColor: colors.white, borderColor: 'rgba(0,0,0,0.02)', borderRadius: borderRadius.lg, borderWidth: 1, elevation: 3, marginBottom: spacing.lg, padding: spacing.lg, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 },
+  cardBody: { gap: 10, marginBottom: 16 },
+  cardHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
 
-  empty: { alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: 12 },
-  emptyTitle: { fontSize: 20, fontWeight: '800', color: colors.text },
-  emptySub: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', paddingHorizontal: spacing['2xl'] },
+  customerName: { color: colors.text, fontSize: 15, fontWeight: '700' },
+  customerPhone: { color: colors.textSecondary, fontSize: 13, marginTop: 1 },
+  customerRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  directionBtn: { alignItems: 'center', backgroundColor: colors.primaryLight, borderRadius: borderRadius.sm, flexDirection: 'row', gap: 4, paddingHorizontal: 10, paddingVertical: 6 },
+  directionText: { color: colors.primary, fontSize: 12, fontWeight: '600' },
+  divider: { backgroundColor: colors.surface, height: 1, marginVertical: 2 },
+  empty: { alignItems: 'center', gap: 12, justifyContent: 'center', paddingTop: 80 },
 
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  emptySub: { color: colors.textSecondary, fontSize: 14, paddingHorizontal: spacing['2xl'], textAlign: 'center' },
+  emptyTitle: { color: colors.text, fontSize: 20, fontWeight: '800' },
+  greeting: { color: colors.text, fontSize: 22, fontWeight: '800' },
+  header: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingTop: spacing.md },
+  itemsRow: { alignItems: 'center', flexDirection: 'row', gap: 8 },
+  
+  itemsText: { color: colors.textSecondary, flex: 1, fontSize: 13 },
+  
+  list: { paddingBottom: 100, paddingHorizontal: spacing.lg },
+  locIcon: { marginTop: 2 },
   modalContent: { backgroundColor: colors.white, borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: spacing['3xl'] },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },
-  modalTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
+  modalHeader: { alignItems: 'center', borderBottomColor: colors.border, borderBottomWidth: 1, flexDirection: 'row', justifyContent: 'space-between', padding: spacing.lg },
+  modalOverlay: { backgroundColor: 'rgba(0,0,0,0.5)', flex: 1, justifyContent: 'flex-end' },
+  modalTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
+
+  orderNum: { color: colors.text, fontSize: 16, fontWeight: '800' },
+  orderNumRow: { alignItems: 'center', flexDirection: 'row', gap: 6 },
+
+  safe: { backgroundColor: colors.surface, flex: 1 },
+  statCard: { alignItems: 'center', borderRadius: borderRadius.lg, elevation: 1, flex: 1, padding: spacing.md, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.02, shadowRadius: 2 },
+
+  statLabel: { color: colors.textSecondary, fontSize: 11, fontWeight: '600', marginTop: 2 },
+  statNum: { fontSize: 20, fontWeight: '800' },
+  statsContainer: { flexDirection: 'row', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+
+  statusBadge: { borderRadius: borderRadius.full, paddingHorizontal: 10, paddingVertical: 4 },
+  statusText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.5 },
+  subtitle: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
+  syncBtn: { alignItems: 'center', backgroundColor: colors.white, borderColor: colors.border, borderRadius: 20, borderWidth: 1, height: 40, justifyContent: 'center', width: 40 },
 });

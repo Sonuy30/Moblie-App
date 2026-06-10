@@ -62,13 +62,54 @@ export default function RatingBreakdown({ avgRating, reviewCount, reviews }: Rat
 }
 
 const styles = StyleSheet.create({
-  container: {
+  barCount: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: '600',
+    textAlign: 'right',
+    width: 16,
+  },
+  barFill: {
+    backgroundColor: colors.star,
+    borderRadius: 3,
+    height: '100%',
+  },
+  barLabel: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'right',
+    width: 12,
+  },
+  barRow: {
+    alignItems: 'center',
     flexDirection: 'row',
+    gap: 5,
+  },
+  barTrack: {
+    backgroundColor: colors.border,
+    borderRadius: 3,
+    flex: 1,
+    height: 6,
+    overflow: 'hidden',
+  },
+  barsContainer: {
+    flex: 1,
+    gap: 5,
+  },
+  container: {
     alignItems: 'center',
     backgroundColor: colors.surface,
     borderRadius: borderRadius.lg,
-    padding: spacing.lg,
+    flexDirection: 'row',
     gap: spacing.lg,
+    padding: spacing.lg,
+  },
+  reviewCountText: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 4,
   },
   scoreBox: {
     alignItems: 'center',
@@ -83,46 +124,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 2,
     marginTop: 4,
-  },
-  reviewCountText: {
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 4,
-    fontWeight: '600',
-  },
-  barsContainer: {
-    flex: 1,
-    gap: 5,
-  },
-  barRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-  },
-  barLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.textSecondary,
-    width: 12,
-    textAlign: 'right',
-  },
-  barTrack: {
-    flex: 1,
-    height: 6,
-    backgroundColor: colors.border,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  barFill: {
-    height: '100%',
-    backgroundColor: colors.star,
-    borderRadius: 3,
-  },
-  barCount: {
-    fontSize: 11,
-    color: colors.textMuted,
-    width: 16,
-    textAlign: 'right',
-    fontWeight: '600',
   },
 });

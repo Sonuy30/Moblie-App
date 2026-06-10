@@ -36,7 +36,7 @@ export default function CategoryRow({ categories }: CategoryRowProps) {
       renderItem={({ item }) => (
         <TouchableOpacity
           style={styles.pill}
-          onPress={() => router.push(`/category/${encodeURIComponent(item)}` as any)}
+          onPress={() => router.push(`/category/${encodeURIComponent(item)}`)}
           activeOpacity={0.7}
         >
           <View style={styles.iconCircle}>
@@ -50,12 +50,12 @@ export default function CategoryRow({ categories }: CategoryRowProps) {
 }
 
 const styles = StyleSheet.create({
-  list: { paddingHorizontal: spacing.lg, gap: spacing.md },
-  pill: { alignItems: 'center', width: 76, gap: 6 },
   iconCircle: {
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center', backgroundColor: colors.primaryLight, borderRadius: 28,
+    height: 56,
+    justifyContent: 'center', width: 56,
   },
-  label: { fontSize: 11, fontWeight: '500', color: colors.text, textAlign: 'center' },
+  label: { color: colors.text, fontSize: 11, fontWeight: '500', textAlign: 'center' },
+  list: { gap: spacing.md, paddingHorizontal: spacing.lg },
+  pill: { alignItems: 'center', gap: 6, width: 76 },
 });

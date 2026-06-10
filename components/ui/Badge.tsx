@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, type ViewStyle } from 'react-native';
 import { colors } from '@/constants/colors';
 import { borderRadius } from '@/constants/config';
 
@@ -42,10 +42,27 @@ export function DotBadge({ count, style }: { count: number; style?: ViewStyle })
 
 const styles = StyleSheet.create({
   base: {
+    alignSelf: 'flex-start',
+    borderRadius: borderRadius.full,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: borderRadius.full,
-    alignSelf: 'flex-start',
+  },
+  dot: {
+    alignItems: 'center',
+    backgroundColor: colors.error,
+    borderRadius: 999,
+    height: 18,
+    justifyContent: 'center',
+    minWidth: 18,
+    paddingHorizontal: 4,
+    position: 'absolute',
+    right: -8,
+    top: -4,
+  },
+  dotText: {
+    color: colors.white,
+    fontSize: 10,
+    fontWeight: '700',
   },
   md: {
     paddingHorizontal: 12,
@@ -54,27 +71,10 @@ const styles = StyleSheet.create({
   text: {
     fontSize: 10,
     fontWeight: '700',
-    textTransform: 'uppercase',
     letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   textMd: {
     fontSize: 12,
-  },
-  dot: {
-    position: 'absolute',
-    top: -4,
-    right: -8,
-    backgroundColor: colors.error,
-    borderRadius: 999,
-    minWidth: 18,
-    height: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  dotText: {
-    color: colors.white,
-    fontSize: 10,
-    fontWeight: '700',
   },
 });

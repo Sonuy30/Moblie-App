@@ -57,7 +57,7 @@ const slides = [
 export default function WelcomeScreen() {
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
-  const progressAnim = useRef(new Animated.Value(0)).current;
+  const [progressAnim] = useState(() => new Animated.Value(0));
   const isLast = activeIndex === slides.length - 1;
 
   const animateProgress = (index: number) => {
@@ -176,56 +176,121 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
+  activeDot: {
+    backgroundColor: colors.primary,
+    width: 24,
   },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  buttons: {
+    gap: 14,
+    paddingBottom: 48,
     paddingHorizontal: spacing.xl,
-    paddingTop: 56,
-    paddingBottom: 12,
+  },
+  container: {
+    backgroundColor: '#FFFFFF',
+    flex: 1,
+  },
+  dot: {
+    borderRadius: 4,
+    height: 8,
+  },
+  dots: {
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'center',
+    paddingVertical: 20,
+  },
+  iconCircle: {
+    alignItems: 'center',
+    borderRadius: 80,
+    elevation: 6,
+    height: 160,
+    justifyContent: 'center',
+    marginBottom: 40,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    width: 160,
+  },
+  inactiveDot: {
+    backgroundColor: colors.border,
+    width: 8,
+  },
+  loginLink: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingVertical: 8,
+  },
+  loginLinkBold: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  loginLinkText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    fontWeight: '500',
   },
   logoRow: {
-    flexDirection: 'row',
     alignItems: 'center',
+    flexDirection: 'row',
     gap: 8,
   },
-  miniLogo: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   logoText: {
+    color: colors.primary,
     fontSize: 16,
     fontWeight: '800',
-    color: colors.primary,
   },
-  skipBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+  miniLogo: {
+    alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    borderRadius: 8,
+    height: 32,
+    justifyContent: 'center',
+    width: 32,
   },
-  skipText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontWeight: '600',
+  nextBtn: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+    height: 56,
+    justifyContent: 'center',
+  },
+  nextBtnWrapper: {
+    borderRadius: borderRadius.lg,
+    elevation: 5,
+    overflow: 'hidden',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  nextText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: '700',
   },
   progressBar: {
-    height: 3,
     backgroundColor: colors.surface,
-    marginHorizontal: spacing.xl,
     borderRadius: 2,
+    height: 3,
     marginBottom: 8,
+    marginHorizontal: spacing.xl,
   },
   progressFill: {
-    height: '100%',
     backgroundColor: colors.primary,
     borderRadius: 2,
+    height: '100%',
+  },
+  skipBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  skipText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    fontWeight: '600',
   },
   slide: {
     alignItems: 'center',
@@ -233,92 +298,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     paddingTop: 20,
   },
-  iconCircle: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 40,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 6,
-  },
-  slideTitle: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: 14,
-    lineHeight: 32,
-  },
   slideDesc: {
-    fontSize: 15,
     color: colors.textSecondary,
-    textAlign: 'center',
+    fontSize: 15,
     lineHeight: 22,
     paddingHorizontal: 8,
+    textAlign: 'center',
   },
-  dots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 20,
-  },
-  dot: {
-    height: 8,
-    borderRadius: 4,
-  },
-  activeDot: {
-    width: 24,
-    backgroundColor: colors.primary,
-  },
-  inactiveDot: {
-    width: 8,
-    backgroundColor: colors.border,
-  },
-  buttons: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: 48,
-    gap: 14,
-  },
-  nextBtnWrapper: {
-    borderRadius: borderRadius.lg,
-    overflow: 'hidden',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  nextBtn: {
-    height: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  nextText: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  loginLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 8,
-  },
-  loginLinkText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  loginLinkBold: {
-    fontSize: 14,
-    color: colors.primary,
+  slideTitle: {
+    color: colors.text,
+    fontSize: 26,
     fontWeight: '800',
+    lineHeight: 32,
+    marginBottom: 14,
+    textAlign: 'center',
+  },
+  topBar: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingBottom: 12,
+    paddingHorizontal: spacing.xl,
+    paddingTop: 56,
   },
 });

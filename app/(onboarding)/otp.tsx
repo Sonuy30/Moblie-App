@@ -56,14 +56,14 @@ export default function OTPScreen() {
     setErrorMsg('');
 
     try {
-      const { token, user } = await verifyOTP(phone!, otp);
+      const { token, user } = await verifyOTP(phone, otp);
       if (!token || !user) {
         throw new Error('Verification failed. Please try again.');
       }
 
       const authenticatedUser = { 
         ...user, 
-        role: (user.role || 'customer') as 'customer' | 'delivery_staff' | 'warehouse_staff' | 'admin'
+        role: (user.role || 'customer')
       };
       
       // Store in secure storage and Zustand store
@@ -92,7 +92,7 @@ export default function OTPScreen() {
     setErrorMsg('');
 
     try {
-      await requestOTP(phone!);
+      await requestOTP(phone);
       setSeconds(120);
       setOtp('');
       focusInput();
@@ -244,152 +244,36 @@ export default function OTPScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: '#FFFFFF' 
-  },
-  scrollContainer: { 
-    flexGrow: 1, 
-    paddingHorizontal: 24, 
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    paddingBottom: 24,
-    justifyContent: 'space-between'
-  },
   backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    alignItems: 'center',
     backgroundColor: '#F8F9FA',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.05)',
-    marginBottom: 20
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 32,
-    marginTop: 10
+    borderRadius: 22,
+    borderWidth: 1,
+    height: 44,
+    justifyContent: 'center',
+    marginBottom: 20,
+    width: 44
   },
   badgeGradient: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 36,
+    elevation: 3,
+    height: 72,
+    justifyContent: 'center',
     marginBottom: 16,
     shadowColor: '#185FA5',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 8,
-    elevation: 3
-  },
-  title: { 
-    fontSize: 26, 
-    fontWeight: '800', 
-    color: '#1A1A18',
-    textAlign: 'center',
-    marginBottom: 12
-  },
-  subtitle: { 
-    fontSize: 14, 
-    color: '#5F5E5A', 
-    textAlign: 'center', 
-    lineHeight: 21,
-    paddingHorizontal: 12
-  },
-  highlight: {
-    fontWeight: '700',
-    color: '#1A1A18'
-  },
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: borderRadius.xl,
-    padding: 20,
-    shadowColor: '#185FA5',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.05,
-    shadowRadius: 20,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: 'rgba(24, 95, 165, 0.05)',
-    marginBottom: 40
-  },
-  cellsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12
-  },
-  cell: {
-    width: 44,
-    height: 52,
-    borderRadius: borderRadius.md,
-    borderWidth: 1.5,
-    borderColor: 'rgba(24, 95, 165, 0.15)',
-    backgroundColor: '#F8F9FA',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative'
-  },
-  cellActive: {
-    borderColor: colors.primary,
-    backgroundColor: '#FFFFFF',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2
-  },
-  cellFilled: {
-    borderColor: 'rgba(24, 95, 165, 0.3)',
-    backgroundColor: '#FFFFFF'
-  },
-  cellError: {
-    borderColor: colors.error,
-    backgroundColor: '#FCEBEB'
-  },
-  cellText: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1A1A18'
-  },
-  cursor: {
-    position: 'absolute',
-    width: 2,
-    height: 20,
-    backgroundColor: colors.primary,
-    borderRadius: 1
-  },
-  hiddenInput: {
-    position: 'absolute',
-    opacity: 0,
-    width: 1,
-    height: 1,
-    left: -100
-  },
-  errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: colors.errorLight,
-    padding: 12,
-    borderRadius: borderRadius.md,
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(163, 45, 45, 0.1)'
-  },
-  errorText: {
-    flex: 1,
-    fontSize: 13,
-    color: colors.error,
-    fontWeight: '500'
+    width: 72
   },
   button: {
-    height: 56,
     borderRadius: borderRadius.lg,
-    overflow: 'hidden',
+    height: 56,
+    justifyContent: 'center',
     marginTop: 24,
-    justifyContent: 'center'
+    overflow: 'hidden'
   },
   buttonDisabled: {
     opacity: 0.95
@@ -397,50 +281,166 @@ const styles = StyleSheet.create({
   buttonPressed: {
     transform: [{ scale: 0.98 }]
   },
-  gradientBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '100%',
-    gap: 10
-  },
   buttonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700'
   },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderColor: 'rgba(24, 95, 165, 0.05)',
+    borderRadius: borderRadius.xl,
+    borderWidth: 1,
+    elevation: 5,
+    marginBottom: 40,
+    padding: 20,
+    shadowColor: '#185FA5',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.05,
+    shadowRadius: 20
+  },
+  cell: {
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    borderColor: 'rgba(24, 95, 165, 0.15)',
+    borderRadius: borderRadius.md,
+    borderWidth: 1.5,
+    height: 52,
+    justifyContent: 'center',
+    position: 'relative',
+    width: 44
+  },
+  cellActive: {
+    backgroundColor: '#FFFFFF',
+    borderColor: colors.primary,
+    elevation: 2,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4
+  },
+  cellError: {
+    backgroundColor: '#FCEBEB',
+    borderColor: colors.error
+  },
+  cellFilled: {
+    backgroundColor: '#FFFFFF',
+    borderColor: 'rgba(24, 95, 165, 0.3)'
+  },
+  cellText: {
+    color: '#1A1A18',
+    fontSize: 22,
+    fontWeight: '700'
+  },
+  cellsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12
+  },
+  container: { 
+    backgroundColor: '#FFFFFF', 
+    flex: 1 
+  },
+  cursor: {
+    backgroundColor: colors.primary,
+    borderRadius: 1,
+    height: 20,
+    position: 'absolute',
+    width: 2
+  },
+  errorBox: {
+    alignItems: 'center',
+    backgroundColor: colors.errorLight,
+    borderColor: 'rgba(163, 45, 45, 0.1)',
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 8,
+    padding: 12
+  },
+  errorText: {
+    color: colors.error,
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '500'
+  },
+  gradientBtn: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+    height: '100%',
+    justifyContent: 'center'
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 32,
+    marginTop: 10
+  },
+  hiddenInput: {
+    height: 1,
+    left: -100,
+    opacity: 0,
+    position: 'absolute',
+    width: 1
+  },
+  highlight: {
+    color: '#1A1A18',
+    fontWeight: '700'
+  },
+  resendBtn: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8
+  },
+  resendBtnText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '700'
+  },
   resendWrapper: {
-    marginTop: 20,
-    alignItems: 'center'
+    alignItems: 'center',
+    marginTop: 20
+  },
+  scrollContainer: { 
+    flexGrow: 1, 
+    justifyContent: 'space-between', 
+    paddingBottom: 24,
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === 'ios' ? 60 : 40
+  },
+  securityText: {
+    color: colors.textMuted,
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 'auto',
+    paddingHorizontal: 20,
+    textAlign: 'center'
+  },
+  subtitle: { 
+    color: '#5F5E5A', 
+    fontSize: 14, 
+    lineHeight: 21, 
+    paddingHorizontal: 12,
+    textAlign: 'center'
   },
   timerRow: {
-    flexDirection: 'row',
     alignItems: 'center',
+    flexDirection: 'row',
     gap: 6
   },
   timerText: {
-    fontSize: 13,
     color: colors.textMuted,
+    fontSize: 13,
     fontWeight: '500'
   },
-  resendBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12
-  },
-  resendBtnText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.primary
-  },
-  securityText: {
-    fontSize: 12,
-    color: colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 18,
-    marginTop: 'auto',
-    paddingHorizontal: 20
+  title: { 
+    color: '#1A1A18', 
+    fontSize: 26, 
+    fontWeight: '800',
+    marginBottom: 12,
+    textAlign: 'center'
   }
 });

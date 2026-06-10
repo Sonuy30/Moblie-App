@@ -1,5 +1,5 @@
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
-import { getProducts, getProductBySlug, getCategories, ProductFilters } from '@/api/products';
+import { getProducts, getProductBySlug, getCategories, type ProductFilters } from '@/api/products';
 
 export const useProducts = (filters: ProductFilters = {}) => {
   return useQuery({
@@ -11,7 +11,7 @@ export const useProducts = (filters: ProductFilters = {}) => {
 export const useInfiniteProducts = (filters: Omit<ProductFilters, 'page'> = {}) => {
   return useInfiniteQuery({
     queryKey: ['products-infinite', filters],
-    queryFn: ({ pageParam = 1 }) => getProducts({ ...filters, page: pageParam as number, limit: 20 }),
+    queryFn: ({ pageParam = 1 }) => getProducts({ ...filters, page: pageParam, limit: 20 }),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => {
       if (lastPage.page < lastPage.totalPages) {

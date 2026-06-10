@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Animated, StyleSheet, ViewStyle } from 'react-native';
+import { View, ScrollView, Animated, StyleSheet, type ViewStyle } from 'react-native';
 import { colors } from '@/constants/colors';
 import { borderRadius } from '@/constants/config';
 
@@ -64,13 +64,76 @@ export function ProductCardSkeleton() {
 
 export function ProductDetailSkeleton() {
   return (
-    <View style={{ gap: 16, padding: 16 }}>
-      <Skeleton width="100%" height={300} radius={borderRadius.lg} />
-      <Skeleton width="40%" height={14} />
-      <Skeleton width="90%" height={22} />
-      <Skeleton width="60%" height={20} />
-      <Skeleton width="100%" height={48} radius={borderRadius.md} />
-    </View>
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+      {/* Image Carousel skeleton */}
+      <Skeleton width="100%" height={320} radius={0} />
+
+      <View style={{ padding: 16, gap: 16 }}>
+        {/* Category & Title */}
+        <Skeleton width="30%" height={14} />
+        <Skeleton width="90%" height={26} />
+        <Skeleton width="50%" height={16} />
+
+        {/* Pricing */}
+        <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+          <Skeleton width="40%" height={28} />
+          <Skeleton width="20%" height={18} />
+        </View>
+
+        {/* Stock status badge */}
+        <Skeleton width="35%" height={20} radius={4} />
+
+        {/* Variant Selectors */}
+        <View style={{ gap: 8, marginTop: 8 }}>
+          <Skeleton width="25%" height={14} />
+          <View style={{ flexDirection: 'row', gap: 8 }}>
+            <Skeleton width={60} height={36} radius={8} />
+            <Skeleton width={60} height={36} radius={8} />
+            <Skeleton width={60} height={36} radius={8} />
+            <Skeleton width={60} height={36} radius={8} />
+          </View>
+        </View>
+
+        {/* Pincode delivery estimator card */}
+        <View style={{ padding: 12, borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.lg, gap: 8 }}>
+          <Skeleton width="40%" height={14} />
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <Skeleton width="70%" height={40} radius={8} />
+            <Skeleton width="25%" height={40} radius={8} />
+          </View>
+        </View>
+
+        {/* Seller Info Card */}
+        <View style={{ padding: 12, borderWidth: 1, borderColor: colors.border, borderRadius: borderRadius.lg, flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+          <Skeleton width={44} height={44} radius={22} />
+          <View style={{ flex: 1, gap: 6 }}>
+            <Skeleton width="60%" height={16} />
+            <Skeleton width="40%" height={12} />
+          </View>
+        </View>
+
+        {/* Description section */}
+        <View style={{ gap: 8 }}>
+          <Skeleton width="40%" height={16} />
+          <Skeleton width="100%" height={12} />
+          <Skeleton width="100%" height={12} />
+          <Skeleton width="80%" height={12} />
+        </View>
+
+        {/* Star breakdown rating summary */}
+        <View style={{ gap: 8, marginTop: 8 }}>
+          <Skeleton width="50%" height={16} />
+          <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
+            <Skeleton width="30%" height={48} />
+            <View style={{ flex: 1, gap: 4 }}>
+              <Skeleton width="100%" height={8} radius={4} />
+              <Skeleton width="90%" height={8} radius={4} />
+              <Skeleton width="80%" height={8} radius={4} />
+            </View>
+          </View>
+        </View>
+      </View>
+    </ScrollView>
   );
 }
 

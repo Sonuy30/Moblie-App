@@ -73,48 +73,53 @@ export default function ReviewCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.white,
+    borderColor: colors.border,
     borderRadius: borderRadius.lg,
-    padding: spacing.lg,
+    borderWidth: 1,
+    elevation: 2,
     gap: 8,
     marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    padding: spacing.lg,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
     shadowRadius: 4,
-    elevation: 2,
   },
   cardHighlighted: {
-    borderColor: colors.primary + '40',
     backgroundColor: colors.primaryLight + '80',
+    borderColor: colors.primary + '40',
+  },
+  comment: {
+    color: colors.textSecondary,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  date: {
+    color: colors.textMuted,
+    fontSize: 11,
+    marginTop: 1,
   },
   header: {
-    flexDirection: 'row',
     alignItems: 'center',
+    flexDirection: 'row',
     gap: 10,
   },
   headerInfo: {
     flex: 1,
   },
   name: {
+    color: colors.text,
     fontSize: 14,
     fontWeight: '700',
-    color: colors.text,
-  },
-  date: {
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 1,
   },
   ratingPill: {
-    flexDirection: 'row',
     alignItems: 'center',
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    flexDirection: 'row',
     gap: 2,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: borderRadius.full,
-    borderWidth: 1,
   },
   ratingPillNum: {
     fontSize: 12,
@@ -123,28 +128,23 @@ const styles = StyleSheet.create({
   ratingPillStar: {
     fontSize: 11,
   },
-  title: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  comment: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    lineHeight: 20,
-  },
   readMore: {
-    fontSize: 12,
     color: colors.primary,
+    fontSize: 12,
     fontWeight: '700',
     marginTop: 2,
+  },
+  title: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '700',
   },
   verifiedRow: {
     marginTop: 2,
   },
   verifiedText: {
-    fontSize: 11,
     color: '#10b981',
+    fontSize: 11,
     fontWeight: '600',
   },
 });

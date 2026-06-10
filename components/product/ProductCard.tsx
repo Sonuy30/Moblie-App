@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, type GestureResponderEvent } from 'react-native';
 import { Image } from 'expo-image';
+import type { Product } from '@/types/product';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
@@ -8,6 +9,8 @@ import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useAuthModalStore } from '@/stores/authModalStore';
 import StarRating from './StarRating';
+import WishlistButton from './WishlistButton';
+import SaleBadge from '@/components/sales/SaleBadge';
 import { formatINR } from '@/utils/currency';
 import { colors } from '@/constants/colors';
 import { borderRadius, spacing } from '@/constants/config';
@@ -25,21 +28,24 @@ interface ProductCardProps {
   inStock: boolean;
   stockQty: number;
   unit?: string;
+  variants?: { _id: string }[];
+  variantType?: string;
 }
 
 const { width } = Dimensions.get('window');
 const CARD_WIDTH = (width - 44) / 2;
 
 export default function ProductCard(props: ProductCardProps) {
+  const variantCount = props.variants?.length ?? 0;
   const addItem = useCartStore((s) => s.addItem);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const showAuthModal = useAuthModalStore((s) => s.show);
 
   const handlePress = () => {
-    router.push(`/product/${props.slug}` as any);
+    router.push(`/product/${props.slug}`);
   };
 
-  const handleAddToCart = (e: any) => {
+  const handleAddToCart = (e: GestureResponderEvent) => {
     e.stopPropagation();
     if (!props.inStock) return;
 
@@ -79,10 +85,20 @@ export default function ProductCard(props: ProductCardProps) {
           transition={200}
         />
         {props.discount && props.discount > 0 ? (
-          <View style={styles.discountBadge}>
-            <Text style={styles.discountText}>{props.discount}% OFF</Text>
-          </View>
+          <SaleBadge discount={props.discount} style={styles.discountBadgePosition} isFlash={false} />
         ) : null}
+        {variantCount > 1 && (
+          <View style={styles.variantBadge}>
+            <Text style={styles.variantBadgeText}>
+              {variantCount} {props.variantType ?? 'Variants'}
+            </Text>
+          </View>
+        )}
+        <WishlistButton
+          product={props as unknown as Product}
+          style={styles.wishlistBtn}
+          size={18}
+        />
       </View>
 
       {/* Info Container */}
@@ -116,96 +132,116 @@ export default function ProductCard(props: ProductCardProps) {
 }
 
 const styles = StyleSheet.create({
+  addToCart: {
+    alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    borderRadius: borderRadius.md,
+    flexDirection: 'row',
+    gap: 4,
+    justifyContent: 'center',
+    marginTop: 6,
+    paddingVertical: 8,
+  },
+  addToCartText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
   card: {
-    width: CARD_WIDTH,
     backgroundColor: colors.white,
+    borderColor: colors.surface,
     borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    elevation: 3,
     overflow: 'hidden',
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 6,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: colors.surface,
+    width: CARD_WIDTH,
   },
-  imageContainer: {
-    width: '100%',
-    height: CARD_WIDTH * 0.95,
-    backgroundColor: colors.surface,
-    position: 'relative',
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-  },
-  discountBadge: {
+  discountBadgePosition: {
+    left: 8,
     position: 'absolute',
     top: 8,
-    left: 8,
-    backgroundColor: colors.discount,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: borderRadius.sm,
   },
-  discountText: {
-    color: colors.white,
-    fontSize: 9,
-    fontWeight: '700',
+  image: {
+    height: '100%',
+    width: '100%',
+  },
+  imageContainer: {
+    backgroundColor: colors.surface,
+    height: CARD_WIDTH * 0.95,
+    position: 'relative',
+    width: '100%',
   },
   info: {
-    padding: spacing.md,
     gap: 4,
+    padding: spacing.md,
+  },
+  mrp: {
+    color: colors.textMuted,
+    fontSize: 11,
+    textDecorationLine: 'line-through',
   },
   name: {
+    color: colors.text,
     fontSize: 13,
     fontWeight: '600',
-    color: colors.text,
-    lineHeight: 18,
     height: 36,
+    lineHeight: 18,
+  },
+  outOfStock: {
+    color: colors.error,
+    fontSize: 12,
+    fontWeight: '700',
+    paddingVertical: 8,
+    textAlign: 'center',
+  },
+  price: {
+    color: colors.primary,
+    fontSize: 15,
+    fontWeight: '700',
   },
   priceRow: {
-    flexDirection: 'row',
     alignItems: 'center',
+    flexDirection: 'row',
     gap: 6,
     marginTop: 2,
   },
-  price: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  mrp: {
-    fontSize: 11,
-    color: colors.textMuted,
-    textDecorationLine: 'line-through',
-  },
   unitText: {
-    fontSize: 11,
     color: colors.textSecondary,
+    fontSize: 11,
     fontWeight: '500',
     marginTop: 2,
   },
-  outOfStock: {
-    fontSize: 12,
-    color: colors.error,
-    fontWeight: '700',
-    textAlign: 'center',
-    paddingVertical: 8,
+  variantBadge: {
+    backgroundColor: 'rgba(24,95,165,0.88)',
+    borderRadius: borderRadius.sm,
+    bottom: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    position: 'absolute',
+    right: 8,
   },
-  addToCart: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primaryLight,
-    paddingVertical: 8,
-    borderRadius: borderRadius.md,
-    gap: 4,
-    marginTop: 6,
+  variantBadgeText: {
+    color: colors.white,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.3,
   },
-  addToCartText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.primary,
+  wishlistBtn: {
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderRadius: borderRadius.full,
+    elevation: 2,
+    padding: 2,
+    position: 'absolute',
+    right: 8,
+    shadowColor: colors.black,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    top: 8,
+    zIndex: 3,
   },
 });

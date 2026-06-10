@@ -25,13 +25,13 @@ export default function SectionHeader({ title, onSeeAll }: SectionHeaderProps) {
 
 const styles = StyleSheet.create({
   container: {
+    alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
-  title: { fontSize: 18, fontWeight: '700', color: colors.text },
-  seeAll: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  seeAllText: { fontSize: 13, fontWeight: '600', color: colors.primary },
+  seeAll: { alignItems: 'center', flexDirection: 'row', gap: 2 },
+  seeAllText: { color: colors.primary, fontSize: 13, fontWeight: '600' },
+  title: { color: colors.text, fontSize: 18, fontWeight: '700' },
 });

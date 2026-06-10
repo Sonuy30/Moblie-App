@@ -7,7 +7,7 @@ import { formatINR } from '@/utils/currency';
 import { formatDate } from '@/utils/date';
 import { colors } from '@/constants/colors';
 import { borderRadius, spacing } from '@/constants/config';
-import { EcomOrder } from '@/api/orders';
+import { type EcomOrder } from '@/api/orders';
 import { Ionicons } from '@expo/vector-icons';
 
 const statusVariant: Record<string, 'primary' | 'success' | 'warning' | 'error' | 'neutral'> = {
@@ -27,7 +27,7 @@ export default function OrderCard({ order }: OrderCardProps) {
     <TouchableOpacity
       style={styles.card}
       activeOpacity={0.7}
-      onPress={() => router.push(`/order/${order._id}` as any)}
+      onPress={() => router.push(`/order/${order._id}`)}
     >
       <View style={styles.header}>
         <Text style={styles.orderNumber}>{order.orderNumber}</Text>
@@ -76,74 +76,74 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.white,
     borderRadius: borderRadius.lg,
-    padding: spacing.lg,
+    elevation: 3,
     marginBottom: spacing.md,
+    padding: spacing.lg,
     shadowColor: colors.black,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
-    elevation: 3,
+  },
+  date: {
+    color: colors.textSecondary,
+    fontSize: 12,
+  },
+  details: {
+    gap: 2,
+    marginTop: spacing.md,
   },
   header: {
+    alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
   },
-  orderNumber: {
-    fontSize: 15,
-    fontWeight: '600',
+  info: {
     color: colors.text,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  itemImage: {
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.sm,
+    height: 48,
+    width: 48,
   },
   itemsPreview: {
     flexDirection: 'row',
     gap: 8,
     marginTop: spacing.md,
   },
-  itemImage: {
-    width: 48,
-    height: 48,
-    borderRadius: borderRadius.sm,
-    backgroundColor: colors.surface,
-  },
   moreItems: {
-    width: 48,
-    height: 48,
-    borderRadius: borderRadius.sm,
-    backgroundColor: colors.surface,
     alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.sm,
+    height: 48,
     justifyContent: 'center',
+    width: 48,
   },
   moreText: {
+    color: colors.textSecondary,
     fontSize: 12,
     fontWeight: '600',
-    color: colors.textSecondary,
   },
-  details: {
-    marginTop: spacing.md,
-    gap: 2,
-  },
-  info: {
-    fontSize: 14,
-    fontWeight: '500',
+  orderNumber: {
     color: colors.text,
-  },
-  date: {
-    fontSize: 12,
-    color: colors.textSecondary,
+    fontSize: 15,
+    fontWeight: '600',
   },
   trackRow: {
-    flexDirection: 'row',
     alignItems: 'center',
+    borderTopColor: colors.border,
+    borderTopWidth: 1,
+    flexDirection: 'row',
     gap: 4,
     marginTop: spacing.md,
     paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
   },
   trackText: {
+    color: colors.primary,
     flex: 1,
     fontSize: 14,
     fontWeight: '600',
-    color: colors.primary,
   },
 });

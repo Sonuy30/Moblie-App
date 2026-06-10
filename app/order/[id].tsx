@@ -3,11 +3,14 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'r
 import { useLocalSearchParams, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useQuery } from '@tanstack/react-query';
 import { useOrderDetail } from '@/hooks/useOrders';
+import { getReturnEligibility } from '@/types/returns';
+import { getReturnHistory } from '@/api/returns';
 import TrackingTimeline from '@/components/order/TrackingTimeline';
 import OrderItemRow from '@/components/order/OrderItemRow';
 import Badge from '@/components/ui/Badge';
-import { ProductDetailSkeleton } from '@/components/ui/Skeleton';
+import { ProductDetailSkeleton } from '@/components/skeletons/ProductDetailSkeleton';
 import { formatINR } from '@/utils/currency';
 import { formatDate } from '@/utils/date';
 import { colors } from '@/constants/colors';
@@ -24,6 +27,12 @@ const statusBanner: Record<string, { text: string; bg: string; color: string }> 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: rawOrder, isLoading } = useOrderDetail(id || '');
+
+  const { data: returns } = useQuery({
+    queryKey: ['order-returns', id],
+    queryFn: () => getReturnHistory(id || ''),
+    enabled: !!id && !isLoading && rawOrder?.status === 'delivered',
+  });
 
   // ── Normalise the ERP order shape to guard against undefined fields ──
   const order = rawOrder ? {
@@ -59,6 +68,26 @@ export default function OrderDetailScreen() {
   const safeStatus = (order.status || 'confirmed').toLowerCase();
   const banner = statusBanner[safeStatus] || statusBanner.confirmed;
 
+  const latestReturn = returns && returns.length > 0 ? returns[returns.length - 1] : null;
+  const eligibility = getReturnEligibility(order.updatedAt);
+  const showReturnButton = safeStatus === 'delivered' && (eligibility.eligible || !!latestReturn);
+
+  const handleReturnPress = () => {
+    if (latestReturn) {
+      router.push(`/order/${id}/return-status?returnId=${latestReturn.returnId}`);
+    } else {
+      router.push(`/order/${id}/return`);
+    }
+  };
+
+  const returnButtonText = latestReturn
+    ? latestReturn.overallStatus === 'completed'
+      ? 'Refund Credited - View Details'
+      : latestReturn.overallStatus === 'rejected'
+      ? 'Return Rejected - View Details'
+      : 'Track Return / Refund'
+    : 'Return / Exchange Items';
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
@@ -78,7 +107,19 @@ export default function OrderDetailScreen() {
 
         {/* Tracking */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Tracking</Text>
+          <View style={styles.trackingHeader}>
+            <Text style={styles.sectionTitle}>Tracking</Text>
+            {safeStatus !== 'cancelled' && safeStatus !== 'delivered' && (
+              <TouchableOpacity
+                style={styles.trackBtn}
+                onPress={() => router.push(`/order/${id}/track`)}
+                activeOpacity={0.75}
+              >
+                <Ionicons name="navigate-outline" size={13} color={colors.primary} />
+                <Text style={styles.trackBtnText}>Live Track</Text>
+              </TouchableOpacity>
+            )}
+          </View>
           <TrackingTimeline status={safeStatus} trackingNumber={order.trackingNumber} courierName={order.courierName} placedAt={order.placedAt} updatedAt={order.updatedAt} />
         </View>
 
@@ -123,6 +164,15 @@ export default function OrderDetailScreen() {
           </View>
         </View>
 
+        {/* Return / Exchange */}
+        {showReturnButton && (
+          <TouchableOpacity style={styles.returnBtn} onPress={handleReturnPress} activeOpacity={0.75}>
+            <Ionicons name="return-down-back-outline" size={20} color={colors.primary} />
+            <Text style={styles.returnBtnText}>{returnButtonText}</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+          </TouchableOpacity>
+        )}
+
         {/* Help */}
         <TouchableOpacity style={styles.helpCard}>
           <Ionicons name="help-circle-outline" size={22} color={colors.primary} />
@@ -137,29 +187,56 @@ export default function OrderDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: colors.background },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
-  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: colors.text },
-  content: { padding: spacing.lg, gap: spacing.xl },
-  banner: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: spacing.lg, borderRadius: borderRadius.lg },
+  addrCard: { backgroundColor: colors.surface, borderRadius: borderRadius.md, gap: 2, padding: spacing.lg },
+  addrLine: { color: colors.textSecondary, fontSize: 13 },
+  addrName: { color: colors.text, fontSize: 15, fontWeight: '600' },
+  backBtn: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: 20, height: 40, justifyContent: 'center', width: 40 },
+  banner: { alignItems: 'center', borderRadius: borderRadius.lg, flexDirection: 'row', gap: 10, padding: spacing.lg },
   bannerText: { fontSize: 15, fontWeight: '600' },
-  section: { gap: spacing.md },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: colors.text },
-  addrCard: { backgroundColor: colors.surface, borderRadius: borderRadius.md, padding: spacing.lg, gap: 2 },
-  addrName: { fontSize: 15, fontWeight: '600', color: colors.text },
-  addrLine: { fontSize: 13, color: colors.textSecondary },
-  priceCard: { backgroundColor: colors.white, borderRadius: borderRadius.lg, padding: spacing.lg, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
+  content: { gap: spacing.xl, padding: spacing.lg },
+  divider: { backgroundColor: colors.border, height: 1, marginVertical: 8 },
+  header: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  headerTitle: { color: colors.text, fontSize: 17, fontWeight: '700' },
+  helpCard: { alignItems: 'center', backgroundColor: colors.primaryLight, borderRadius: borderRadius.lg, flexDirection: 'row', gap: spacing.md, padding: spacing.lg },
+  helpText: { color: colors.primary, flex: 1, fontSize: 14, fontWeight: '600' },
+  payCard: { backgroundColor: colors.surface, borderRadius: borderRadius.md, gap: spacing.md, padding: spacing.lg },
+  payLabel: { color: colors.textSecondary, fontSize: 13 },
+  payRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
+  payVal: { color: colors.text, fontSize: 13, fontWeight: '500' },
+  priceCard: { backgroundColor: colors.white, borderRadius: borderRadius.lg, elevation: 2, padding: spacing.lg, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4 },
+  priceLabel: { color: colors.textSecondary, fontSize: 14 },
   priceRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  priceLabel: { fontSize: 14, color: colors.textSecondary },
-  priceVal: { fontSize: 14, fontWeight: '500', color: colors.text },
-  divider: { height: 1, backgroundColor: colors.border, marginVertical: 8 },
-  totalLabel: { fontSize: 16, fontWeight: '700', color: colors.text },
-  totalVal: { fontSize: 18, fontWeight: '700', color: colors.primary },
-  payCard: { backgroundColor: colors.surface, borderRadius: borderRadius.md, padding: spacing.lg, gap: spacing.md },
-  payRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  payLabel: { fontSize: 13, color: colors.textSecondary },
-  payVal: { fontSize: 13, fontWeight: '500', color: colors.text },
-  helpCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, backgroundColor: colors.primaryLight, borderRadius: borderRadius.lg, padding: spacing.lg },
-  helpText: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.primary },
+  priceVal: { color: colors.text, fontSize: 14, fontWeight: '500' },
+  returnBtn: {
+    alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.primary + '33',
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+    padding: spacing.lg,
+  },
+  returnBtnText: {
+    color: colors.primary,
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  safe: { backgroundColor: colors.background, flex: 1 },
+  section: { gap: spacing.md },
+  sectionTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
+  totalLabel: { color: colors.text, fontSize: 16, fontWeight: '700' },
+  totalVal: { color: colors.primary, fontSize: 18, fontWeight: '700' },
+  trackBtn: {
+    alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    borderRadius: 20,
+    flexDirection: 'row',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  trackBtnText: { color: colors.primary, fontSize: 12, fontWeight: '700' },
+  trackingHeader: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
 });

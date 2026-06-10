@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle } from 'react-native';
+import { View, Text, StyleSheet, type ViewStyle } from 'react-native';
 import { colors } from '@/constants/colors';
 
 interface AvatarProps {
@@ -64,12 +64,12 @@ const styles = StyleSheet.create({
   container: {
     overflow: 'hidden',
   },
-  initialsContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   initials: {
     color: colors.white,
     fontWeight: '700',
+  },
+  initialsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
