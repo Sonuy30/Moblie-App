@@ -5,6 +5,7 @@ import type { Review, ReviewsResponse } from '@/types/review';
 export type { Review, ReviewsResponse };
 
 function isBackendMissing(err: unknown): boolean {
+  if (!Config.USE_MOCK_API) return false;
   if (!(err instanceof Error)) return true;
   const axiosError = err as AxiosError;
   if (!axiosError.response) return true;

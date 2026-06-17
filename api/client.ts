@@ -250,6 +250,9 @@ export const getErrorMessage = (err: unknown): string => {
     }
 
     const e = err as AxiosError<{ message?: string; error?: string }>;
+    if (e.response?.data?.message === 'Server error' && e.response?.data?.error) {
+      return `Server error: ${e.response.data.error}`;
+    }
     if (e.response?.data?.message) return e.response.data.message;
     if (e.response?.data?.error)   return e.response.data.error;
     if (e.code === 'ECONNABORTED') return 'Request timed out. Please check your connection.';

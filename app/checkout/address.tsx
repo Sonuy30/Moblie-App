@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getAddresses, addAddress } from '@/api/addresses';
 import { type Address } from '@/api/orders';
 import { useCheckoutStore } from '@/stores/checkoutStore';
+import { useAuthStore } from '@/stores/authStore';
 import CheckoutProgress from '@/components/checkout/CheckoutProgress';
 import Button from '@/components/ui/Button';
 import { colors } from '@/constants/colors';
@@ -24,6 +25,7 @@ import { getErrorMessage } from '@/api/client';
 export default function CheckoutAddressScreen() {
   const selectedAddress = useCheckoutStore((s) => s.selectedAddress);
   const setSelectedAddress = useCheckoutStore((s) => s.setSelectedAddress);
+  const user = useAuthStore((s) => s.user);
 
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -255,7 +257,18 @@ export default function CheckoutAddressScreen() {
             <TouchableOpacity
               style={styles.addAddrBtn}
               activeOpacity={0.7}
-              onPress={() => setShowAddForm(true)}
+              onPress={() => {
+                setAddrForm({
+                  fullName: user?.fullName || '',
+                  phone: user?.phone || '',
+                  addressLine1: '',
+                  addressLine2: '',
+                  city: '',
+                  state: '',
+                  pincode: '',
+                });
+                setShowAddForm(true);
+              }}
             >
               <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
               <Text style={styles.addAddrText}>Add new address</Text>

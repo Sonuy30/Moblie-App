@@ -9,10 +9,10 @@ import {
 import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { FlashList as OriginalFlashList } from '@shopify/flash-list';
 import Toast from 'react-native-toast-message';
-import { getActiveSale, getSaleProducts, setMockSaleOffset, type SaleProduct } from '@/api/sales';
+import { getActiveSale, getSaleProducts, type SaleProduct } from '@/api/sales';
 import CountdownTimer from '@/components/sales/CountdownTimer';
 import SaleBadge from '@/components/sales/SaleBadge';
 import { SearchResultSkeleton } from '@/components/skeletons/SearchResultSkeleton';
@@ -27,25 +27,14 @@ import { borderRadius, spacing } from '@/constants/config';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const FlashList = OriginalFlashList as any;
 
-type SortOption = 'timeLeft' | 'discount' | 'priceAsc' | 'priceDesc';
-
-// Simulated individual product end time offsets (in seconds from now) for sorting by "Time Left"
-const MOCK_PRODUCT_TIMEOUTS: Record<string, number> = {
-  'prod-tmt-10mm': 3600 * 1.5, // 1.5 hours
-  'prod-gi-pipe-25': 3600 * 0.8, // 48 minutes
-  'prod-sht-15': 3600 * 2.5,   // 2.5 hours
-  'prod-rnd-16': 300,          // 5 minutes (sold out)
-  'prod-ang-40': 120,          // 2 minutes (low stock)
-};
+type SortOption = 'discount' | 'priceAsc' | 'priceDesc';
 
 export default function SaleScreen() {
-  const queryClient = useQueryClient();
   const addItem = useCartStore((s) => s.addItem);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const showAuthModal = useAuthModalStore((s) => s.show);
 
   const [sortBy, setSortBy] = useState<SortOption>('discount');
-  const [demoMode, setDemoMode] = useState<'normal' | 'pulsing' | 'expired'>('normal');
 
   // Query active sale
   const { data: activeSale, isLoading: loadingSale } = useQuery({
@@ -60,19 +49,7 @@ export default function SaleScreen() {
     enabled: !!activeSale?._id,
   });
 
-  // Handle simulated QA countdown tests
-  const handleQAOffsetChange = (mode: 'normal' | 'pulsing' | 'expired') => {
-    setDemoMode(mode);
-    if (mode === 'normal') {
-      setMockSaleOffset(2 * 60 * 60); // 2 hours
-    } else if (mode === 'pulsing') {
-      setMockSaleOffset(4 * 60); // 4 minutes
-    } else {
-      setMockSaleOffset(-10); // Already ended
-    }
-    // Invalidate react query cache to trigger immediate update of components
-    void queryClient.invalidateQueries({ queryKey: ['active-sale'] });
-  };
+
 
   const handleAddToCart = (item: SaleProduct) => {
     if (!item.inStock || item.stockQty <= 0) return;
@@ -116,11 +93,7 @@ export default function SaleScreen() {
       if (sortBy === 'priceDesc') {
         return b.storePrice - a.storePrice; // High price first
       }
-      if (sortBy === 'timeLeft') {
-        const timeA = MOCK_PRODUCT_TIMEOUTS[a._id] ?? 99999;
-        const timeB = MOCK_PRODUCT_TIMEOUTS[b._id] ?? 99999;
-        return timeA - timeB; // Shortest time left first
-      }
+
       return 0;
     });
   };
@@ -138,30 +111,7 @@ export default function SaleScreen() {
         <Ionicons name="flame" size={24} color="#FF5722" />
       </View>
 
-      {/* QA Demo Switcher */}
-      <View style={styles.qaBar}>
-        <Text style={styles.qaLabel}>QA Mode:</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.qaScroll}>
-          <TouchableOpacity
-            style={[styles.qaButton, demoMode === 'normal' && styles.qaButtonActive]}
-            onPress={() => handleQAOffsetChange('normal')}
-          >
-            <Text style={[styles.qaButtonText, demoMode === 'normal' && styles.qaButtonTextActive]}>2h Left</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.qaButton, demoMode === 'pulsing' && styles.qaButtonActive]}
-            onPress={() => handleQAOffsetChange('pulsing')}
-          >
-            <Text style={[styles.qaButtonText, demoMode === 'pulsing' && styles.qaButtonTextActive]}>4m (Pulse)</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.qaButton, demoMode === 'expired' && styles.qaButtonActive]}
-            onPress={() => handleQAOffsetChange('expired')}
-          >
-            <Text style={[styles.qaButtonText, demoMode === 'expired' && styles.qaButtonTextActive]}>Expired</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
+
 
       {loadingSale || loadingProducts ? (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -219,14 +169,7 @@ export default function SaleScreen() {
                   Discount %
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.sortPill, sortBy === 'timeLeft' && styles.sortPillActive]}
-                onPress={() => setSortBy('timeLeft')}
-              >
-                <Text style={[styles.sortPillText, sortBy === 'timeLeft' && styles.sortPillTextActive]}>
-                  Time Left
-                </Text>
-              </TouchableOpacity>
+
               <TouchableOpacity
                 style={[styles.sortPill, sortBy === 'priceAsc' && styles.sortPillActive]}
                 onPress={() => setSortBy('priceAsc')}
@@ -257,7 +200,6 @@ export default function SaleScreen() {
                   const hasStock = item.inStock && item.stockQty > 0;
                   const totalQty = item.soldQty + item.stockQty;
                   const soldPercent = totalQty > 0 ? Math.round((item.soldQty / totalQty) * 100) : 0;
-                  const individualTimeLeft = MOCK_PRODUCT_TIMEOUTS[item._id] || 0;
 
                   return (
                     <View style={[styles.productCard, !hasStock && styles.soldOutCard]}>
@@ -281,19 +223,6 @@ export default function SaleScreen() {
                         <Text style={styles.productName} numberOfLines={2}>
                           {item.name}
                         </Text>
-
-                        {/* Ticking Time left label if not sold out */}
-                        {hasStock && individualTimeLeft > 0 && (
-                          <View style={styles.timeLeftRow}>
-                            <Ionicons name="time" size={12} color={individualTimeLeft <= 600 ? colors.error : colors.textSecondary} />
-                            <Text style={[
-                              styles.timeLeftText,
-                              individualTimeLeft <= 600 && styles.timeLeftTextUrgent
-                            ]}>
-                              {individualTimeLeft <= 600 ? 'Ending soon!' : 'Deal active'}
-                            </Text>
-                          </View>
-                        )}
 
                         <View style={styles.priceRow}>
                           <Text style={styles.salePrice}>{formatINR(item.storePrice)}</Text>
@@ -482,44 +411,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
   },
-  qaBar: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: 8,
-  },
-  qaButton: {
-    backgroundColor: colors.white,
-    borderColor: colors.border,
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  qaButtonActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  qaButtonText: {
-    color: colors.textSecondary,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  qaButtonTextActive: {
-    color: colors.white,
-  },
-  qaLabel: {
-    color: colors.textSecondary,
-    fontSize: 11,
-    fontWeight: '800',
-  },
-  qaScroll: {
-    gap: 6,
-  },
+
   safe: {
     backgroundColor: colors.background,
     flex: 1,
@@ -608,19 +500,7 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '700',
   },
-  timeLeftRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 4,
-  },
-  timeLeftText: {
-    color: colors.textSecondary,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  timeLeftTextUrgent: {
-    color: colors.error,
-  },
+
   timerBadge: {
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.25)',

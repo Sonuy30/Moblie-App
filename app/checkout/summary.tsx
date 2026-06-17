@@ -133,6 +133,8 @@ export default function CheckoutSummaryScreen() {
           price: i.price,
           quantity: i.quantity,
           image: i.image || '',
+          variantId: i.variantId,
+          variantLabel: i.variantLabel,
         })),
         addressId: selectedAddress._id || '',
         shippingAddress: selectedAddress,
@@ -316,8 +318,8 @@ export default function CheckoutSummaryScreen() {
             {couponError ? <Text style={styles.couponErrorText}>{couponError}</Text> : null}
             {!couponCode && (
               <Text style={styles.couponHint}>
-                {"Try \"WELCOME10\" for 10% off, or \"AITS500\" for ₹500 off (Min ₹2000)."}
-              </Text>
+              {'Try "WELCOME10" for 10% off, or "OFFER500" for ₹500 off (Min ₹2000).'}
+            </Text>
             )}
           </View>
 
@@ -360,6 +362,8 @@ export default function CheckoutSummaryScreen() {
             fullWidth
             style={{ marginTop: spacing.lg }}
           />
+
+
         </View>
         <View style={styles.bottomSpacer} />
       </ScrollView>
@@ -567,3 +571,4 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
 });
+

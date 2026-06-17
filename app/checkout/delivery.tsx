@@ -71,7 +71,7 @@ export default function CheckoutDeliveryScreen() {
           estimatedDays: standardDays,
           estimatedDeliveryDate: res.deliveryDate || getFormattedDate(standardDays),
           isDeliverable: true,
-          message: 'Safe and secure delivery via AITS surface logistics',
+          message: 'Safe and secure delivery via Sudama Enterprises logistics',
         };
 
         const expressOpt: DeliveryOption = {
@@ -114,8 +114,43 @@ export default function CheckoutDeliveryScreen() {
 
         setLoading(false);
       } catch (err) {
-        console.warn('Failed to calculate delivery speeds:', err);
-        setErrorMsg('Unable to retrieve shipping configurations.');
+        console.warn('Failed to calculate delivery speeds (using local fallbacks):', err);
+        const standardDays = 4;
+        const expressDays = 2;
+
+        const standardOpt: DeliveryOption = {
+          id: 'standard',
+          name: 'Standard Delivery',
+          price: 0,
+          estimatedDays: standardDays,
+          estimatedDeliveryDate: getFormattedDate(standardDays),
+          isDeliverable: true,
+          message: 'Safe and secure delivery via AITS surface logistics',
+        };
+
+        const expressOpt: DeliveryOption = {
+          id: 'express',
+          name: 'Express Delivery',
+          price: 99,
+          estimatedDays: expressDays,
+          estimatedDeliveryDate: getFormattedDate(expressDays),
+          isDeliverable: true,
+          message: 'Priority shipping via express air partners',
+        };
+
+        const sameDayOpt: DeliveryOption = {
+          id: 'same_day',
+          name: 'Same-day Delivery',
+          price: 249,
+          estimatedDays: 0,
+          estimatedDeliveryDate: getFormattedDate(0),
+          isDeliverable: false,
+          message: 'Same-day delivery is not available for this location',
+        };
+
+        const calculatedOptions = [standardOpt, expressOpt, sameDayOpt];
+        setOptions(calculatedOptions);
+        setDeliveryOption(standardOpt);
         setLoading(false);
       }
     };

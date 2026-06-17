@@ -1,25 +1,146 @@
-import React, { useState } from 'react';
+/**
+ * VariantSelector — Amazon-style variant picker
+ *
+ * Groups variants by attribute key (e.g. "Size", "Color", "Grade").
+ * Each attribute axis gets its own labelled row of chips/swatches.
+ * Tapping a chip updates price, image and stock in real time.
+ *
+ * Works with ANY attribute structure the ERP sends:
+ *  - Single attribute  { "Size": "10mm" }
+ *  - Multi-attribute   { "Color": "Red", "Size": "Large" }
+ *  - Flat label only   variants with no attributes (uses variant.label)
+ */
+
+import React from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   ScrollView,
+  StyleSheet,
   Animated,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import type { ProductVariant } from '@/types/product';
 import { colors } from '@/constants/colors';
 import { borderRadius, spacing } from '@/constants/config';
 import { formatINR } from '@/utils/currency';
 
+// ── Named CSS colors that should render as swatches ─────────────────────────
+const KNOWN_COLORS = new Set([
+  'red','green','blue','yellow','orange','purple','pink','black','white',
+  'grey','gray','brown','cyan','magenta','gold','silver','navy','teal',
+  'maroon','olive','lime','indigo','violet','beige','cream','ivory',
+  'khaki','lavender','salmon','coral','crimson','aqua','turquoise',
+]);
+
+function isColorValue(val: string): boolean {
+  if (!val) return false;
+  const lower = val.toLowerCase().trim();
+  return lower.startsWith('#') || KNOWN_COLORS.has(lower);
+}
+
+function colorToHex(val: string): string {
+  if (val.startsWith('#')) return val;
+  // Map common color names → hex
+  const map: Record<string, string> = {
+    red: '#E53935', green: '#43A047', blue: '#1E88E5',
+    yellow: '#FDD835', orange: '#FB8C00', purple: '#8E24AA',
+    pink: '#E91E63', black: '#212121', white: '#FAFAFA',
+    grey: '#9E9E9E', gray: '#9E9E9E', brown: '#6D4C41',
+    cyan: '#00ACC1', magenta: '#D81B60', gold: '#FFB300',
+    silver: '#BDBDBD', navy: '#1A237E', teal: '#00796B',
+    maroon: '#880E4F', olive: '#827717', lime: '#AEEA00',
+    indigo: '#3949AB', violet: '#7B1FA2', beige: '#F5F5DC',
+    cream: '#FFFDD0', ivory: '#FFFFF0', khaki: '#C8B560',
+    lavender: '#E6E6FA', salmon: '#FA8072', coral: '#FF6B6B',
+    crimson: '#DC143C', aqua: '#00FFFF', turquoise: '#40E0D0',
+  };
+  return map[val.toLowerCase()] || '#9E9E9E';
+}
+
+// ── Types ────────────────────────────────────────────────────────────────────
+
 interface VariantSelectorProps {
-  variantType: string;          // e.g. "Diameter", "Size", "Color"
+  variantType: string;
   variants: ProductVariant[];
   selectedVariant: ProductVariant | null;
   onSelect: (variant: ProductVariant) => void;
-  basePrice?: number;           // base product price for delta comparison
+  basePrice?: number;
 }
+
+// For each attribute key, the values it takes across all variants
+type AttrGroup = {
+  key: string;
+  values: string[];
+  isColor: boolean;
+};
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Parse variant attributes into a plain object.
+ * Handles: Map, plain object, or missing attributes (falls back to {label: variant.label}).
+ */
+function getAttrs(v: ProductVariant): Record<string, string> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const raw = (v as any).attributes;
+  if (!raw) return { Variant: v.label || 'Default' };
+  if (raw instanceof Map) return Object.fromEntries(raw);
+  if (typeof raw === 'object') return raw as Record<string, string>;
+  return { Variant: v.label || 'Default' };
+}
+
+/** Build grouped attribute axes from the full variants array */
+function buildAttrGroups(variants: ProductVariant[]): AttrGroup[] {
+  const keyOrder: string[] = [];
+  const keyValues: Record<string, Set<string>> = {};
+
+  variants.forEach((v) => {
+    const attrs = getAttrs(v);
+    Object.entries(attrs).forEach(([k, val]) => {
+      if (!keyValues[k]) {
+        keyValues[k] = new Set();
+        keyOrder.push(k);
+      }
+      keyValues[k].add(val);
+    });
+  });
+
+  return keyOrder.map((k) => {
+    const values = Array.from(keyValues[k]);
+    const isColor = values.some(isColorValue);
+    return { key: k, values, isColor };
+  });
+}
+
+/**
+ * Find the best matching variant given the current selection map.
+ * If we change one axis, keep other axes the same where possible.
+ */
+function findVariant(
+  variants: ProductVariant[],
+  currentAttrs: Record<string, string>,
+  changedKey: string,
+  changedVal: string
+): ProductVariant | null {
+  const target = { ...currentAttrs, [changedKey]: changedVal };
+
+  // Perfect match (all keys match)
+  const perfect = variants.find((v) => {
+    const a = getAttrs(v);
+    return Object.entries(target).every(([k, val]) => a[k] === val);
+  });
+  if (perfect) return perfect;
+
+  // Partial match — only the changed key must match
+  const partial = variants.find((v) => {
+    const a = getAttrs(v);
+    return a[changedKey] === changedVal;
+  });
+  return partial ?? null;
+}
+
+// ── Main Component ───────────────────────────────────────────────────────────
 
 export default function VariantSelector({
   variantType,
@@ -30,198 +151,151 @@ export default function VariantSelector({
 }: VariantSelectorProps) {
   if (!variants || variants.length === 0) return null;
 
-  const inStockCount = variants.filter((v) => v.inStock).length;
+  const attrGroups = buildAttrGroups(variants);
+  const selectedAttrs = selectedVariant ? getAttrs(selectedVariant) : {};
 
-  // Determine if this product has color/size variants
-  const hasColorOrSize = variants.some((v) => v.color || v.size);
-
-  // Reference price for delta: first in-stock variant (or cheapest)
+  // Reference price for delta display — use base product price or cheapest variant
   const refPrice =
     basePrice ??
-    variants
-      .filter((v) => v.inStock)
-      .sort((a, b) => a.storePrice - b.storePrice)[0]?.storePrice ??
-    variants[0].storePrice;
+    [...variants].sort((a, b) => a.storePrice - b.storePrice)[0]?.storePrice ??
+    0;
 
-  if (hasColorOrSize) {
-    const colorsList = Array.from(new Set(variants.map((v) => v.color).filter(Boolean))) as string[];
-    const sizesList = Array.from(new Set(variants.map((v) => v.size).filter(Boolean))) as string[];
+  const handleChipPress = (groupKey: string, value: string) => {
+    const next = findVariant(variants, selectedAttrs, groupKey, value);
+    if (next) onSelect(next);
+  };
 
-    return (
-      <View style={styles.container}>
-        {/* Colors Selector */}
-        {colorsList.length > 0 && (
-          <View style={styles.groupSection}>
-            <Text style={styles.groupLabel}>
-              Select Color:
-              {selectedVariant?.color ? (
-                <Text style={styles.selectedLabel}> · {selectedVariant.color}</Text>
-              ) : null}
-            </Text>
-            <View style={styles.swatchesRow}>
-              {colorsList.map((colorVal) => {
-                const isSelected = selectedVariant?.color === colorVal;
-                // Check if color is hex
-                const isHex = colorVal.startsWith('#');
-                // Find matching variant. Prefer currently selected size.
-                const matched = variants.find(
-                  (v) => v.color === colorVal && (selectedVariant?.size ? v.size === selectedVariant.size : true)
-                ) || variants.find((v) => v.color === colorVal);
-                const isOOS = !matched || !matched.inStock;
+  // If no meaningful attribute keys, fall back to flat list using label
+  const isFlatList = attrGroups.length === 0 ||
+    (attrGroups.length === 1 && attrGroups[0].key === 'Variant');
 
-                return (
-                  <TouchableOpacity
-                    key={colorVal}
-                    activeOpacity={isOOS ? 0.9 : 0.7}
-                    onPress={() => {
-                      if (matched) onSelect(matched);
-                    }}
-                    style={[
-                      styles.colorSwatchOuter,
-                      isSelected && styles.colorSwatchOuterSelected,
-                      isOOS && { opacity: 0.4 },
-                    ]}
-                  >
-                    {isHex ? (
-                      <View style={[styles.colorSwatchInner, { backgroundColor: colorVal }]} />
-                    ) : (
-                      <Text style={[styles.colorSwatchText, isSelected && styles.colorSwatchTextSelected]}>
-                        {colorVal}
-                      </Text>
-                    )}
-                    {isSelected && (
-                      <View style={styles.colorCheckBadge}>
-                        <Ionicons name="checkmark" size={10} color={colors.white} />
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
-        {/* Sizes Selector */}
-        {sizesList.length > 0 && (
-          <View style={styles.groupSection}>
-            <Text style={styles.groupLabel}>
-              Select Size:
-              {selectedVariant?.size ? (
-                <Text style={styles.selectedLabel}> · {selectedVariant.size}</Text>
-              ) : null}
-            </Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.pillsRow}
-              keyboardShouldPersistTaps="handled"
-            >
-              {sizesList.map((sizeVal) => {
-                const isSelected = selectedVariant?.size === sizeVal;
-                // Find matching variant. Prefer currently selected color.
-                const matched = variants.find(
-                  (v) => v.size === sizeVal && (selectedVariant?.color ? v.color === selectedVariant.color : true)
-                ) || variants.find((v) => v.size === sizeVal);
-                const isOOS = !matched || !matched.inStock;
-
-                return (
-                  <TouchableOpacity
-                    key={sizeVal}
-                    activeOpacity={isOOS ? 0.9 : 0.75}
-                    onPress={() => {
-                      if (matched) onSelect(matched);
-                    }}
-                    style={[
-                      styles.pill,
-                      isSelected && styles.pillSelected,
-                      isOOS && styles.pillOOS,
-                    ]}
-                  >
-                    <Text style={[styles.pillText, isSelected && styles.pillTextSelected, isOOS && styles.pillTextOOS]}>
-                      {sizeVal}
-                    </Text>
-                    {isSelected && (
-                      <View style={styles.checkBadge}>
-                        <Ionicons name="checkmark" size={10} color={colors.white} />
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        )}
-      </View>
-    );
-  }
-
-  // Fallback to single-axis variant selectors
   return (
     <View style={styles.container}>
-      {/* Header row */}
-      <View style={styles.headerRow}>
-        <View style={styles.headerLeft}>
-          <Ionicons name="options-outline" size={16} color={colors.primary} />
-          <Text style={styles.label}>
-            {variantType}
-            {selectedVariant ? (
-              <Text style={styles.selectedLabel}> · {selectedVariant.label}</Text>
-            ) : null}
-          </Text>
+      {isFlatList ? (
+        // ── Flat variant list (label-only) ──────────────────────────────
+        <View style={styles.group}>
+          <Text style={styles.groupLabel}>{variantType}</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chipsRow}
+          >
+            {variants.map((v) => {
+              const isSelected = selectedVariant?._id === v._id;
+              const isOOS = !v.inStock;
+              const diff = v.storePrice - refPrice;
+              return (
+                <PillChip
+                  key={v._id}
+                  label={v.label}
+                  priceDiff={diff !== 0 ? diff : null}
+                  isSelected={isSelected}
+                  isOOS={isOOS}
+                  onPress={() => { if (!isOOS) onSelect(v); }}
+                />
+              );
+            })}
+          </ScrollView>
         </View>
-        <Text style={styles.availableText}>
-          {inStockCount}/{variants.length} available
-        </Text>
-      </View>
-
-      {/* Pill row */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.pillsRow}
-        keyboardShouldPersistTaps="handled"
-      >
-        {variants.map((variant) => {
-          const isSelected = selectedVariant?._id === variant._id;
-          const isOOS = !variant.inStock;
-
-          // Compare against the cheapest in-stock reference (computed above)
-          const diff = variant.storePrice - refPrice;
-          const showDiff = Math.abs(diff) > 0 && !isSelected;
+      ) : (
+        // ── Grouped attribute axes (Amazon-style) ───────────────────────
+        attrGroups.map((group) => {
+          const selectedVal = selectedAttrs[group.key];
 
           return (
-            <VariantPill
-              key={variant._id}
-              label={variant.label}
-              isSelected={isSelected}
-              isOOS={isOOS}
-              priceDiff={showDiff ? diff : null}
-              onPress={() => {
-                if (!isOOS) onSelect(variant);
-              }}
-            />
-          );
-        })}
-      </ScrollView>
+            <View key={group.key} style={styles.group}>
+              {/* Row label — e.g. "Color: Red" or "Size:" */}
+              <View style={styles.groupLabelRow}>
+                <Text style={styles.groupLabel}>{group.key}</Text>
+                {selectedVal ? (
+                  <Text style={styles.groupSelected}> · {selectedVal}</Text>
+                ) : null}
+              </View>
 
-      {/* Selected variant info bar */}
-      {selectedVariant && (
-        <View style={styles.infoBar}>
-          <View style={styles.infoItem}>
-            <Text style={styles.infoKey}>Price</Text>
-            <Text style={styles.infoVal}>{formatINR(selectedVariant.storePrice)}</Text>
-          </View>
-          {selectedVariant.weightPerPiece && (
-            <View style={[styles.infoItem, styles.infoItemBorder]}>
-              <Text style={styles.infoKey}>Unit Weight</Text>
-              <Text style={styles.infoVal}>{selectedVariant.weightPerPiece} kg</Text>
+              {group.isColor ? (
+                // ── Color swatches ──────────────────────────────────────
+                <View style={styles.swatchesRow}>
+                  {group.values.map((val) => {
+                    const matchedVariant = variants.find(
+                      (v) => getAttrs(v)[group.key] === val
+                    );
+                    const isSelected = selectedVal === val;
+                    const isOOS = !matchedVariant || !matchedVariant.inStock;
+                    const hex = colorToHex(val);
+                    return (
+                      <ColorSwatch
+                        key={val}
+                        colorName={val}
+                        hex={hex}
+                        isSelected={isSelected}
+                        isOOS={isOOS}
+                        onPress={() => handleChipPress(group.key, val)}
+                      />
+                    );
+                  })}
+                </View>
+              ) : (
+                // ── Text pill chips ─────────────────────────────────────
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.chipsRow}
+                >
+                  {group.values.map((val) => {
+                    // Find best matching variant for price delta
+                    const matchedVariant = findVariant(
+                      variants,
+                      selectedAttrs,
+                      group.key,
+                      val
+                    );
+                    const isSelected = selectedVal === val;
+                    const isOOS = !matchedVariant || !matchedVariant.inStock;
+                    const diff = matchedVariant
+                      ? matchedVariant.storePrice - refPrice
+                      : null;
+
+                    return (
+                      <PillChip
+                        key={val}
+                        label={val}
+                        priceDiff={diff !== 0 ? diff ?? null : null}
+                        isSelected={isSelected}
+                        isOOS={isOOS}
+                        onPress={() => handleChipPress(group.key, val)}
+                      />
+                    );
+                  })}
+                </ScrollView>
+              )}
             </View>
-          )}
-          <View style={[styles.infoItem, styles.infoItemBorder]}>
-            <Text style={styles.infoKey}>Stock</Text>
-            <Text style={[styles.infoVal, !selectedVariant.inStock && { color: colors.error }]}>
+          );
+        })
+      )}
+
+      {/* Selected variant summary bar */}
+      {selectedVariant && (
+        <View style={styles.summaryBar}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>Price</Text>
+            <Text style={styles.summaryValue}>{formatINR(selectedVariant.storePrice)}</Text>
+          </View>
+          {selectedVariant.weightPerPiece ? (
+            <View style={[styles.summaryItem, styles.summaryBorder]}>
+              <Text style={styles.summaryLabel}>Unit Wt.</Text>
+              <Text style={styles.summaryValue}>{selectedVariant.weightPerPiece} kg</Text>
+            </View>
+          ) : null}
+          <View style={[styles.summaryItem, styles.summaryBorder]}>
+            <Text style={styles.summaryLabel}>Stock</Text>
+            <Text
+              style={[
+                styles.summaryValue,
+                !selectedVariant.inStock && { color: colors.error },
+              ]}
+            >
               {selectedVariant.inStock
-                ? `${selectedVariant.stockQty.toLocaleString()} pcs`
+                ? `${selectedVariant.stockQty} pcs`
                 : 'Out of Stock'}
             </Text>
           </View>
@@ -231,22 +305,24 @@ export default function VariantSelector({
   );
 }
 
-// ─── Individual pill ───────────────────────────────────────
-interface PillProps {
+// ── PillChip ─────────────────────────────────────────────────────────────────
+
+interface PillChipProps {
   label: string;
+  priceDiff: number | null;
   isSelected: boolean;
   isOOS: boolean;
-  priceDiff: number | null;
   onPress: () => void;
 }
 
-function VariantPill({ label, isSelected, isOOS, priceDiff, onPress }: PillProps) {
-  const [scale] = useState(() => new Animated.Value(1));
+function PillChip({ label, priceDiff, isSelected, isOOS, onPress }: PillChipProps) {
+  const scale = React.useRef(new Animated.Value(1)).current;
 
   const handlePress = () => {
+    if (isOOS) return;
     Animated.sequence([
-      Animated.timing(scale, { toValue: 0.9, duration: 80, useNativeDriver: true }),
-      Animated.spring(scale, { toValue: 1, friction: 5, useNativeDriver: true }),
+      Animated.timing(scale, { toValue: 0.92, duration: 70, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, friction: 6, useNativeDriver: true }),
     ]).start();
     onPress();
   };
@@ -257,248 +333,248 @@ function VariantPill({ label, isSelected, isOOS, priceDiff, onPress }: PillProps
         onPress={handlePress}
         activeOpacity={isOOS ? 1 : 0.75}
         style={[
-          styles.pill,
-          isSelected && styles.pillSelected,
-          isOOS && styles.pillOOS,
+          styles.chip,
+          isSelected && styles.chipSelected,
+          isOOS && styles.chipOOS,
         ]}
       >
         <Text
           style={[
-            styles.pillText,
-            isSelected && styles.pillTextSelected,
-            isOOS && styles.pillTextOOS,
+            styles.chipLabel,
+            isSelected && styles.chipLabelSelected,
+            isOOS && styles.chipLabelOOS,
           ]}
         >
           {label}
         </Text>
 
-        {/* Price delta badge */}
+        {/* Price delta — e.g. "+₹120" or "–₹50" */}
         {priceDiff !== null && !isOOS && (
-          <View
+          <Text
             style={[
-              styles.deltaBadge,
-              priceDiff > 0 ? styles.deltaBadgeUp : styles.deltaBadgeDown,
+              styles.chipDelta,
+              isSelected && styles.chipDeltaSelected,
             ]}
           >
-            <Text
-              style={[
-                styles.deltaText,
-                priceDiff > 0 ? styles.deltaTextUp : styles.deltaTextDown,
-              ]}
-            >
-              {priceDiff > 0 ? '+' : ''}
-              {formatINR(priceDiff)}
-            </Text>
-          </View>
+            {priceDiff > 0 ? `+${formatINR(priceDiff)}` : formatINR(priceDiff)}
+          </Text>
         )}
 
-        {/* OOS overlay stripe */}
-        {isOOS && (
-          <View style={styles.oosStripe} />
-        )}
-
-        {isSelected && (
-          <View style={styles.checkBadge}>
-            <Ionicons name="checkmark" size={10} color={colors.white} />
-          </View>
-        )}
+        {/* OOS diagonal strike */}
+        {isOOS && <View style={styles.oosStrike} />}
       </TouchableOpacity>
     </Animated.View>
   );
 }
 
+// ── ColorSwatch ───────────────────────────────────────────────────────────────
+
+interface ColorSwatchProps {
+  colorName: string;
+  hex: string;
+  isSelected: boolean;
+  isOOS: boolean;
+  onPress: () => void;
+}
+
+function ColorSwatch({ colorName, hex, isSelected, isOOS, onPress }: ColorSwatchProps) {
+  const isDark = hex === '#212121' || hex === '#1A237E' || hex === '#880E4F';
+  return (
+    <TouchableOpacity
+      onPress={() => { if (!isOOS) onPress(); }}
+      activeOpacity={isOOS ? 1 : 0.75}
+      style={[
+        styles.swatch,
+        isSelected && styles.swatchSelected,
+        isOOS && { opacity: 0.35 },
+      ]}
+    >
+      {/* Color circle */}
+      <View
+        style={[
+          styles.swatchCircle,
+          { backgroundColor: hex },
+          hex === '#FAFAFA' && styles.swatchCircleWhiteBorder,
+        ]}
+      />
+      {/* Name below swatch */}
+      <Text
+        style={[
+          styles.swatchName,
+          isSelected && styles.swatchNameSelected,
+        ]}
+        numberOfLines={1}
+      >
+        {colorName}
+      </Text>
+      {/* Selected ring */}
+      {isSelected && <View style={styles.swatchRing} />}
+    </TouchableOpacity>
+  );
+}
+
+// ── Styles ────────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
-  availableText: {
-    color: colors.textMuted,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  checkBadge: {
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 7,
-    height: 14,
-    justifyContent: 'center',
-    position: 'absolute',
-    right: 4,
-    top: 4,
-    width: 14,
-  },
-  colorCheckBadge: {
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    borderRadius: 7,
-    bottom: -4,
-    height: 14,
-    justifyContent: 'center',
-    position: 'absolute',
-    right: -4,
-    width: 14,
-  },
-  colorSwatchInner: {
-    borderRadius: 14,
-    height: 28,
-    width: 28,
-  },
-  colorSwatchOuter: {
-    alignItems: 'center',
-    borderColor: colors.border,
-    borderRadius: 18,
-    borderWidth: 1.5,
-    height: 36,
-    justifyContent: 'center',
-    position: 'relative',
-    width: 36,
-  },
-  colorSwatchOuterSelected: {
-    borderColor: colors.primary,
-  },
-  colorSwatchText: {
-    color: colors.textSecondary,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  colorSwatchTextSelected: {
-    color: colors.primary,
-  },
-  container: {
-    gap: spacing.sm,
-  },
-  deltaBadge: {
-    alignSelf: 'center',
-    borderRadius: borderRadius.sm,
-    marginTop: 3,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-  },
-  deltaBadgeDown: {
-    backgroundColor: colors.successLight,
-  },
-  deltaBadgeUp: {
-    backgroundColor: colors.errorLight,
-  },
-  deltaText: {
-    fontSize: 9,
-    fontWeight: '800',
-  },
-  deltaTextDown: {
-    color: colors.success,
-  },
-  deltaTextUp: {
-    color: colors.error,
-  },
-  groupLabel: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: '700',
-    marginBottom: spacing.xs,
-  },
-  groupSection: {
-    gap: 2,
-  },
-  headerLeft: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
-  },
-  headerRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  infoBar: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    flexDirection: 'row',
-    overflow: 'hidden',
-  },
-  infoItem: {
-    alignItems: 'center',
-    flex: 1,
-    gap: 3,
-    paddingHorizontal: 4,
-    paddingVertical: 8,
-  },
-  infoItemBorder: {
-    borderLeftColor: colors.border,
-    borderLeftWidth: 1,
-  },
-  infoKey: {
-    color: colors.textMuted,
-    fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  },
-  infoVal: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: '800',
-  },
-  label: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  oosStripe: {
-    backgroundColor: colors.textMuted,
-    height: 1.5,
-    left: 0,
-    opacity: 0.5,
-    position: 'absolute',
-    right: 0,
-    top: '50%',
-  },
-  pill: {
+  chip: {
     alignItems: 'center',
     backgroundColor: colors.white,
     borderColor: colors.border,
     borderRadius: borderRadius.md,
     borderWidth: 1.5,
     justifyContent: 'center',
-    minWidth: 56,
+    minWidth: 60,
     overflow: 'hidden',
     paddingHorizontal: 14,
     paddingVertical: 10,
     position: 'relative',
   },
-  pillOOS: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    opacity: 0.6,
+  chipDelta: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 1,
   },
-  pillSelected: {
-    backgroundColor: colors.primaryLight,
-    borderColor: colors.primary,
+  chipDeltaSelected: {
+    color: colors.primary,
   },
-  pillText: {
-    color: colors.textSecondary,
+  chipLabel: {
+    color: colors.text,
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '600',
   },
-  pillTextOOS: {
+  chipLabelOOS: {
     color: colors.textMuted,
     textDecorationLine: 'line-through',
   },
-  pillTextSelected: {
+  chipLabelSelected: {
     color: colors.primary,
-  },
-  pillsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingRight: spacing.md,
-    paddingVertical: 2,
-  },
-  selectedLabel: {
-    color: colors.primary,
-    fontSize: 13,
     fontWeight: '800',
+  },
+  chipOOS: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    opacity: 0.55,
+  },
+  chipSelected: {
+    backgroundColor: '#EBF3FF',
+    borderColor: colors.primary,
+    borderWidth: 2,
+  },
+  chipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
+    gap: 8,
+    paddingBottom: 2,
+    paddingRight: spacing.md,
+    paddingTop: 2,
+  },
+  container: {
+    gap: 18,
+  },
+  group: {
+    gap: 10,
+  },
+  groupLabel: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  groupLabelRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+  },
+  groupSelected: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  oosStrike: {
+    backgroundColor: colors.textMuted,
+    height: 1.5,
+    left: 0,
+    opacity: 0.6,
+    position: 'absolute',
+    right: 0,
+    top: '50%',
+  },
+  summaryBar: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+    marginTop: 4,
+    overflow: 'hidden',
+  },
+  summaryBorder: {
+    borderLeftColor: colors.border,
+    borderLeftWidth: 1,
+  },
+  summaryItem: {
+    alignItems: 'center',
+    flex: 1,
+    gap: 3,
+    paddingVertical: 10,
+  },
+  summaryLabel: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  summaryValue: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  swatch: {
+    alignItems: 'center',
+    gap: 5,
+    padding: 4,
+    position: 'relative',
+    width: 56,
+  },
+  swatchCircle: {
+    borderRadius: 22,
+    height: 44,
+    width: 44,
+  },
+  swatchCircleWhiteBorder: {
+    borderColor: colors.border,
+    borderWidth: 1,
+  },
+  swatchName: {
+    color: colors.textSecondary,
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  swatchNameSelected: {
+    color: colors.primary,
+    fontWeight: '800',
+  },
+  swatchRing: {
+    borderColor: colors.primary,
+    borderRadius: 26,
+    borderWidth: 2.5,
+    bottom: 22,
+    height: 52,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 4,
+    width: 52,
+    alignSelf: 'center',
+  },
+  swatchSelected: {
+    // outer highlight handled by swatchRing
   },
   swatchesRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: 12,
-    paddingVertical: 4,
+    paddingTop: 2,
   },
 });

@@ -16,6 +16,10 @@ export default function AccountScreen() {
   const menuItems = [
     { icon: 'cube-outline' as const, label: 'My orders', route: '/(tabs)/orders' as const },
     { icon: 'location-outline' as const, label: 'Saved addresses', route: '/addresses' as const },
+    ...(user && (user.role === 'admin' || user.role === 'delivery_staff' || user.role === 'warehouse_staff')
+      ? [{ icon: 'calculator-outline' as const, label: 'Staff Portal', route: '/(staff)' as const }]
+      : []
+    ),
     { icon: 'notifications-outline' as const, label: 'Notifications', route: null },
     { icon: 'lock-closed-outline' as const, label: 'Change password', route: null },
     { icon: 'help-circle-outline' as const, label: 'Help & Support', route: null },

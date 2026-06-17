@@ -21,28 +21,8 @@ export interface DeliveryOrder {
 }
 
 // In-memory mock delivery orders
-let MOCK_DELIVERIES: DeliveryOrder[] = [
-  {
-    _id: 'mock-del-001',
-    orderNumber: 'ORD-2025-002',
-    customer: { fullName: 'Rahul Sharma', phone: '9876543210' },
-    deliveryAddress: {
-      fullName: 'Rahul Sharma',
-      phone: '9876543210',
-      addressLine1: '14, Sector 5, Industrial Area',
-      city: 'Jaipur',
-      state: 'Rajasthan',
-      pincode: '302005',
-    },
-    items: [
-      { name: 'MS Channel 100×50 mm', quantity: 5, unit: 'piece' }
-    ],
-    status: 'shipped',
-    deliveryToken: '123456',
-    estimatedDelivery: new Date(Date.now() + 2 * 24 * 3600000).toISOString(),
-    notes: 'Please call before arrival.'
-  }
-];
+let MOCK_DELIVERIES: DeliveryOrder[] = [];
+
 
 // Staff: get all assigned deliveries
 export const fetchAssignedDeliveries = async () => {
@@ -115,7 +95,10 @@ export const getDeliveryEstimate = async (
       params: { productId, pincode },
     });
     return data;
-  } catch {
+  } catch (err) {
+    if (!Config.USE_MOCK_API) {
+      throw err;
+    }
     // If backend is unreachable or not implemented, fallback to local mock implementation
     console.info('[MOCK] getDeliveryEstimate fallback active');
     return mockGetDeliveryEstimate(productId, pincode);

@@ -1,20 +1,19 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/constants/colors';
 import { useCartStore } from '@/stores/cartStore';
-import { useWishlistStore } from '@/stores/wishlistStore';
 import AuthModal from '@/components/AuthModal';
 
-function WishlistIcon({ color, size }: { color: string; size: number }) {
-  const count = useWishlistStore((s) => s.items.length);
+function CartTabIcon({ color, size }: { color: string; size: number }) {
+  const totalItems = useCartStore((s) => s.totalItems());
   return (
     <View>
-      <Ionicons name="heart-outline" size={size} color={color} />
-      {count > 0 && (
+      <Ionicons name="cart-outline" size={size} color={color} />
+      {totalItems > 0 && (
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>{count > 99 ? '99+' : count}</Text>
+          <Text style={styles.badgeText}>{totalItems > 99 ? '99+' : totalItems}</Text>
         </View>
       )}
     </View>
@@ -22,8 +21,6 @@ function WishlistIcon({ color, size }: { color: string; size: number }) {
 }
 
 export default function TabsLayout() {
-  const totalItems = useCartStore((s) => s.totalItems());
-
   return (
     <View style={{ flex: 1 }}>
       <Tabs
@@ -49,20 +46,7 @@ export default function TabsLayout() {
           options={{
             title: 'Home',
             tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="explore"
-          options={{
-            title: 'Explore',
-            tabBarIcon: ({ color, size }) => <Ionicons name="compass-outline" size={size} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="sale"
-          options={{
-            title: 'Deals',
-            tabBarIcon: ({ color, size }) => <Ionicons name="flame-outline" size={size} color={color} />,
+            headerShown: false,
           }}
         />
         <Tabs.Screen
@@ -70,29 +54,14 @@ export default function TabsLayout() {
           options={{
             title: 'Search',
             tabBarIcon: ({ color, size }) => <Ionicons name="search-outline" size={size} color={color} />,
-          }}
-        />
-        <Tabs.Screen
-          name="wishlist"
-          options={{
-            title: 'Wishlist',
-            tabBarIcon: ({ color, size }) => <WishlistIcon color={color} size={size} />,
+            headerShown: false,
           }}
         />
         <Tabs.Screen
           name="cart"
           options={{
             title: 'Cart',
-            tabBarIcon: ({ color, size }) => (
-              <View>
-                <Ionicons name="cart-outline" size={size} color={color} />
-                {totalItems > 0 && (
-                  <View style={styles.badge}>
-                    <Text style={styles.badgeText}>{totalItems > 99 ? '99+' : totalItems}</Text>
-                  </View>
-                )}
-              </View>
-            ),
+            tabBarIcon: ({ color, size }) => <CartTabIcon color={color} size={size} />,
           }}
         />
         <Tabs.Screen
@@ -108,6 +77,20 @@ export default function TabsLayout() {
             title: 'Account',
             tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
           }}
+        />
+
+        {/* Hidden screens — files exist but not shown as tabs */}
+        <Tabs.Screen
+          name="explore"
+          options={{ href: null }}
+        />
+        <Tabs.Screen
+          name="sale"
+          options={{ href: null }}
+        />
+        <Tabs.Screen
+          name="wishlist"
+          options={{ href: null }}
         />
       </Tabs>
 

@@ -31,6 +31,8 @@ import { useNotificationStore } from '@/stores/notificationStore';
 import { clearBadge } from '@/services/notifications';
 import { NetworkStatusProvider } from '@/hooks/useNetworkStatus';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
+import { MISSING_ENV_VARS } from '@/utils/config';
+import { MissingEnvScreen } from '@/components/error/MissingEnvScreen';
 
 // ── 1. Sentry: initialise before any render ────────────────────────────────
 // Called at module evaluation time (outside component) so it captures
@@ -55,6 +57,10 @@ const asyncStoragePersister = createAsyncStoragePersister({
 
 // ── Root layout ────────────────────────────────────────────────────────────
 export default function RootLayout() {
+  if (MISSING_ENV_VARS.length > 0) {
+    return <MissingEnvScreen missingVars={MISSING_ENV_VARS} />;
+  }
+
   const restoreSession      = useAuthStore((s) => s.restoreSession);
   const isAuthenticated     = useAuthStore((s) => s.isAuthenticated);
   const user                = useAuthStore((s) => s.user);

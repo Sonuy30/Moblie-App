@@ -31,6 +31,13 @@ export default function StaffLayout() {
         }}
       />
       <Tabs.Screen
+        name="pos"
+        options={{
+          title: 'POS',
+          tabBarIcon: ({ color, size }) => <Ionicons name="calculator-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="history"
         options={{
           title: 'History',

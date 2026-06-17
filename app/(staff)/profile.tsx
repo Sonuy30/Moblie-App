@@ -32,9 +32,11 @@ export default function StaffProfile() {
         {
           text: 'Sign Out',
           style: 'destructive',
-          onPress: async () => {
-            await logout();
-            router.replace('/(onboarding)/welcome');
+          onPress: () => {
+            void (async () => {
+              await logout();
+              router.replace('/(onboarding)/welcome');
+            })();
           },
         },
       ]
@@ -81,6 +83,22 @@ export default function StaffProfile() {
                 <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
               </TouchableOpacity>
             ))}
+          </View>
+        </View>
+
+        {/* Portal Switching */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Application Portal</Text>
+          <View style={styles.menuGroup}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              activeOpacity={0.6}
+              onPress={() => router.replace('/(tabs)')}
+            >
+              <Ionicons name="cart-outline" size={20} color={colors.primary} />
+              <Text style={[styles.menuLabel, { color: colors.primary }]}>Switch to Customer View</Text>
+              <Ionicons name="arrow-forward-outline" size={16} color={colors.primary} />
+            </TouchableOpacity>
           </View>
         </View>
 

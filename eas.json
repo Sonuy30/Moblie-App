@@ -6,7 +6,6 @@
   },
   "build": {
     "development": {
-      "comment": "Dev client build for internal testers using Expo Dev Client. Fast iteration with hot reload.",
       "developmentClient": true,
       "distribution": "internal",
       "android": {
@@ -17,17 +16,16 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://192.168.1.4:3000",
+        "EXPO_PUBLIC_API_URL": "https://pankajalerp.vercel.app",
         "EXPO_PUBLIC_API_TIMEOUT": "15000",
         "EXPO_PUBLIC_COMPANY_SLUG": "sudama01",
         "EXPO_PUBLIC_COMPANY_NAME": "Sudama01",
-        "EXPO_PUBLIC_USE_MOCK_API": "true",
+        "EXPO_PUBLIC_USE_MOCK_API": "false",
         "EXPO_PUBLIC_WS_URL": "ws://192.168.1.4:3001"
       }
     },
 
     "preview": {
-      "comment": "Internal preview build for QA & stakeholder review. No dev client — close to prod behaviour.",
       "developmentClient": false,
       "distribution": "internal",
       "android": {
@@ -37,13 +35,15 @@
         "simulator": false
       },
       "env": {
+        "EXPO_PUBLIC_API_URL": "https://pankajalerp.vercel.app",
         "EXPO_PUBLIC_API_TIMEOUT": "15000",
+        "EXPO_PUBLIC_COMPANY_SLUG": "sudama01",
+        "EXPO_PUBLIC_COMPANY_NAME": "Sudama Enterprises",
         "EXPO_PUBLIC_USE_MOCK_API": "false"
       }
     },
 
     "production": {
-      "comment": "Production build submitted to Google Play Store and Apple App Store via EAS Submit.",
       "developmentClient": false,
       "distribution": "store",
       "android": {
@@ -53,7 +53,10 @@
         "simulator": false
       },
       "env": {
+        "EXPO_PUBLIC_API_URL": "https://pankajalerp.vercel.app",
         "EXPO_PUBLIC_API_TIMEOUT": "15000",
+        "EXPO_PUBLIC_COMPANY_SLUG": "sudama01",
+        "EXPO_PUBLIC_COMPANY_NAME": "Sudama Enterprises",
         "EXPO_PUBLIC_USE_MOCK_API": "false"
       }
     }

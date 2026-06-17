@@ -7,6 +7,7 @@ const ADDRESSES_CACHE_KEY = 'aits_cached_addresses';
 
 // Helper to check if backend is offline/missing
 function isBackendMissing(err: unknown): boolean {
+  if (!Config.USE_MOCK_API) return false;
   if (err && typeof err === 'object') {
     const errorWithResponse = err as { response?: { status?: number } };
     const status = errorWithResponse.response?.status;

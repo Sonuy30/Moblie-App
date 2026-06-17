@@ -33,7 +33,10 @@ export default function FlashSaleBanner() {
   const products = saleProducts || [];
 
   const handleBannerPress = () => {
-    router.push('/(tabs)/sale');
+    router.push({
+      pathname: '/(tabs)/search',
+      params: { query: 'sale' },
+    });
   };
 
   return (
@@ -86,11 +89,9 @@ export default function FlashSaleBanner() {
               <TouchableOpacity
                 key={item._id}
                 style={[styles.productCard, !hasStock && styles.soldOutCard]}
-                activeOpacity={hasStock ? 0.9 : 1}
+                activeOpacity={0.9}
                 onPress={() => {
-                  if (hasStock) {
-                    router.push(`/product/${item.slug}`);
-                  }
+                  router.push(`/product/${item.slug}`);
                 }}
               >
                 <View style={styles.imageWrapper}>

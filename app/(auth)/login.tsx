@@ -94,7 +94,9 @@ export default function LoginScreen() {
       }
       useAuthModalStore.getState().hide();
 
-      if (pendingAction === 'checkout') {
+      if (user.role === 'admin' || user.role === 'delivery_staff' || user.role === 'warehouse_staff') {
+        router.replace('/(staff)');
+      } else if (pendingAction === 'checkout') {
         if (pendingData) useCartStore.getState().addItem(pendingData as any);
         router.replace('/checkout');
       } else {

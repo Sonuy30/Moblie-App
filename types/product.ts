@@ -20,9 +20,12 @@ export interface ProductVariant {
   weightPerPiece?: number;
   itemCode?: string;
   images?: string[];
+  description?: string;
   specifications?: { key: string; value: string }[];
   color?: string;        // Hex code or name e.g. "#FF0000" or "Red"
   size?: string;         // Size code e.g. "XL", "M", "8mm"
+  /** Raw ERP attribute map — e.g. { "Size": "10mm", "Grade": "Fe500D" } */
+  attributes?: Record<string, string> | Map<string, string>;
 }
 
 export interface Review {

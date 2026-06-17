@@ -18,7 +18,12 @@ export interface ProductVariant {
   weightPerPiece?: number;
   itemCode?: string;
   images?: string[];      // optional variant-specific images
+  description?: string;
   specifications?: { key: string; value: string }[];
+  color?: string;
+  size?: string;
+  /** Raw ERP attribute map — e.g. { "Size": "10mm", "Grade": "Fe500D" } */
+  attributes?: Record<string, string> | Map<string, string>;
 }
 
 export interface StoreProduct {
@@ -79,6 +84,7 @@ export interface ProductListResponse {
  *  • 500 — server crash, should surface to user
  */
 function isBackendMissing(err: unknown): boolean {
+  if (!Config.USE_MOCK_API) return false;
   if (!err || typeof err !== 'object') {
     return true;
   }

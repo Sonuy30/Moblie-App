@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -69,8 +69,14 @@ export default function OrderDetailScreen() {
   const banner = statusBanner[safeStatus] || statusBanner.confirmed;
 
   const latestReturn = returns && returns.length > 0 ? returns[returns.length - 1] : null;
-  const eligibility = getReturnEligibility(order.updatedAt);
-  const showReturnButton = safeStatus === 'delivered' && (eligibility.eligible || !!latestReturn);
+  // Use updatedAt if available and looks like a delivery timestamp,
+  // else fall back to placedAt so the window is always calculated from something real.
+  const eligibilityDate =
+    rawOrder?.updatedAt && rawOrder.updatedAt !== rawOrder.placedAt
+      ? rawOrder.updatedAt
+      : order.placedAt;
+  const eligibility = getReturnEligibility(eligibilityDate);
+  const showReturnSection = safeStatus === 'delivered';
 
   const handleReturnPress = () => {
     if (latestReturn) {
@@ -82,11 +88,13 @@ export default function OrderDetailScreen() {
 
   const returnButtonText = latestReturn
     ? latestReturn.overallStatus === 'completed'
-      ? 'Refund Credited - View Details'
+      ? 'Refund Credited — View Details'
       : latestReturn.overallStatus === 'rejected'
-      ? 'Return Rejected - View Details'
+      ? 'Return Rejected — View Details'
       : 'Track Return / Refund'
-    : 'Return / Exchange Items';
+    : eligibility.eligible
+    ? `Return / Exchange Items (${eligibility.daysRemaining}d left)`
+    : 'Return Window Closed';
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -165,11 +173,31 @@ export default function OrderDetailScreen() {
         </View>
 
         {/* Return / Exchange */}
-        {showReturnButton && (
-          <TouchableOpacity style={styles.returnBtn} onPress={handleReturnPress} activeOpacity={0.75}>
-            <Ionicons name="return-down-back-outline" size={20} color={colors.primary} />
-            <Text style={styles.returnBtnText}>{returnButtonText}</Text>
-            <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+        {showReturnSection && (
+          <TouchableOpacity
+            style={[
+              styles.returnBtn,
+              !eligibility.eligible && !latestReturn && styles.returnBtnDisabled,
+            ]}
+            onPress={eligibility.eligible || !!latestReturn ? handleReturnPress : undefined}
+            activeOpacity={eligibility.eligible || !!latestReturn ? 0.75 : 1}
+          >
+            <Ionicons
+              name="return-down-back-outline"
+              size={20}
+              color={eligibility.eligible || !!latestReturn ? colors.primary : colors.textMuted}
+            />
+            <Text
+              style={[
+                styles.returnBtnText,
+                !eligibility.eligible && !latestReturn && styles.returnBtnTextDisabled,
+              ]}
+            >
+              {returnButtonText}
+            </Text>
+            {(eligibility.eligible || !!latestReturn) && (
+              <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+            )}
           </TouchableOpacity>
         )}
 
@@ -217,11 +245,19 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     padding: spacing.lg,
   },
+  returnBtnDisabled: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+  },
   returnBtnText: {
     color: colors.primary,
     flex: 1,
     fontSize: 14,
     fontWeight: '700',
+  },
+  returnBtnTextDisabled: {
+    color: colors.textMuted,
+    fontWeight: '600',
   },
   safe: { backgroundColor: colors.background, flex: 1 },
   section: { gap: spacing.md },

@@ -3,78 +3,8 @@ import type { EcomOrder, Address } from './orders';
 // ─────────────────────────────────────────────────────────────────────────────
 // In-memory mock orders store — survives the session, resets on app restart
 // ─────────────────────────────────────────────────────────────────────────────
-const MOCK_ORDERS: EcomOrder[] = [
-  {
-    _id: 'mock-order-001',
-    orderNumber: 'ORD-2025-001',
-    items: [
-      { name: 'MS Angle Bar 40×40 mm', image: 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&auto=format&fit=crop&q=80', quantity: 10, price: 4800, unit: 'piece' },
-      { name: 'TMT Bar 10mm Fe500D', image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&auto=format&fit=crop&q=80', quantity: 20, price: 650, unit: 'piece' },
-    ],
-    deliveryAddress: {
-      fullName: 'Rahul Sharma', phone: '9876543210',
-      addressLine1: '14, Sector 5, Industrial Area',
-      city: 'Jaipur', state: 'Rajasthan', pincode: '302005',
-    },
-    subtotal: 61000,
-    gstAmount: 10980,
-    deliveryCharge: 0,
-    totalAmount: 71980,
-    paymentStatus: 'paid',
-    status: 'delivered',
-    placedAt: new Date(Date.now() - 15 * 24 * 3600000).toISOString(),
-    updatedAt: new Date(Date.now() - 10 * 24 * 3600000).toISOString(),
-    paymentMethod: 'cod',
-    estimatedDelivery: new Date(Date.now() - 10 * 24 * 3600000).toISOString(),
-  },
-  {
-    _id: 'mock-order-002',
-    orderNumber: 'ORD-2025-002',
-    items: [
-      { name: 'MS Channel 100×50 mm', image: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=400&auto=format&fit=crop&q=80', quantity: 5, price: 7200, unit: 'piece' },
-    ],
-    deliveryAddress: {
-      fullName: 'Rahul Sharma', phone: '9876543210',
-      addressLine1: '14, Sector 5, Industrial Area',
-      city: 'Jaipur', state: 'Rajasthan', pincode: '302005',
-    },
-    subtotal: 36000,
-    gstAmount: 6480,
-    deliveryCharge: 99,
-    totalAmount: 42579,
-    paymentStatus: 'paid',
-    status: 'shipped',
-    trackingNumber: 'DELHIVERY1234567',
-    courierName: 'Delhivery',
-    placedAt: new Date(Date.now() - 5 * 24 * 3600000).toISOString(),
-    updatedAt: new Date(Date.now() - 2 * 24 * 3600000).toISOString(),
-    paymentMethod: 'cod',
-    estimatedDelivery: new Date(Date.now() + 2 * 24 * 3600000).toISOString(),
-  },
-  {
-    _id: 'mock-order-003',
-    orderNumber: 'ORD-2025-003',
-    items: [
-      { name: 'GI Pipe 20mm (Light Grade)', image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&auto=format&fit=crop&q=80', quantity: 50, price: 320, unit: 'piece' },
-      { name: 'MS Flat Bar 50×5 mm', image: 'https://images.unsplash.com/photo-1604754742629-3e5728249d73?w=400&auto=format&fit=crop&q=80', quantity: 8, price: 3200, unit: 'piece' },
-    ],
-    deliveryAddress: {
-      fullName: 'Rahul Sharma', phone: '9876543210',
-      addressLine1: '14, Sector 5, Industrial Area',
-      city: 'Jaipur', state: 'Rajasthan', pincode: '302005',
-    },
-    subtotal: 41600,
-    gstAmount: 7488,
-    deliveryCharge: 0,
-    totalAmount: 49088,
-    paymentStatus: 'pending',
-    status: 'confirmed',
-    placedAt: new Date(Date.now() - 1 * 24 * 3600000).toISOString(),
-    updatedAt: new Date(Date.now() - 1 * 24 * 3600000).toISOString(),
-    paymentMethod: 'cod',
-    estimatedDelivery: new Date(Date.now() + 5 * 24 * 3600000).toISOString(),
-  },
-];
+const MOCK_ORDERS: EcomOrder[] = [];
+
 
 // Newly placed orders (from checkout in this session) are prepended here
 export const SESSION_ORDERS: EcomOrder[] = [];

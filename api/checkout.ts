@@ -29,6 +29,7 @@ import client from './client';
 import { mockInitiateCheckout } from './mockOrders';
 
 function shouldUseMock(err: unknown): boolean {
+  if (!Config.USE_MOCK_API) return false;
   const axErr = err as AxiosError;
   if (!axErr?.response) return true;
   const s = axErr.response.status;

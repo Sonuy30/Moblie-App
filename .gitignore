@@ -55,3 +55,7 @@ scratch/
 
 # Lint and temp logs
 *lint_output*.txt
+
+# Editor / IDE configuration
+.idea/
+

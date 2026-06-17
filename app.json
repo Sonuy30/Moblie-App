@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "AITS Shop",
+    "name": "Sudama Enterprises",
     "slug": "aits-shop",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "scheme": "aitsshop",
+    "scheme": "sudamaenterprises",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.aits.shop"
+      "bundleIdentifier": "com.sudama.enterprises"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +23,15 @@
         "backgroundColor": "#185FA5"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.aits.shop"
+      "package": "com.sudama.enterprises",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.INTERNET",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.USE_FULL_SCREEN_INTENT"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -36,9 +44,34 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow AITS Shop to use the camera to scan invite QR codes."
+          "cameraPermission": "Allow Sudama Enterprises to use the camera to scan invite QR codes."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#185FA5",
+          "sounds": [],
+          "androidMode": "default",
+          "androidCollapsedTitle": "#{unread_notifications} new interactions"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "cd7df94c-1fd3-4cfa-aa0c-94fa2eceb4d3"
+      }
+    },
+    "owner": "ronp6"
   }
 }

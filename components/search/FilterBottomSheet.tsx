@@ -148,11 +148,11 @@ export default function FilterBottomSheet({
   };
 
   return (
-    <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
+    <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose} statusBarTranslucent>
       <View style={styles.overlay}>
-        {/* Backdrop Tap Target */}
+        {/* Backdrop */}
         <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]}>
-          <TouchableOpacity style={styles.backdropButton} activeOpacity={1} onPress={handleClose} />
+          <TouchableOpacity style={styles.backdropFill} activeOpacity={1} onPress={handleClose} />
         </Animated.View>
 
         {/* Bottom Sheet Sheet */}
@@ -349,14 +349,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   backdrop: {
-    backgroundColor: colors.black,
-    height: '100%',
-    position: 'absolute',
-    width: '100%',
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#000',
   },
-  backdropButton: {
-    height: '100%',
-    width: '100%',
+  backdropFill: {
+    flex: 1,
   },
   chip: {
     alignItems: 'center',
@@ -438,6 +435,7 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: 'flex-end',
+    backgroundColor: 'transparent',
   },
   presetContainer: {
     marginTop: 12,

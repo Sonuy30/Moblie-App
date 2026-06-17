@@ -94,6 +94,7 @@ interface ServerErrorBody {
  * the fallback — those propagate as-is so the UI can show the right message.
  */
 function isBackendMissing(err: unknown): boolean {
+  if (!Config.USE_MOCK_API) return false;
   const axiosErr = err as AxiosError<ServerErrorBody>;
 
   // No HTTP response = network error (server down, wrong IP, CORS, no internet)

@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getAddresses, addAddress, deleteAddress, setDefaultAddress } from '@/api/addresses';
 import { type Address } from '@/api/orders';
 import { getErrorMessage } from '@/api/client';
+import { useAuthStore } from '@/stores/authStore';
 import Button from '@/components/ui/Button';
 import EmptyState from '@/components/ui/EmptyState';
 import { SkeletonRect } from '@/components/skeletons/SkeletonBase';
@@ -13,11 +14,25 @@ import { colors } from '@/constants/colors';
 import { spacing, borderRadius } from '@/constants/config';
 
 export default function AddressScreen() {
+  const user = useAuthStore((s) => s.user);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ fullName: '', phone: '', addressLine1: '', addressLine2: '', city: '', state: '', pincode: '' });
+
+  const handleOpenForm = () => {
+    setForm({
+      fullName: user?.fullName || '',
+      phone: user?.phone || '',
+      addressLine1: '',
+      addressLine2: '',
+      city: '',
+      state: '',
+      pincode: '',
+    });
+    setShowForm(true);
+  };
 
   const load = async () => {
     setLoading(true);
@@ -100,7 +115,7 @@ export default function AddressScreen() {
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.title}>Saved Addresses</Text>
-        <TouchableOpacity onPress={() => setShowForm(true)}>
+        <TouchableOpacity onPress={handleOpenForm}>
           <Ionicons name="add-circle-outline" size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
@@ -127,7 +142,7 @@ export default function AddressScreen() {
           ))}
         </ScrollView>
       ) : addresses.length === 0 ? (
-        <EmptyState icon="location-outline" title="No saved addresses" subtitle="Add an address for faster checkout" actionLabel="Add Address" onAction={() => setShowForm(true)} />
+        <EmptyState icon="location-outline" title="No saved addresses" subtitle="Add an address for faster checkout" actionLabel="Add Address" onAction={handleOpenForm} />
       ) : (
         <FlatList data={addresses} keyExtractor={(item) => item._id || ''} contentContainerStyle={styles.list}
           renderItem={({ item }) => (

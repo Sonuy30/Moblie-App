@@ -68,6 +68,7 @@ export interface EcomOrder {
 
 /** Returns true when the error warrants a mock fallback instead of propagation. */
 function shouldUseMock(err: unknown): boolean {
+  if (!Config.USE_MOCK_API) return false;
   const axErr = err as AxiosError;
   if (!axErr?.response) return true;
   const s = axErr.response.status;
@@ -283,6 +284,8 @@ export const initiateCheckout = async (payload: {
       name:      i.name,
       qty:       i.quantity,
       price:     i.price,
+      variantId: (i as any).variantId || null,
+      variantLabel: (i as any).variantLabel || null,
     })),
     paymentMethod:   payload.paymentMethod || 'cod',
     shippingAddress: payload.shippingAddress || {},

@@ -53,7 +53,7 @@ export default function CheckoutSuccessScreen() {
         <View style={styles.detailsCard}>
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>Order Reference</Text>
-            <Text style={styles.detailValue}>#{orderNumber || 'AITS-MOCK-001'}</Text>
+            <Text style={styles.detailValue}>{orderNumber ? `#${orderNumber}` : 'N/A'}</Text>
           </View>
           {ecomOrderId ? (
             <View style={styles.detailRow}>

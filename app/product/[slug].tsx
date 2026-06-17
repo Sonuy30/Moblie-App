@@ -127,6 +127,7 @@ export default function ProductDetailScreen() {
       : product.images;
   const activeSpecs    = selectedVariant?.specifications ?? product.specifications;
   const activeItemCode = selectedVariant?.itemCode ?? product.itemCode;
+  const activeDescription = selectedVariant?.description ?? product.description;
 
   // ── Calculator ───────────────────────────────────────────
   const hasWeight = typeof activeWeight === 'number' && activeWeight > 0;
@@ -202,6 +203,14 @@ export default function ProductDetailScreen() {
     router.push('/checkout');
   };
 
+  const handleNotifyMe = () => {
+    Alert.alert(
+      'Stock Alert Set',
+      `We will notify you via push notification as soon as ${product.name} is back in stock!`,
+      [{ text: 'OK' }]
+    );
+  };
+
   const handleWriteReview = () => {
     if (!isOnline) {
       Alert.alert(
@@ -230,7 +239,8 @@ export default function ProductDetailScreen() {
       ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
       : product.avgRating || 0;
 
-  const hasVariants = (product.variants?.length ?? 0) > 1;
+  // Show variant selector when at least 1 variant exists
+  const hasVariants = (product.variants?.length ?? 0) >= 1;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -272,20 +282,7 @@ export default function ProductDetailScreen() {
             Code: {activeItemCode || product.itemCode}
           </Text>
 
-          {/* ── Variant Selector ── */}
-          {hasVariants && product.variantType && (
-            <View style={styles.variantSection}>
-              <VariantSelector
-                variantType={product.variantType}
-                variants={product.variants!}
-                selectedVariant={selectedVariant}
-                onSelect={handleVariantSelect}
-                basePrice={product.storePrice}
-              />
-            </View>
-          )}
-
-          {/* Pricing */}
+          {/* Pricing — shown first so user sees price before choosing variant */}
           <View style={styles.priceRow}>
             <Text style={styles.price}>{formatINR(activePrice)}</Text>
             {activeMRP !== undefined && activeMRP > activePrice && (
@@ -296,9 +293,6 @@ export default function ProductDetailScreen() {
             )}
           </View>
 
-          {/* Stock badge */}
-          <StockBadge inStock={activeInStock} stockQty={activeStock} />
-
           {/* Rating */}
           <TouchableOpacity onPress={() => {}} style={styles.ratingRow}>
             <StarRating
@@ -306,6 +300,22 @@ export default function ProductDetailScreen() {
               count={reviews.length || product.reviewCount || 0}
             />
           </TouchableOpacity>
+
+          {/* ── Variant Selector (Amazon-style) ── */}
+          {hasVariants && (
+            <View style={styles.variantSection}>
+              <VariantSelector
+                variantType={product.variantType ?? 'Variant'}
+                variants={product.variants!}
+                selectedVariant={selectedVariant}
+                onSelect={handleVariantSelect}
+                basePrice={product.storePrice}
+              />
+            </View>
+          )}
+
+          {/* Stock badge */}
+          <StockBadge inStock={activeInStock} stockQty={activeStock} />
 
           {/* Quantity Stepper */}
           {activeInStock && (
@@ -431,11 +441,11 @@ export default function ProductDetailScreen() {
           )}
 
           {/* Description */}
-          {product.description && (
+          {activeDescription && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>About this product</Text>
               <Text style={styles.desc} numberOfLines={expanded ? undefined : 4}>
-                {product.description}
+                {activeDescription}
               </Text>
               <TouchableOpacity onPress={() => setExpanded(!expanded)}>
                 <Text style={styles.readMore}>{expanded ? 'Show less' : 'Read more'}</Text>
@@ -556,27 +566,37 @@ export default function ProductDetailScreen() {
 
       {/* Fixed footer controls */}
       <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.addToCartBtn]}
-          onPress={handleAddToCart}
-          disabled={!activeInStock}
-        >
-          <Ionicons name="cart-outline" size={20} color={colors.primary} />
-          <Text style={styles.addToCartText}>Add to Cart</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.actionBtn,
-            styles.buyNowBtn,
-            !activeInStock && styles.disabledBtn,
-          ]}
-          onPress={handleBuyNow}
-          disabled={!activeInStock}
-        >
-          <Text style={styles.buyNowText}>
-            {activeInStock ? 'Buy Now' : 'Out of Stock'}
-          </Text>
-        </TouchableOpacity>
+        {activeInStock ? (
+          <>
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.addToCartBtn]}
+              onPress={handleAddToCart}
+            >
+              <Ionicons name="cart-outline" size={20} color={colors.primary} />
+              <Text style={styles.addToCartText}>Add to Cart</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.buyNowBtn]}
+              onPress={handleBuyNow}
+            >
+              <Text style={styles.buyNowText}>Buy Now</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <View style={styles.outOfStockFooterRow}>
+            <View style={styles.outOfStockLabelContainer}>
+              <Ionicons name="alert-circle-outline" size={16} color={colors.error} />
+              <Text style={styles.outOfStockLabelText}>Out of Stock</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.notifyBtn}
+              onPress={handleNotifyMe}
+            >
+              <Ionicons name="notifications-outline" size={18} color={colors.white} />
+              <Text style={styles.notifyBtnText}>Notify Me</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       {/* Write Review Modal */}
@@ -657,7 +677,6 @@ const styles = StyleSheet.create({
   calcValLarge: { color: colors.white, fontSize: 18, fontWeight: '800' },
   content: { gap: spacing.md, padding: spacing.lg },
   desc: { color: colors.textSecondary, fontSize: 14, lineHeight: 22 },
-  disabledBtn: { opacity: 0.5 },
   firstReviewBtn: {
     backgroundColor: colors.primary,
     borderRadius: borderRadius.full,
@@ -730,7 +749,43 @@ const styles = StyleSheet.create({
   },
   noReviewsSub: { color: colors.textMuted, fontSize: 13 },
   noReviewsTitle: { color: colors.text, fontSize: 15, fontWeight: '700' },
+  notifyBtn: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.lg,
+    flex: 1,
+    flexDirection: 'row',
+    gap: 8,
+    height: 52,
+    justifyContent: 'center',
+  },
+  notifyBtnText: {
+    color: colors.white,
+    fontSize: 15,
+    fontWeight: '700',
+  },
   oldSubtotal: { color: '#94a3b8', fontSize: 12, marginBottom: 2, textDecorationLine: 'line-through' },
+  outOfStockFooterRow: {
+    alignItems: 'center',
+    flex: 1,
+    flexDirection: 'row',
+    gap: 12,
+  },
+  outOfStockLabelContainer: {
+    alignItems: 'center',
+    backgroundColor: colors.errorLight,
+    borderRadius: borderRadius.lg,
+    flexDirection: 'row',
+    gap: 4,
+    height: 52,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  outOfStockLabelText: {
+    color: colors.error,
+    fontSize: 14,
+    fontWeight: '700',
+  },
   price: { color: colors.primary, fontSize: 26, fontWeight: '800' },
   // Pricing
   priceRow: { alignItems: 'center', flexDirection: 'row', gap: 10 },
@@ -850,5 +905,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
   },
-  writeReviewText: { color: colors.primary, fontSize: 12, fontWeight: '700' },
+  writeReviewText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
 });

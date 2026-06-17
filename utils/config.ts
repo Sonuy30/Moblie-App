@@ -33,10 +33,35 @@ interface EnvVars {
 // We prefer process.env because it works without modifying app.config.js.
 function getEnv(key: keyof EnvVars): string | undefined {
   // Primary: Metro-inlined process.env (works in Expo Go + bare workflow)
-  const fromProcess = process.env[key];
+  // We must access these statically (literal property access) so the Metro bundler
+  // can replace them with string literals during production bundling.
+  let fromProcess: string | undefined;
+  switch (key) {
+    case 'EXPO_PUBLIC_API_URL':
+      fromProcess = process.env.EXPO_PUBLIC_API_URL;
+      break;
+    case 'EXPO_PUBLIC_API_TIMEOUT':
+      fromProcess = process.env.EXPO_PUBLIC_API_TIMEOUT;
+      break;
+    case 'EXPO_PUBLIC_COMPANY_SLUG':
+      fromProcess = process.env.EXPO_PUBLIC_COMPANY_SLUG;
+      break;
+    case 'EXPO_PUBLIC_COMPANY_NAME':
+      fromProcess = process.env.EXPO_PUBLIC_COMPANY_NAME;
+      break;
+    case 'EXPO_PUBLIC_RAZORPAY_KEY':
+      fromProcess = process.env.EXPO_PUBLIC_RAZORPAY_KEY;
+      break;
+    case 'EXPO_PUBLIC_USE_MOCK_API':
+      fromProcess = process.env.EXPO_PUBLIC_USE_MOCK_API;
+      break;
+    case 'EXPO_PUBLIC_WS_URL':
+      fromProcess = process.env.EXPO_PUBLIC_WS_URL;
+      break;
+  }
   if (fromProcess) return fromProcess;
 
-  // Fallback: Constants.expoConfig.extra (useful in EAS builds with app.config.js)
+  // Fallback: Constants.expoConfig?.extra (useful in EAS builds with app.config.js)
   const extra = Constants.expoConfig?.extra;
   const val: unknown = extra?.[key];
   return typeof val === 'string' ? val : undefined;
@@ -86,7 +111,11 @@ const REQUIRED_VARS = [
   'EXPO_PUBLIC_COMPANY_SLUG',
 ] as const satisfies ReadonlyArray<keyof EnvVars>;
 
-validateRequiredEnvVars(REQUIRED_VARS);
+// Export the list of missing required variables so it can be handled in UI
+export const MISSING_ENV_VARS = REQUIRED_VARS.filter((key) => {
+  const val = getEnv(key);
+  return !val || val.trim() === '';
+});
 
 // ── Typed Config object ────────────────────────────────────────────────────
 /**

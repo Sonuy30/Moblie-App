@@ -1,25 +1,105 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import React, { useRef, useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  FlatList,
+  Dimensions,
+  type ViewToken,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { colors } from '@/constants/colors';
 import { borderRadius, spacing } from '@/constants/config';
 
-const { width } = Dimensions.get('window');
-
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
 
+interface Banner {
+  id: string;
+  gradient: [string, string, string];
+  badge: string;
+  brandLine: string;
+  title: string;
+  subtitle: string;
+  ctaText: string;
+  ctaRoute: '/(tabs)/search';
+}
+
+const BANNERS: Banner[] = [
+  {
+    id: 'b1',
+    gradient: ['#0F2027', '#203A43', '#2C5364'],
+    badge: '⚡ MEGA DEAL',
+    brandLine: `🌟 ${companyName} SUPER VALUE FEST`,
+    title: 'Build Securely\nSave Up To 20%',
+    subtitle:
+      'Direct-from-mill discounts on premium TMT rebars, rust-proof GI pipes, and binding wire combos.',
+    ctaText: 'Claim Offers',
+    ctaRoute: '/(tabs)/search',
+  },
+  {
+    id: 'b2',
+    gradient: ['#1a1a2e', '#16213e', '#0f3460'],
+    badge: '🎁 COMBO SAVER',
+    brandLine: `🔩 ${companyName} BULK BONANZA`,
+    title: 'Buy More,\nPay Less',
+    subtitle:
+      'Order 15 bundles of annealed binding wire, get 1 FREE. Exclusive bulk pricing unlocked.',
+    ctaText: 'Shop Combos',
+    ctaRoute: '/(tabs)/search',
+  },
+  {
+    id: 'b3',
+    gradient: ['#11998e', '#1a6b51', '#0d4a38'],
+    badge: '📉 PRICE DROP',
+    brandLine: `🏗️ ${companyName} CONTRACTOR WEEK`,
+    title: 'GI Pipe Price\nDrop — 20% Off',
+    subtitle:
+      'Premium galvanized iron pipes, 20mm & 25mm light grade. Stock up now before prices rise.',
+    ctaText: 'View Deals',
+    ctaRoute: '/(tabs)/search',
+  },
+];
+
 export default function HeroBanner() {
-  return (
-    <View style={styles.container}>
+  const flatListRef = useRef<FlatList<Banner>>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const indexRef = useRef(0);
+
+  // Auto-scroll every 4 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const next = (indexRef.current + 1) % BANNERS.length;
+      flatListRef.current?.scrollToIndex({ index: next, animated: true });
+      indexRef.current = next;
+      setActiveIndex(next);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      if (viewableItems[0]?.index !== null && viewableItems[0]?.index !== undefined) {
+        indexRef.current = viewableItems[0].index;
+        setActiveIndex(viewableItems[0].index);
+      }
+    }
+  ).current;
+
+  const viewabilityConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
+
+  const renderBanner = ({ item }: { item: Banner }) => (
+    <View style={styles.slide}>
       <LinearGradient
-        colors={['#0F2027', '#203A43', '#2C5364']}
+        colors={item.gradient}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.gradient}
       >
-        {/* Top Badge */}
+        {/* Top Row */}
         <View style={styles.topRow}>
           <LinearGradient
             colors={['#FF512F', '#DD2476']}
@@ -28,7 +108,7 @@ export default function HeroBanner() {
             style={styles.liveBadgeGradient}
           >
             <View style={styles.liveDot} />
-            <Text style={styles.liveText}>⚡ MEGA DEAL</Text>
+            <Text style={styles.liveText}>{item.badge}</Text>
           </LinearGradient>
           <View style={styles.certBadge}>
             <Ionicons name="shield-checkmark" size={12} color="#38ef7d" />
@@ -36,22 +116,20 @@ export default function HeroBanner() {
           </View>
         </View>
 
+        {/* Content */}
         <View style={styles.content}>
-          <Text style={styles.brandLine}>🌟 {companyName} SUPER VALUE FEST</Text>
-          <Text style={styles.title}>Build Securely{'\n'}Save Up To 20%</Text>
-          <Text style={styles.subtitle}>
-            Direct-from-mill discounts on premium TMT rebars, rust-proof GI pipes, and binding wire combos.
-          </Text>
+          <Text style={styles.brandLine}>{item.brandLine}</Text>
+          <Text style={styles.title}>{item.title}</Text>
+          <Text style={styles.subtitle}>{item.subtitle}</Text>
 
-          {/* CTA & Offer Highlights */}
           <View style={styles.ctaRow}>
             <TouchableOpacity
               style={styles.primaryCta}
-              onPress={() => router.push('/(tabs)/explore')}
+              onPress={() => router.push(item.ctaRoute)}
               activeOpacity={0.85}
             >
               <Ionicons name="cart-outline" size={15} color="#fff" />
-              <Text style={styles.primaryCtaText}>Claim Offers</Text>
+              <Text style={styles.primaryCtaText}>{item.ctaText}</Text>
             </TouchableOpacity>
             <View style={styles.statPill}>
               <Text style={styles.statNumber}>Flat 20%</Text>
@@ -68,15 +146,45 @@ export default function HeroBanner() {
         <View style={styles.circle1} />
         <View style={styles.circle2} />
         <View style={styles.circle3} />
-
-        {/* Steel beam decoration */}
         <View style={styles.beamH} />
         <View style={styles.beamV} />
       </LinearGradient>
     </View>
   );
+
+  return (
+    <View style={styles.container}>
+      <FlatList
+        ref={flatListRef}
+        data={BANNERS}
+        renderItem={renderBanner}
+        keyExtractor={(item) => item.id}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        getItemLayout={(_, index) => ({
+          length: SCREEN_WIDTH - spacing.lg * 2,
+          offset: (SCREEN_WIDTH - spacing.lg * 2) * index,
+          index,
+        })}
+      />
+
+      {/* Pagination Dots */}
+      <View style={styles.dotsRow}>
+        {BANNERS.map((_, i) => (
+          <View
+            key={i}
+            style={[styles.dot, i === activeIndex && styles.dotActive]}
+          />
+        ))}
+      </View>
+    </View>
+  );
 }
 
+const SLIDE_WIDTH = SCREEN_WIDTH - spacing.lg * 2;
 
 const styles = StyleSheet.create({
   beamH: {
@@ -147,23 +255,37 @@ const styles = StyleSheet.create({
     width: 60,
   },
   container: {
-    borderRadius: borderRadius.xl,
     marginHorizontal: spacing.lg,
     marginTop: spacing.md,
-    overflow: 'hidden',
   },
   content: {
     zIndex: 1,
   },
-
   ctaRow: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: 10,
     marginTop: 16,
   },
-  gradient: {
+  dot: {
+    backgroundColor: 'rgba(24,95,165,0.25)',
+    borderRadius: 999,
+    height: 6,
+    width: 6,
+  },
+  dotActive: {
+    backgroundColor: colors.primary,
+    width: 18,
+  },
+  dotsRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 5,
     justifyContent: 'center',
+    marginTop: 10,
+  },
+  gradient: {
+    justifyContent: 'space-between',
     minHeight: 200,
     overflow: 'hidden',
     padding: spacing.lg,
@@ -205,6 +327,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '800',
   },
+  slide: {
+    borderRadius: borderRadius.xl,
+    overflow: 'hidden',
+    width: SLIDE_WIDTH,
+  },
   statLabel: {
     color: 'rgba(255,255,255,0.7)',
     fontSize: 9,
@@ -245,4 +372,3 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
 });
-

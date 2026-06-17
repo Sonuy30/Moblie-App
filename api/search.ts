@@ -5,6 +5,7 @@ import type { SearchFilters, SearchResult } from '@/types/search';
 
 // Check if the backend is unreachable (consistent with api/products.ts)
 function isBackendMissing(err: unknown): boolean {
+  if (!Config.USE_MOCK_API) return false;
   if (err && typeof err === 'object') {
     const errorWithResponse = err as { response?: { data?: { message?: string; error?: string }; status?: number } };
     if (errorWithResponse.response?.data?.message || errorWithResponse.response?.data?.error) {
@@ -100,11 +101,32 @@ async function mockSearchProducts(query: string, filters: SearchFilters): Promis
   // Apply text query search
   if (query) {
     const q = query.toLowerCase();
-    items = items.filter((p) =>
-      p.name.toLowerCase().includes(q) ||
-      p.tags.some((t) => t.includes(q)) ||
-      p.category.toLowerCase().includes(q)
-    );
+    if (q === 'sale') {
+      // Return flash sale products!
+      /* eslint-disable @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
+      const { getMockActiveSale, getSaleProducts } = require('./sales');
+      const activeSale = getMockActiveSale();
+      const saleProducts = await getSaleProducts(activeSale._id);
+      items = saleProducts.map((sp: { originalPrice: number; category: string }) => ({
+        ...sp,
+        mrp: sp.originalPrice,
+        isFeatured: false,
+        tags: ['sale', 'deal', sp.category.toLowerCase()],
+      }));
+      /* eslint-enable @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
+    } else if (q === 'top rated') {
+      items = items.filter((p) => p.avgRating >= 4.3);
+    } else if (q === 'new') {
+      items = items.sort((a, b) => b._id.localeCompare(a._id));
+    } else if (q === 'under 500') {
+      items = items.filter((p) => p.storePrice < 1000);
+    } else {
+      items = items.filter((p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.tags.some((t) => t.includes(q)) ||
+        p.category.toLowerCase().includes(q)
+      );
+    }
   }
 
   // Apply categories filter (multi-select)

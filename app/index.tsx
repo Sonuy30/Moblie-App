@@ -70,7 +70,12 @@ export default function SplashScreen() {
     if (!isLoading) {
       // Add a small delay so the animation plays before navigating
       setTimeout(() => {
-        router.replace('/(tabs)');
+        const auth = useAuthStore.getState();
+        if (auth.isAuthenticated && auth.user && (auth.user.role === 'admin' || auth.user.role === 'delivery_staff' || auth.user.role === 'warehouse_staff')) {
+          router.replace('/(staff)');
+        } else {
+          router.replace('/(tabs)');
+        }
       }, 2200);
     }
   }, [isLoading]);
