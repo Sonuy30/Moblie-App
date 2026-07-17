@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery } from '@tanstack/react-query';
 import { FlashList as OriginalFlashList } from '@shopify/flash-list';
@@ -84,6 +84,57 @@ export default function SearchScreen() {
     if (params.sort === 'price_asc') initialFilters.sortBy = 'price_asc';
     return initialFilters;
   });
+
+  // ── Sync Route Params on Focus ────────────────────────────
+  useFocusEffect(
+    useCallback(() => {
+      const hasParams =
+        params.category ||
+        params.query ||
+        params.featured ||
+        params.sort ||
+        params.minPrice ||
+        params.maxPrice;
+
+      if (hasParams) {
+        let newQuery = '';
+        if (params.featured === 'true') {
+          newQuery = 'featured';
+        } else if (params.category) {
+          newQuery = params.category;
+        } else if (params.query) {
+          newQuery = params.query;
+        }
+
+        setSearchQuery(newQuery);
+        setDebouncedQuery(newQuery);
+
+        setFilters((prev) => {
+          const updated: SearchFilters = {
+            ...prev,
+            minPrice: params.minPrice ? parseInt(params.minPrice) : undefined,
+            maxPrice: params.maxPrice ? parseInt(params.maxPrice) : undefined,
+            categories: params.category ? [params.category] : undefined,
+          };
+          if (params.sort === 'newest') updated.sortBy = 'newest';
+          else if (params.sort === 'popular') updated.sortBy = 'popularity';
+          else if (params.sort === 'price_asc') updated.sortBy = 'price_asc';
+          else updated.sortBy = 'relevance';
+          return updated;
+        });
+
+        // Clear the params from the route so they don't get re-applied on subsequent focuses
+        router.setParams({
+          category: undefined,
+          query: undefined,
+          featured: undefined,
+          sort: undefined,
+          minPrice: undefined,
+          maxPrice: undefined,
+        });
+      }
+    }, [params])
+  );
 
   const searchInputRef = useRef<TextInput>(null);
   const [focusAnim] = useState(() => new Animated.Value(0));
@@ -328,6 +379,38 @@ export default function SearchScreen() {
     );
   };
 
+  const renderEmptyState = () => {
+    return (
+      <View style={styles.emptyContainer}>
+        <EmptyState
+          icon="search-outline"
+          title="No results found"
+          subtitle={`We couldn't find matches for "${searchQuery || 'your filters'}"`}
+          actionLabel={isFilterActive ? 'Clear Filters' : 'Try Another Search'}
+          onAction={isFilterActive ? handleClearFilters : () => searchInputRef.current?.focus()}
+        />
+        
+        {/* Recovery suggestions */}
+        <View style={[styles.suggestionSection, styles.emptyRecoverySection]}>
+          <Text style={styles.suggestionTitle}>You might be looking for</Text>
+          <View style={styles.popularContainer}>
+            {POPULAR_SEARCHES.map((term, idx) => (
+              <TouchableOpacity
+                key={idx}
+                activeOpacity={0.7}
+                onPress={() => handleChipPress(term)}
+                style={styles.popularChip}
+              >
+                <Ionicons name="trending-up-outline" size={14} color={colors.primary} />
+                <Text style={styles.popularChipText}>{term}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   // ── Render ────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -365,7 +448,11 @@ export default function SearchScreen() {
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity
-              onPress={() => { setSearchQuery(''); setFilters((f) => ({ ...f, categories: undefined })); }}
+              onPress={() => {
+                setSearchQuery('');
+                setDebouncedQuery('');
+                setFilters((f) => ({ ...f, categories: undefined }));
+              }}
               style={styles.clearIconContainer}
               activeOpacity={0.7}
             >
@@ -396,7 +483,11 @@ export default function SearchScreen() {
             <Ionicons name="pricetag-outline" size={12} color={colors.primary} />
             <Text style={styles.activeCategoryText}>{filters.categories.join(', ')}</Text>
             <TouchableOpacity
-              onPress={() => setFilters((f) => ({ ...f, categories: undefined }))}
+              onPress={() => {
+                setFilters((f) => ({ ...f, categories: undefined }));
+                setSearchQuery('');
+                setDebouncedQuery('');
+              }}
               activeOpacity={0.7}
             >
               <Ionicons name="close-circle" size={16} color={colors.primary} />
@@ -424,15 +515,6 @@ export default function SearchScreen() {
           onAction={() => { void refetch(); }}
         />
 
-      ) : productsList.length === 0 ? (
-        <EmptyState
-          icon="search-outline"
-          title="No results found"
-          subtitle={`We couldn't find matches for "${searchQuery || 'your filters'}"`}
-          actionLabel={isFilterActive ? 'Clear Filters' : 'Try Another Search'}
-          onAction={isFilterActive ? handleClearFilters : () => searchInputRef.current?.focus()}
-        />
-
       ) : (
         <View style={styles.resultsContainer}>
           <FlashList
@@ -445,6 +527,7 @@ export default function SearchScreen() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             ListHeaderComponent={renderHeader}
+            ListEmptyComponent={renderEmptyState}
           />
         </View>
       )}
@@ -541,6 +624,14 @@ const styles = StyleSheet.create({
   clearIconContainer: {
     justifyContent: 'center',
     padding: spacing.xs,
+  },
+  emptyContainer: {
+    flex: 1,
+    paddingTop: spacing.xl,
+  },
+  emptyRecoverySection: {
+    marginTop: spacing.xl,
+    paddingHorizontal: spacing.lg,
   },
   exploreHeaderContainer: {
     paddingHorizontal: spacing.sm,

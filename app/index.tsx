@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
@@ -11,15 +11,15 @@ export default function SplashScreen() {
   const { isLoading, restoreSession } = useAuthStore();
 
   // Animations
-  const logoScale = useRef(new Animated.Value(0.5)).current;
-  const logoOpacity = useRef(new Animated.Value(0)).current;
-  const textOpacity = useRef(new Animated.Value(0)).current;
-  const taglineOpacity = useRef(new Animated.Value(0)).current;
-  const ringScale = useRef(new Animated.Value(0.3)).current;
-  const ringOpacity = useRef(new Animated.Value(0.8)).current;
+  const [logoScale] = useState(() => new Animated.Value(0.5));
+  const [logoOpacity] = useState(() => new Animated.Value(0));
+  const [textOpacity] = useState(() => new Animated.Value(0));
+  const [taglineOpacity] = useState(() => new Animated.Value(0));
+  const [ringScale] = useState(() => new Animated.Value(0.3));
+  const [ringOpacity] = useState(() => new Animated.Value(0.8));
 
   useEffect(() => {
-    restoreSession();
+    void restoreSession();
 
     // Sequence: ring expands → logo fades in → text fades in → tagline
     Animated.sequence([
@@ -68,15 +68,17 @@ export default function SplashScreen() {
 
   useEffect(() => {
     if (!isLoading) {
-      // Add a small delay so the animation plays before navigating
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         const auth = useAuthStore.getState();
-        if (auth.isAuthenticated && auth.user && (auth.user.role === 'admin' || auth.user.role === 'delivery_staff' || auth.user.role === 'warehouse_staff')) {
-          router.replace('/(staff)');
+        const isStaff = auth.user &&
+          ["admin","delivery_staff","warehouse_staff"].includes(auth.user.role);
+        if (auth.isAuthenticated && isStaff) {
+          router.replace("/(staff)");
         } else {
-          router.replace('/(tabs)');
+          router.replace("/(tabs)");
         }
-      }, 2200);
+      }, 1000);   // Reduced from 2200ms — cleanup added
+      return () => clearTimeout(timer);
     }
   }, [isLoading]);
 

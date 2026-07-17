@@ -14,6 +14,7 @@
 import { Stack, router } from 'expo-router';
 import { useEffect, useCallback, useRef } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { useAuthStore } from '@/stores/authStore';
 import { QueryClient } from '@tanstack/react-query';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -57,10 +58,6 @@ const asyncStoragePersister = createAsyncStoragePersister({
 
 // ── Root layout ────────────────────────────────────────────────────────────
 export default function RootLayout() {
-  if (MISSING_ENV_VARS.length > 0) {
-    return <MissingEnvScreen missingVars={MISSING_ENV_VARS} />;
-  }
-
   const restoreSession      = useAuthStore((s) => s.restoreSession);
   const isAuthenticated     = useAuthStore((s) => s.isAuthenticated);
   const user                = useAuthStore((s) => s.user);
@@ -155,6 +152,24 @@ export default function RootLayout() {
     return () => sub.remove();
   }, [handleDeepLink]);
 
+  // ── Push notification tap → order / screen deep link ─────────────────
+  // Fires when user taps a notification while the app is in background/killed.
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener((res) => {
+      const data = res.notification.request.content.data as Record<string, unknown>;
+      if (data?.orderId && typeof data.orderId === 'string') {
+        router.push(`/order/${data.orderId}`);
+      } else if (data?.screen && typeof data.screen === 'string') {
+        router.push(data.screen);
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
+  if (MISSING_ENV_VARS.length > 0) {
+    return <MissingEnvScreen missingVars={MISSING_ENV_VARS} />;
+  }
+
   return (
     // ── 2. ErrorBoundary: catches any crash inside the entire app tree ──
     <ErrorBoundary
@@ -195,9 +210,12 @@ export default function RootLayout() {
               <Stack.Screen name="checkout" />
               <Stack.Screen name="order/[id]" />
               <Stack.Screen name="order/[id]/track" options={{ animation: 'slide_from_bottom' }} />
-              <Stack.Screen name="search" options={{ animation: 'fade' }} />
+              <Stack.Screen name="order/[id]/invoice" options={{ headerShown: false }} />
               <Stack.Screen name="category/[category]" />
               <Stack.Screen name="addresses" />
+              <Stack.Screen name="wishlist" options={{ headerShown: false }} />
+              <Stack.Screen name="support" options={{ headerShown: false }} />
+              <Stack.Screen name="terms" options={{ headerShown: false }} />
             </Stack>
 
             {/* ── 7. Global Toast overlay ───────────────────────────────── */}

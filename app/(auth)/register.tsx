@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Platform,
   StyleSheet,
   ActivityIndicator,
+  type TextInput as TextInputType,
 } from 'react-native';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -47,20 +48,19 @@ export default function RegisterScreen() {
   const {
     control,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
     defaultValues: { fullName: '', phone: '', password: '', confirmPassword: '' },
   });
 
-
-  const [isMockMode, setIsMockMode] = useState(false);
+  const phoneRef = useRef<TextInputType>(null);
+  const passwordRef = useRef<TextInputType>(null);
+  const confirmRef = useRef<TextInputType>(null);
 
   const onSubmit = async (data: RegisterForm) => {
     setLoading(true);
     setApiError('');
-    setIsMockMode(false);
     try {
       const result = await registerUser({
         fullName: data.fullName,
@@ -68,9 +68,6 @@ export default function RegisterScreen() {
         password: data.password,
       });
       setLoading(false);
-      // Check if server returned a devOtp (dev mode)
-      const isMock = (result as any).isMock === true || !(result as any).companyName;
-      if (isMock) setIsMockMode(true);
       // Pass devOtp (if returned by server in dev mode) to OTP screen
       router.push({
         pathname: '/(auth)/otp',
@@ -89,7 +86,8 @@ export default function RegisterScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'android' ? 24 : 0}
     >
       <StatusBar style="dark" />
       <ScrollView
@@ -142,6 +140,10 @@ export default function RegisterScreen() {
                     onChangeText={onChange}
                     value={value}
                     autoCapitalize="words"
+                    returnKeyType="next"
+                    onSubmitEditing={() => phoneRef.current?.focus()}
+                    blurOnSubmit={false}
+                    accessibilityLabel="Full name input"
                   />
                 </View>
               )}
@@ -162,6 +164,7 @@ export default function RegisterScreen() {
                   </View>
                   <View style={styles.divider} />
                   <TextInput
+                    ref={phoneRef}
                     style={styles.input}
                     placeholder="10-digit mobile number"
                     placeholderTextColor={colors.textMuted}
@@ -170,6 +173,10 @@ export default function RegisterScreen() {
                     value={value}
                     keyboardType="phone-pad"
                     maxLength={10}
+                    returnKeyType="next"
+                    onSubmitEditing={() => passwordRef.current?.focus()}
+                    blurOnSubmit={false}
+                    accessibilityLabel="Phone number input"
                   />
                 </View>
               )}
@@ -187,6 +194,7 @@ export default function RegisterScreen() {
                 <View style={[styles.inputContainer, errors.password && styles.inputError]}>
                   <Ionicons name="lock-closed-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
                   <TextInput
+                    ref={passwordRef}
                     style={styles.input}
                     placeholder="Minimum 8 characters"
                     placeholderTextColor={colors.textMuted}
@@ -195,6 +203,10 @@ export default function RegisterScreen() {
                     value={value}
                     secureTextEntry={!showPassword}
                     autoCapitalize="none"
+                    returnKeyType="next"
+                    onSubmitEditing={() => confirmRef.current?.focus()}
+                    blurOnSubmit={false}
+                    accessibilityLabel="Password input"
                   />
                   <TouchableOpacity onPress={() => setShowPassword(!showPassword)} activeOpacity={0.7} style={styles.eyeBtn}>
                     <Ionicons
@@ -219,6 +231,7 @@ export default function RegisterScreen() {
                 <View style={[styles.inputContainer, errors.confirmPassword && styles.inputError]}>
                   <Ionicons name="shield-checkmark-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
                   <TextInput
+                    ref={confirmRef}
                     style={styles.input}
                     placeholder="Re-enter your password"
                     placeholderTextColor={colors.textMuted}
@@ -227,6 +240,9 @@ export default function RegisterScreen() {
                     value={value}
                     secureTextEntry={!showConfirm}
                     autoCapitalize="none"
+                    returnKeyType="done"
+                    onSubmitEditing={() => { void handleSubmit(onSubmit)(); }}
+                    accessibilityLabel="Confirm password input"
                   />
                   <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)} activeOpacity={0.7} style={styles.eyeBtn}>
                     <Ionicons
@@ -245,7 +261,7 @@ export default function RegisterScreen() {
 
           {/* Submit */}
           <TouchableOpacity
-            onPress={handleSubmit(onSubmit)}
+            onPress={() => { void handleSubmit(onSubmit)(); }}
             disabled={loading}
             activeOpacity={0.85}
             style={styles.submitBtnWrapper}

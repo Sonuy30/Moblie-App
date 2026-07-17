@@ -1,6 +1,3 @@
-import type { AxiosError } from 'axios';
-import { Config } from '@/utils/config';
-import { type Address } from './orders';
 
 export interface CheckoutPayload {
   cartItems: {
@@ -26,36 +23,14 @@ export interface CheckoutInitResponse {
 }
 
 import client from './client';
-import { mockInitiateCheckout } from './mockOrders';
 
-function shouldUseMock(err: unknown): boolean {
-  if (!Config.USE_MOCK_API) return false;
-  const axErr = err as AxiosError;
-  if (!axErr?.response) return true;
-  const s = axErr.response.status;
-  return s === 401 || s === 403 || s === 404 || s === 405 || s === 400;
-}
+
 
 /**
  * Places an order in the ERP via /api/mobile/orders.
  * Falls back to local mock order creation if backend is unavailable.
  */
 export const initiateCheckout = async (payload: CheckoutPayload): Promise<CheckoutInitResponse> => {
-  if (Config.USE_MOCK_API) {
-    console.info('[MOCK] initiateCheckout active');
-    const mockResult = await mockInitiateCheckout({
-      cartItems: payload.cartItems,
-      shippingAddress: payload.shippingAddress as Address | undefined,
-      paymentMethod: payload.paymentMethod,
-    });
-    return {
-      ecomOrderId: mockResult.order._id,
-      orderNumber: mockResult.order.orderNumber,
-      amount:      mockResult.order.totalAmount,
-      currency:    'INR',
-    };
-  }
-
   const orderPayload = {
     items: payload.cartItems.map((i) => ({
       productId: i.productId,
@@ -68,31 +43,13 @@ export const initiateCheckout = async (payload: CheckoutPayload): Promise<Checko
     shippingAddress: payload.shippingAddress || {},
   };
 
-  try {
-    const { data } = await client.post<{ order: { _id: string; orderNumber: string; totalAmount?: number } }>('/api/mobile/orders', orderPayload);
-    return {
-      ecomOrderId: data.order._id,
-      orderNumber: data.order.orderNumber,
-      amount:      data.order.totalAmount || 0,
-      currency:    'INR',
-    };
-  } catch (err) {
-    if (shouldUseMock(err)) {
-      console.info('[MOCK] initiateCheckout fallback active');
-      const mockResult = await mockInitiateCheckout({
-        cartItems: payload.cartItems,
-        shippingAddress: payload.shippingAddress as Address | undefined,
-        paymentMethod: payload.paymentMethod,
-      });
-      return {
-        ecomOrderId: mockResult.order._id,
-        orderNumber: mockResult.order.orderNumber,
-        amount:      mockResult.order.totalAmount,
-        currency:    'INR',
-      };
-    }
-    throw err;
-  }
+  const { data } = await client.post<{ order: { _id: string; orderNumber: string; totalAmount?: number } }>('/api/mobile/orders', orderPayload);
+  return {
+    ecomOrderId: data.order._id,
+    orderNumber: data.order.orderNumber,
+    amount:      data.order.totalAmount || 0,
+    currency:    'INR',
+  };
 };
 
 export const verifyPayment = async (_payload: {
@@ -124,4 +81,31 @@ export const payWithCreditLimit = async (_ecomOrderId: string) => {
 export const payOfflineInvoice = async (_ecomOrderId: string) => {
   await Promise.resolve();
   return { success: true, message: 'Offline invoice created' };
+};
+
+// ── Coupon Validation ──────────────────────────────────────────────────────────
+
+export interface CouponValidateResponse {
+  valid: boolean;
+  discount: number;
+  discountPercent?: number;
+  message: string;
+  code: string;
+}
+
+/**
+ * Validate a coupon code against the cart total.
+ * Falls back to mock codes when USE_MOCK_API is true.
+ */
+export const validateCoupon = async (
+  code: string,
+  cartTotal: number
+): Promise<CouponValidateResponse> => {
+  const upperCode = code.trim().toUpperCase();
+
+  const { data } = await client.post<CouponValidateResponse>('/api/coupons/validate', {
+    code: upperCode,
+    cartTotal,
+  });
+  return data;
 };

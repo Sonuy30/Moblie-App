@@ -37,6 +37,8 @@ export default function CartItem({ item }: CartItemProps) {
           <TouchableOpacity
             onPress={() => removeItem(item.productId, item.variantId)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityLabel={`Remove ${item.name} from cart`}
+            accessibilityRole="button"
           >
             <Ionicons name="close" size={20} color={colors.textMuted} />
           </TouchableOpacity>
@@ -47,6 +49,8 @@ export default function CartItem({ item }: CartItemProps) {
             <TouchableOpacity
               style={styles.qtyBtn}
               onPress={() => updateQty(item.productId, item.quantity - 1, item.variantId)}
+              accessibilityLabel={`Decrease quantity of ${item.name}`}
+              accessibilityRole="button"
             >
               <Ionicons name="remove" size={16} color={colors.primary} />
             </TouchableOpacity>
@@ -55,6 +59,8 @@ export default function CartItem({ item }: CartItemProps) {
               style={[styles.qtyBtn, item.quantity >= item.maxQty && styles.qtyBtnDisabled]}
               onPress={() => updateQty(item.productId, item.quantity + 1, item.variantId)}
               disabled={item.quantity >= item.maxQty}
+              accessibilityLabel={`Increase quantity of ${item.name}`}
+              accessibilityRole="button"
             >
               <Ionicons name="add" size={16} color={item.quantity >= item.maxQty ? colors.textMuted : colors.primary} />
             </TouchableOpacity>

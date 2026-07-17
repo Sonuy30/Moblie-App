@@ -5,19 +5,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { colors } from '@/constants/colors';
-import { spacing, borderRadius } from '@/constants/config';
+import { borderRadius } from '@/constants/config';
 import { verifyOTP, requestOTP } from '@/api/auth';
 import { useAuthStore } from '@/stores/authStore';
 import { getErrorMessage } from '@/api/client';
 
 export default function OTPScreen() {
-  const { phone, maskedPhone, companyName, inviteToken, customerId, fromInvite } = useLocalSearchParams<{ 
+  const { phone, maskedPhone, companyName } = useLocalSearchParams<{ 
     phone: string, 
     maskedPhone: string, 
-    companyName: string,
-    inviteToken?: string,
-    customerId?: string,
-    fromInvite?: string
+    companyName: string
   }>();
 
   const [otp, setOtp] = useState('');
@@ -201,7 +198,7 @@ export default function OTPScreen() {
               (isLoading || otp.length !== 6) && styles.buttonDisabled,
               pressed && otp.length === 6 && styles.buttonPressed
             ]} 
-            onPress={handleVerify}
+            onPress={() => { void handleVerify(); }}
             disabled={isLoading || otp.length !== 6}
           >
             {isLoading ? (
@@ -227,7 +224,7 @@ export default function OTPScreen() {
                 <Text style={styles.timerText}>Resend code in {formatTimer(seconds)}</Text>
               </View>
             ) : (
-              <Pressable style={styles.resendBtn} onPress={handleResend}>
+              <Pressable style={styles.resendBtn} onPress={() => { void handleResend(); }}>
                 <Text style={styles.resendBtnText}>Resend Verification Code</Text>
                 <Ionicons name="refresh-outline" size={16} color={colors.primary} />
               </Pressable>

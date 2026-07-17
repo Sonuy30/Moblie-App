@@ -24,9 +24,9 @@ import DiscountCarousel from '@/components/home/DiscountCarousel';
 import FeaturedProducts from '@/components/home/FeaturedProducts';
 import WishlistPreview from '@/components/home/WishlistPreview';
 import FlashSaleBanner from '@/components/sales/FlashSaleBanner';
+import RecentlyViewed from '@/components/home/RecentlyViewed';
 
 // UI
-import WishlistModal from '@/components/wishlist/WishlistModal';
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/config';
 
@@ -36,13 +36,18 @@ export default function HomeScreen() {
   const queryClient = useQueryClient();
   const wishlistCount = useWishlistStore((s) => s.items.length);
   const cartCount = useCartStore((s) => s.totalItems());
-  const [wishlistVisible, setWishlistVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = async () => {
     setRefreshing(true);
     try {
-      await queryClient.invalidateQueries();
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['products'] }),
+        queryClient.invalidateQueries({ queryKey: ['products-infinite'] }),
+        queryClient.invalidateQueries({ queryKey: ['categories'] }),
+        queryClient.invalidateQueries({ queryKey: ['active-sale'] }),
+        queryClient.invalidateQueries({ queryKey: ['sale-products'] }),
+      ]);
     } catch (err) {
       console.warn('[HomeScreen] Refresh failed:', err);
     } finally {
@@ -63,15 +68,10 @@ export default function HomeScreen() {
         <View style={styles.headerRight}>
           <TouchableOpacity
             style={styles.iconBtn}
-            onPress={() => router.push('/(tabs)/search')}
+            onPress={() => router.push('/wishlist')}
             activeOpacity={0.7}
-          >
-            <Ionicons name="search-outline" size={22} color={colors.text} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.iconBtn}
-            onPress={() => setWishlistVisible(true)}
-            activeOpacity={0.7}
+            accessibilityLabel="View wishlist"
+            accessibilityRole="button"
           >
             <Ionicons name="heart-outline" size={22} color={colors.text} />
             {wishlistCount > 0 && (
@@ -86,6 +86,8 @@ export default function HomeScreen() {
             style={styles.iconBtn}
             onPress={() => router.push('/(tabs)/cart')}
             activeOpacity={0.7}
+            accessibilityLabel="View cart"
+            accessibilityRole="button"
           >
             <Ionicons name="cart-outline" size={22} color={colors.text} />
             {cartCount > 0 && (
@@ -115,6 +117,8 @@ export default function HomeScreen() {
           style={styles.searchBar}
           onPress={() => router.push('/(tabs)/search')}
           activeOpacity={0.8}
+          accessibilityLabel="Search for products"
+          accessibilityRole="search"
         >
           <Ionicons name="search-outline" size={20} color={colors.textMuted} />
           <Text style={styles.searchPlaceholder}>
@@ -134,6 +138,9 @@ export default function HomeScreen() {
         {/* ── SECTION 4: Top Deals Horizontal Scroll ── */}
         <DiscountCarousel />
 
+        {/* ── SECTION 4.5: Recently Viewed ── */}
+        <RecentlyViewed />
+
         {/* ── SECTION 5: Best Sellers 2-Column Grid ── */}
         <FeaturedProducts />
 
@@ -142,12 +149,6 @@ export default function HomeScreen() {
 
         <View style={styles.bottomPad} />
       </ScrollView>
-
-      {/* Wishlist Modal */}
-      <WishlistModal
-        visible={wishlistVisible}
-        onClose={() => setWishlistVisible(false)}
-      />
     </SafeAreaView>
   );
 }
@@ -191,12 +192,18 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
+    backgroundColor: colors.background,
     borderBottomColor: colors.border,
     borderBottomWidth: 1,
+    elevation: 3,
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
   },
   headerRight: {
     flexDirection: 'row',
@@ -219,13 +226,20 @@ const styles = StyleSheet.create({
   searchBar: {
     alignItems: 'center',
     backgroundColor: colors.surface,
+    borderColor: colors.border,
     borderRadius: 14,
+    borderWidth: 1,
+    elevation: 2,
     flexDirection: 'row',
     gap: 10,
-    height: 50,
+    height: 52,
     marginHorizontal: spacing.lg,
     marginTop: spacing.md,
     paddingHorizontal: spacing.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
   },
   searchPlaceholder: {
     color: colors.textMuted,

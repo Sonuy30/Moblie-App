@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -38,6 +38,7 @@ import type { Product, ProductVariant } from '@/types/product';
 import { useProductShare } from '@/hooks/useProductShare';
 import { ShareCard } from '@/components/product/ShareCard';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
+import { useRecentlyViewedStore } from '@/stores/recentlyViewedStore';
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -76,7 +77,6 @@ export default function ProductDetailScreen() {
   const [ratingSummary, setRatingSummary] = useState<RatingSummaryData | null>(null);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
-  const [prevProductId, setPrevProductId] = useState<string | null>(null);
 
   // Load reviews with pagination and sorting
   const loadReviews = useCallback(async (pageToLoad = 1, shouldAppend = false, sortOption = 'newest') => {
@@ -105,16 +105,29 @@ export default function ProductDetailScreen() {
     }, [product?._id, reviewsSort, loadReviews])
   );
 
-  // Auto-select first available variant when product loads
-  if (product && product._id !== prevProductId) {
-    setPrevProductId(product._id);
-    if (product.variants && product.variants.length > 0) {
-      const firstAvailable = product.variants.find((v) => v.inStock) ?? product.variants[0];
-      setSelectedVariant(firstAvailable);
-    } else {
-      setSelectedVariant(null);
+  // Auto-select first available variant when product loads (moved to useEffect to avoid render-phase side effects)
+  const addRecentProduct = useRecentlyViewedStore((s) => s.addProduct);
+  useEffect(() => {
+    if (product) {
+      if (product.variants && product.variants.length > 0) {
+        const firstAvailable = product.variants.find((v) => v.inStock) ?? product.variants[0];
+        setSelectedVariant(firstAvailable);
+      } else {
+        setSelectedVariant(null);
+      }
+      // Track recently viewed
+      addRecentProduct({
+        _id: product._id,
+        slug: product.slug,
+        name: product.name,
+        image: product.images?.[0] || '',
+        storePrice: product.storePrice,
+        unit: product.unit,
+        inStock: product.inStock,
+      });
     }
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?._id]);
 
   // Reset qty when variant changes
   const handleVariantSelect = useCallback((variant: ProductVariant) => {
@@ -375,6 +388,8 @@ export default function ProductDetailScreen() {
                 <TouchableOpacity
                   style={styles.qtyBtn}
                   onPress={() => setQty(Math.max(1, qty - 1))}
+                  accessibilityLabel="Decrease quantity"
+                  accessibilityRole="button"
                 >
                   <Ionicons name="remove" size={18} color={colors.primary} />
                 </TouchableOpacity>
@@ -382,6 +397,8 @@ export default function ProductDetailScreen() {
                 <TouchableOpacity
                   style={styles.qtyBtn}
                   onPress={() => setQty(Math.min(activeStock, qty + 1))}
+                  accessibilityLabel="Increase quantity"
+                  accessibilityRole="button"
                 >
                   <Ionicons name="add" size={18} color={colors.primary} />
                 </TouchableOpacity>
@@ -640,6 +657,8 @@ export default function ProductDetailScreen() {
             <TouchableOpacity
               style={[styles.actionBtn, styles.addToCartBtn]}
               onPress={handleAddToCart}
+              accessibilityLabel="Add to cart"
+              accessibilityRole="button"
             >
               <Ionicons name="cart-outline" size={20} color={colors.primary} />
               <Text style={styles.addToCartText}>Add to Cart</Text>
@@ -647,6 +666,8 @@ export default function ProductDetailScreen() {
             <TouchableOpacity
               style={[styles.actionBtn, styles.buyNowBtn]}
               onPress={handleBuyNow}
+              accessibilityLabel="Buy now"
+              accessibilityRole="button"
             >
               <Text style={styles.buyNowText}>Buy Now</Text>
             </TouchableOpacity>

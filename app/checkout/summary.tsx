@@ -20,6 +20,7 @@ import {
   demoPay,
   payWithCreditLimit,
   payOfflineInvoice,
+  validateCoupon,
 } from '@/api/checkout';
 import { useRazorpay } from '@/hooks/useRazorpay';
 import CheckoutProgress from '@/components/checkout/CheckoutProgress';
@@ -41,11 +42,13 @@ export default function CheckoutSummaryScreen() {
   const couponDiscount = useCheckoutStore((s) => s.couponDiscount);
   const setCouponCode = useCheckoutStore((s) => s.setCouponCode);
   const setCouponDiscount = useCheckoutStore((s) => s.setCouponDiscount);
+  const clearCoupon = useCheckoutStore((s) => s.clearCoupon);
   const setOrderDetails = useCheckoutStore((s) => s.setOrderDetails);
 
   const { payWithRazorpay, loading: paymentLoading } = useRazorpay();
 
   const [loading, setLoading] = useState(false);
+  const [couponLoading, setCouponLoading] = useState(false);
   const [couponInput, setCouponInput] = useState('');
   const [couponError, setCouponError] = useState('');
 
@@ -66,42 +69,34 @@ export default function CheckoutSummaryScreen() {
   const deliveryCharge = deliveryOption?.price || 0;
   const grandTotal = subtotal + gst + deliveryCharge - couponDiscount;
 
-  const handleApplyCoupon = () => {
+  const handleApplyCoupon = async () => {
     setCouponError('');
-    const code = couponInput.trim().toUpperCase();
+    const code = couponInput.trim();
     if (!code) return;
-
-    if (code === 'WELCOME10') {
-      const discount = subtotal * 0.1;
-      setCouponDiscount(discount);
-      setCouponCode(code);
-      Toast.show({
-        type: 'success',
-        text1: 'Coupon Applied',
-        text2: '10% discount applied successfully!',
-        position: 'bottom',
-      });
-    } else if (code === 'AITS500') {
-      if (subtotal < 2000) {
-        setCouponError('Minimum purchase of ₹2,000 required for this coupon.');
-        return;
+    setCouponLoading(true);
+    try {
+      const result = await validateCoupon(code, subtotal);
+      if (result.valid) {
+        setCouponDiscount(result.discount);
+        setCouponCode(result.code);
+        Toast.show({
+          type: 'success',
+          text1: 'Coupon Applied',
+          text2: result.message,
+          position: 'bottom',
+        });
+      } else {
+        setCouponError(result.message);
       }
-      setCouponDiscount(500);
-      setCouponCode(code);
-      Toast.show({
-        type: 'success',
-        text1: 'Coupon Applied',
-        text2: '₹500 flat discount applied successfully!',
-        position: 'bottom',
-      });
-    } else {
-      setCouponError('Invalid coupon code.');
+    } catch {
+      setCouponError('Could not validate coupon. Please try again.');
+    } finally {
+      setCouponLoading(false);
     }
   };
 
   const handleRemoveCoupon = () => {
-    setCouponCode('');
-    setCouponDiscount(0);
+    clearCoupon();
     setCouponInput('');
     setCouponError('');
   };
@@ -310,16 +305,22 @@ export default function CheckoutSummaryScreen() {
                     setCouponError('');
                   }}
                 />
-                <TouchableOpacity style={styles.applyBtn} onPress={handleApplyCoupon}>
-                  <Text style={styles.applyBtnText}>Apply</Text>
+                <TouchableOpacity
+                  style={styles.applyBtn}
+                  onPress={() => { void handleApplyCoupon(); }}
+                  disabled={couponLoading}
+                >
+                  <Text style={styles.applyBtnText}>
+                    {couponLoading ? 'Checking…' : 'Apply'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             )}
             {couponError ? <Text style={styles.couponErrorText}>{couponError}</Text> : null}
             {!couponCode && (
               <Text style={styles.couponHint}>
-              {'Try "WELCOME10" for 10% off, or "OFFER500" for ₹500 off (Min ₹2000).'}
-            </Text>
+                {'Try STEEL10 (10% off), AITS20 (20% off), FIRST50 (50% off), or AITS500 (₹500 off, min ₹2k).'}
+              </Text>
             )}
           </View>
 

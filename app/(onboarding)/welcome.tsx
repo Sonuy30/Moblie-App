@@ -1,8 +1,9 @@
-import React, { useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, Pressable, Dimensions, type FlatList, Animated } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { View, Text, StyleSheet, Pressable, Dimensions, type FlatList, Animated, TouchableOpacity } from 'react-native';
 import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/constants/colors';
 import { spacing, borderRadius } from '@/constants/config';
 
@@ -30,18 +31,23 @@ const slides = [
 ];
 
 export default function WelcomeScreen() {
-  const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const [scrollX] = useState(() => new Animated.Value(0));
 
-  const onViewableItemsChanged = useCallback(({ viewableItems }: any) => {
-    if (viewableItems && viewableItems.length > 0) {
-      setActiveIndex(viewableItems[0].index || 0);
-    }
-  }, []);
-
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      {/* Skip button */}
+      <TouchableOpacity
+        style={styles.skipBtn}
+        onPress={() => router.replace('/(tabs)')}
+        activeOpacity={0.7}
+        accessibilityLabel="Skip onboarding"
+        accessibilityRole="button"
+      >
+        <Text style={styles.skipText}>Skip</Text>
+        <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+      </TouchableOpacity>
+
       {/* Slides */}
       <Animated.FlatList
         ref={flatListRef}
@@ -50,8 +56,6 @@ export default function WelcomeScreen() {
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], { useNativeDriver: false })}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={{ viewAreaCoveragePercentThreshold: 50 }}
         keyExtractor={(_, i) => i.toString()}
         renderItem={({ item }) => (
           <View style={styles.slide}>
@@ -112,7 +116,7 @@ export default function WelcomeScreen() {
       <Text style={styles.footer}>
         By continuing, you agree to our Terms & Privacy Policy
       </Text>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -199,6 +203,20 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 16,
     width: 120,
+  },
+  skipBtn: {
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    flexDirection: 'row',
+    gap: 2,
+    paddingBottom: spacing.xs,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.sm,
+  },
+  skipText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    fontWeight: '600',
   },
   slide: {
     alignItems: 'center',

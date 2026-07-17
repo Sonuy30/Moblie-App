@@ -68,42 +68,6 @@ function getEnv(key: keyof EnvVars): string | undefined {
 }
 
 // ── Runtime validation ─────────────────────────────────────────────────────
-/**
- * Validates that all required env vars are present.
- * Throws a single error listing EVERY missing variable so the developer
- * can fix all issues in one go instead of playing whack-a-mole.
- *
- * Called once at module load — crashes fast rather than failing silently
- * when the first API call is made.
- */
-function validateRequiredEnvVars(required: ReadonlyArray<keyof EnvVars>): void {
-  const missing = required.filter((key) => {
-    const val = getEnv(key);
-    return !val || val.trim() === '';
-  });
-
-  if (missing.length > 0) {
-    const lines = [
-      '',
-      '╔══════════════════════════════════════════════════════════════╗',
-      '║          AITS Shop — Missing Environment Variables           ║',
-      '╚══════════════════════════════════════════════════════════════╝',
-      '',
-      'The following required environment variables are not set:',
-      '',
-      ...missing.map((k) => `  ✗  ${k}`),
-      '',
-      'Fix:',
-      '  1. Copy .env.example → .env.local',
-      '  2. Fill in the missing values',
-      '  3. Restart the Expo dev server (stop + npx expo start --clear)',
-      '',
-      'See .env.example for descriptions of each variable.',
-      '',
-    ];
-    throw new Error(lines.join('\n'));
-  }
-}
 
 // ── Required variables — app will not start without these ─────────────────
 const REQUIRED_VARS = [

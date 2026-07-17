@@ -1,5 +1,5 @@
-import { useState, RefObject } from 'react';
-import { View } from 'react-native';
+import { useState, type RefObject } from 'react';
+import type { View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { captureMessage } from '@/utils/sentry';

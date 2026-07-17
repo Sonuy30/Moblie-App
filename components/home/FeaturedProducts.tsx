@@ -117,7 +117,7 @@ export default function FeaturedProducts() {
         {isBestLoading ? (
           <SkeletonRow />
         ) : bestSellers.length === 0 ? null : (
-          <FlatList
+        <FlatList
             data={bestSellers}
             numColumns={2}
             keyExtractor={(item: StoreProduct) => item._id}
@@ -129,6 +129,11 @@ export default function FeaturedProducts() {
             )}
             contentContainerStyle={styles.grid}
             columnWrapperStyle={styles.row}
+            getItemLayout={(_data, index) => ({
+              length: 220,
+              offset: 220 * Math.floor(index / 2),
+              index,
+            })}
           />
         )}
       </View>

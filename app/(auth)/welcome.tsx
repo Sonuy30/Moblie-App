@@ -15,10 +15,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/constants/colors';
 import { spacing, borderRadius } from '@/constants/config';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
 
-const slides = [
+interface SlideItem {
+  id: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  desc: string;
+  color: string;
+  iconColor: string;
+}
+
+const slides: SlideItem[] = [
   {
     id: '1',
     icon: 'cube-outline' as const,
@@ -112,7 +121,7 @@ export default function WelcomeScreen() {
       </View>
 
       {/* Slides */}
-      <FlatList
+      <FlatList<SlideItem>
         ref={flatListRef}
         data={slides}
         horizontal

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, LayoutAnimation, Platform, UIManager, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useCartStore } from '@/stores/cartStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -23,6 +24,8 @@ export default function CartScreen() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const showAuthModal = useAuthModalStore((s) => s.show);
   const isEmpty = items.length === 0;
+  const insets = useSafeAreaInsets();
+  const footerBottomPadding = Math.max(insets.bottom, spacing.lg);
 
   const handleClearCart = () => {
     Alert.alert(
@@ -105,12 +108,19 @@ export default function CartScreen() {
           grandTotal={grandTotal()}
         />
         
-        <View style={{ height: 120 }} />
+        <View style={{ height: 140 }} />
       </ScrollView>
 
       {/* Fixed Checkout Footer */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.checkoutBtn} onPress={handleCheckout} activeOpacity={0.9}>
+      {/* eslint-disable-next-line react-native/no-inline-styles */}
+      <View style={[styles.footer, { paddingBottom: footerBottomPadding }]}>
+        <TouchableOpacity
+          style={styles.checkoutBtn}
+          onPress={handleCheckout}
+          activeOpacity={0.9}
+          accessibilityLabel="Proceed to checkout"
+          accessibilityRole="button"
+        >
           <View style={styles.checkoutBtnLeft}>
             <Text style={styles.checkoutText}>Proceed to Checkout</Text>
             <Text style={styles.subtext}>Secure Razorpay payment</Text>
@@ -183,11 +193,16 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     borderTopWidth: 1,
     bottom: 0,
+    elevation: 12,
     left: 0,
     padding: spacing.lg,
     paddingBottom: spacing.xl,
     position: 'absolute',
     right: 0,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
   },
   header: {
     alignItems: 'center',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, FlatList, StyleSheet, RefreshControl, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useOrders } from '@/hooks/useOrders';
@@ -65,7 +65,7 @@ export default function OrdersScreen() {
       ) : (
         <FlatList data={filtered} keyExtractor={(item) => item._id}
           contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { void onRefresh(); }} tintColor={colors.primary} />}
           renderItem={({ item }) => <OrderCard order={item} />}
         />
       )}

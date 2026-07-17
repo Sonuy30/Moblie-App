@@ -18,6 +18,7 @@
 
 import client from './client';
 import { Config } from '@/utils/config';
+import { useAuthStore } from '@/stores/authStore';
 import type { AuthUser } from '@/stores/authStore';
 import type { AxiosError } from 'axios';
 import {
@@ -34,6 +35,7 @@ export interface OTPRequestResponse {
   message: string;
   companyName?: string;
   maskedPhone?: string;
+  devOtp?: string;
 }
 
 export interface OTPVerifyResponse {
@@ -47,6 +49,7 @@ export interface OTPVerifyResponse {
 export interface RegisterResponse {
   message: string;
   phone: string;
+  devOtp?: string;
 }
 
 export interface LoginResponse {
@@ -302,7 +305,8 @@ export const getProfile = async (): Promise<ProfileResponse> => {
   if (Config.USE_MOCK_API) {
     console.info('[MOCK] getProfile active');
     try {
-      return await mockGetProfile('demo-user-001');
+      const userId = useAuthStore.getState().user?._id || 'demo-user-001';
+      return await mockGetProfile(userId);
     } catch {
       return {
         user: {
@@ -323,8 +327,8 @@ export const getProfile = async (): Promise<ProfileResponse> => {
     if (isBackendMissing(err)) {
       console.info('[MOCK] getProfile fallback active');
       try {
-        // mockGetProfile requires a userId; pass empty string to get first mock user
-        return await mockGetProfile('demo-user-001');
+        const userId = useAuthStore.getState().user?._id || 'demo-user-001';
+        return await mockGetProfile(userId);
       } catch {
         return {
           user: {
@@ -416,4 +420,30 @@ export const validateInviteToken = async (
     // Server error (invalid/expired invite token) — propagate it
     throw err;
   }
+};
+
+// ── Change Password ───────────────────────────────────────────────────────────
+
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
+/**
+ * Change the authenticated user's password.
+ * PUT /api/customers/change-password
+ */
+export const changePassword = async (
+  payload: ChangePasswordPayload
+): Promise<{ message: string }> => {
+  if (Config.USE_MOCK_API) {
+    // Simulate a successful change in mock mode
+    await new Promise((r) => setTimeout(r, 600));
+    return { message: 'Password changed successfully.' };
+  }
+  const { data } = await client.put<{ message: string }>(
+    '/api/customers/change-password',
+    payload
+  );
+  return data;
 };

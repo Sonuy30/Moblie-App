@@ -14,7 +14,7 @@ import { spacing } from '@/constants/config';
 export default function CategoryScreen() {
   const { category } = useLocalSearchParams<{ category: string }>();
   const decoded = decodeURIComponent(category || '');
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteProducts({ category: decoded });
+  const { data, fetchNextPage, hasNextPage, isLoading } = useInfiniteProducts({ category: decoded });
 
   const allProducts = data?.pages.flatMap((p) => p.products) || [];
 
@@ -37,7 +37,7 @@ export default function CategoryScreen() {
       ) : (
         <FlashList data={allProducts} numColumns={2}
           contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: 100 }}
-          onEndReached={() => { if (hasNextPage) fetchNextPage(); }}
+          onEndReached={() => { if (hasNextPage) void fetchNextPage(); }}
           keyExtractor={(item) => item._id}
           renderItem={({ item }) => <View style={styles.gridItem}><ProductCard {...item} /></View>}
         />

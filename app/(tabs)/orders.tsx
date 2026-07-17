@@ -19,9 +19,10 @@ import EmptyState from '@/components/ui/EmptyState';
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/config';
 import { StatusBar } from 'expo-status-bar';
+import type { EcomOrder } from '@/api/orders';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const FlashList = OriginalFlashList as any;
+const FlashList = OriginalFlashList as React.ComponentType<any>;
 
 const STATUS_FILTERS = [
   { label: 'All', value: null },
@@ -103,7 +104,14 @@ export default function OrdersScreen() {
       
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.screenTitle}>My Orders</Text>
+        <View style={styles.headerLeft}>
+          <Text style={styles.screenTitle}>My Orders</Text>
+          {filteredOrders.length > 0 && (
+            <View style={styles.countBadge}>
+              <Text style={styles.countBadgeText}>{filteredOrders.length}</Text>
+            </View>
+          )}
+        </View>
       </View>
 
       {/* Filter Scroll Pills */}
@@ -188,8 +196,8 @@ export default function OrdersScreen() {
             estimatedItemSize={140}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 40, paddingTop: spacing.xs }}
-            renderItem={({ item }: { item: any }) => <OrderCard order={item} />}
-            keyExtractor={(item: any) => (item as { _id: string })._id}
+            renderItem={({ item }: { item: EcomOrder }) => <OrderCard order={item} />}
+            keyExtractor={(item: EcomOrder) => item._id}
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -206,6 +214,20 @@ export default function OrdersScreen() {
 }
 
 const styles = StyleSheet.create({
+  countBadge: {
+    alignItems: 'center',
+    backgroundColor: colors.primaryLight,
+    borderRadius: 99,
+    justifyContent: 'center',
+    minWidth: 26,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  countBadgeText: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '700',
+  },
   filterContainer: {
     paddingVertical: spacing.md,
   },
@@ -297,11 +319,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   header: {
-    borderBottomColor: colors.surface,
+    backgroundColor: colors.background,
+    borderBottomColor: colors.border,
     borderBottomWidth: 1,
+    elevation: 2,
     paddingBottom: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  headerLeft: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
   },
   safe: {
     backgroundColor: colors.background,

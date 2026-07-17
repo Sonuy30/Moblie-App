@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 import { useCart } from '@/hooks/useCart';
 import CartItemComponent from '@/components/cart/CartItem';
 import CartSummary from '@/components/cart/CartSummary';

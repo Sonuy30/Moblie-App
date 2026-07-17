@@ -201,6 +201,21 @@ export default function OrderDetailScreen() {
           </TouchableOpacity>
         )}
 
+        {/* Download Invoice — delivered orders only */}
+        {safeStatus === 'delivered' && (
+          <TouchableOpacity
+            style={styles.invoiceBtn}
+            onPress={() => router.push(`/order/${id}/invoice`)}
+            activeOpacity={0.8}
+            accessibilityLabel="Download GST invoice PDF"
+            accessibilityRole="button"
+          >
+            <Ionicons name="document-text-outline" size={20} color={colors.primary} />
+            <Text style={styles.invoiceBtnText}>Download GST Invoice (PDF)</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.primary} />
+          </TouchableOpacity>
+        )}
+
         {/* Help */}
         <TouchableOpacity style={styles.helpCard}>
           <Ionicons name="help-circle-outline" size={22} color={colors.primary} />
@@ -227,6 +242,17 @@ const styles = StyleSheet.create({
   headerTitle: { color: colors.text, fontSize: 17, fontWeight: '700' },
   helpCard: { alignItems: 'center', backgroundColor: colors.primaryLight, borderRadius: borderRadius.lg, flexDirection: 'row', gap: spacing.md, padding: spacing.lg },
   helpText: { color: colors.primary, flex: 1, fontSize: 14, fontWeight: '600' },
+  invoiceBtn: {
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderColor: colors.border,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    gap: spacing.md,
+    padding: spacing.lg,
+  },
+  invoiceBtnText: { color: colors.primary, flex: 1, fontSize: 14, fontWeight: '700' },
   payCard: { backgroundColor: colors.surface, borderRadius: borderRadius.md, gap: spacing.md, padding: spacing.lg },
   payLabel: { color: colors.textSecondary, fontSize: 13 },
   payRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },

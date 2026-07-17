@@ -59,3 +59,7 @@ scratch/
 # Editor / IDE configuration
 .idea/
 
+# Customizations
+.agents/
+
+

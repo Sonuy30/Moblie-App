@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/constants/colors';
 import { spacing, borderRadius } from '@/constants/config';
@@ -20,11 +20,51 @@ export default function EmptyState({
   actionLabel,
   onAction,
 }: EmptyStateProps) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.85)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    // Entrance animation
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 380,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 100,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Subtle pulse loop on the icon container
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 1800,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1800,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
-    <View style={styles.container}>
-      <View style={styles.iconContainer}>
-        <Ionicons name={icon} size={64} color={colors.textMuted} />
-      </View>
+    <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+      <Animated.View style={[styles.iconContainer, { transform: [{ scale: pulseAnim }] }]}>
+        <Ionicons name={icon} size={56} color={colors.primary} />
+      </Animated.View>
       <Text style={styles.title}>{title}</Text>
       {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
       {actionLabel && onAction && (
@@ -33,10 +73,10 @@ export default function EmptyState({
           onPress={onAction}
           variant="primary"
           size="md"
-          style={{ marginTop: spacing.lg }}
+          style={{ marginTop: spacing.xl, borderRadius: borderRadius.lg }}
         />
       )}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -50,24 +90,31 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 60,
-    height: 120,
+    backgroundColor: colors.primaryLight,
+    borderColor: 'rgba(24,95,165,0.12)',
+    borderRadius: 64,
+    borderWidth: 1.5,
+    elevation: 2,
+    height: 128,
     justifyContent: 'center',
     marginBottom: spacing['2xl'],
-    width: 120,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    width: 128,
   },
   subtitle: {
     color: colors.textSecondary,
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 21,
     marginTop: spacing.sm,
     textAlign: 'center',
   },
   title: {
     color: colors.text,
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     textAlign: 'center',
   },
 });

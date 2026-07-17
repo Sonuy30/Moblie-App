@@ -59,10 +59,10 @@ export default function HomeScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { void onRefresh(); }} tintColor={colors.primary} />}
       >
         {/* Search bar */}
-        <TouchableOpacity style={styles.searchBar} onPress={() => router.push('/search')} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.searchBar} onPress={() => router.push('/(tabs)/search')} activeOpacity={0.7}>
           <Ionicons name="search-outline" size={20} color={colors.textMuted} />
           <Text style={styles.searchPlaceholder}>Search for products...</Text>
         </TouchableOpacity>

@@ -4,11 +4,9 @@ import { router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/constants/colors';
-import { spacing, borderRadius } from '@/constants/config';
-import { requestOTP, verifyOTP } from '@/api/auth';
+import { borderRadius } from '@/constants/config';
+import { requestOTP } from '@/api/auth';
 import { getErrorMessage } from '@/api/client';
-import { useAuthStore } from '@/stores/authStore';
-import Toast from 'react-native-toast-message';
 
 export default function PhoneScreen() {
   const [phone, setPhone] = useState('');
@@ -125,7 +123,7 @@ export default function PhoneScreen() {
               (!isValidPhone || isLoading) && styles.buttonDisabled,
               pressed && isValidPhone && styles.buttonPressed
             ]} 
-            onPress={onSubmit}
+            onPress={() => { void onSubmit(); }}
             disabled={!isValidPhone || isLoading}
           >
             {isLoading ? (

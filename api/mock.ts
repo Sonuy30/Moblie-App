@@ -1,5 +1,4 @@
 import type { AuthUser } from '@/stores/authStore';
-import type { StoreProduct, ProductListResponse } from './products';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
@@ -150,89 +149,7 @@ export async function mockGetProfile(userId: string): Promise<{ user: AuthUser }
   return { user: user.profile };
 }
 
-// ──────────────────────────────────────────────────────────
-// Mock Products with Variants
-// ──────────────────────────────────────────────────────────
-const MOCK_PRODUCTS: StoreProduct[] = [];
 
-
-// ──────────────────────────────────────────────────────────
-// Mock product fetcher functions
-// ──────────────────────────────────────────────────────────
-
-export async function mockFetchProducts(params?: {
-  page?: number; limit?: number; search?: string;
-  category?: string; featured?: boolean; sort?: string;
-}): Promise<ProductListResponse> {
-  await delay(700);
-
-  let products = [...MOCK_PRODUCTS];
-
-  if (params?.search) {
-    const q = params.search.toLowerCase();
-    products = products.filter((p) =>
-      p.name.toLowerCase().includes(q) ||
-      p.tags.some((t) => t.includes(q)) ||
-      p.category.toLowerCase().includes(q)
-    );
-  }
-
-  if (params?.category && params.category !== 'All') {
-    products = products.filter((p) => p.category === params.category);
-  }
-
-  if (params?.featured) {
-    products = products.filter((p) => p.isFeatured);
-  }
-
-  if (params?.sort === 'price_asc') products.sort((a, b) => a.storePrice - b.storePrice);
-  else if (params?.sort === 'price_desc') products.sort((a, b) => b.storePrice - a.storePrice);
-  else if (params?.sort === 'popular') products.sort((a, b) => b.reviewCount - a.reviewCount);
-
-  const page = params?.page || 1;
-  const limit = params?.limit || 20;
-  const start = (page - 1) * limit;
-  const paged = products.slice(start, start + limit);
-
-  return {
-    products: paged,
-    total: products.length,
-    page,
-    totalPages: Math.ceil(products.length / limit),
-  };
-}
-
-export async function mockFetchProductBySlug(slug: string): Promise<StoreProduct> {
-  await delay(400);
-
-  // Exact match first (by slug or _id)
-  let product = MOCK_PRODUCTS.find((p) => p.slug === slug || p._id === slug);
-
-  // Partial match (handles old slugs that included variant size like "tmt-bar-12mm")
-  if (!product) {
-    product = MOCK_PRODUCTS.find((p) =>
-      slug.startsWith(p.slug) || p.slug.startsWith(slug.replace(/-\d+mm$/, '').replace(/-\d+x\d+mm$/, ''))
-    );
-  }
-
-  // Last resort: return the first product rather than crashing
-  if (!product) {
-    console.warn(`[MOCK] Product slug "${slug}" not found — returning first product as fallback`);
-    product = MOCK_PRODUCTS[0];
-  }
-
-  return {
-    ...product,
-    relatedProducts: MOCK_PRODUCTS
-      .filter((p) => p._id !== product._id && p.category === product.category)
-      .slice(0, 4),
-  };
-}
-
-export async function mockFetchCategories(): Promise<string[]> {
-  await delay(300);
-  return [...new Set(MOCK_PRODUCTS.map((p) => p.category))];
-}
 
 // ──────────────────────────────────────────────────────────
 // Utility

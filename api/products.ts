@@ -1,6 +1,4 @@
 import client from './client';
-import { mockFetchProducts, mockFetchProductBySlug, mockFetchCategories } from './mock';
-import { Config } from '@/utils/config';
 
 // ──────────────────────────────────────────────────────────
 // Product Variant — a single selectable option for a product
@@ -70,151 +68,90 @@ export interface ProductListResponse {
   totalPages: number;
 }
 
-/**
- * Determine whether the backend is unreachable (trigger mock fallback)
- * vs. the backend returned a real structured error (propagate to user).
- *
- * Only fallback to mock when:
- *  • No HTTP response at all (server down / wrong IP / network error)
- *  • 405 Method Not Allowed (endpoint not implemented)
- *
- * DO NOT fallback for:
- *  • 401 / 403 — auth errors should surface to the user
- *  • 404 — "Company not found" or "Product not found" are real errors
- *  • 500 — server crash, should surface to user
- */
-function isBackendMissing(err: unknown): boolean {
-  if (!Config.USE_MOCK_API) return false;
-  if (!err || typeof err !== 'object') {
-    return true;
-  }
-  const e = err as { response?: { data?: { message?: unknown; error?: unknown }; status?: number } };
-  if (e.response?.data?.message || e.response?.data?.error) {
-    return false;
-  }
-  const status = e.response?.status;
-  if (!status || status === 405) return true;
-  return false;
-}
+
 
 // ──────────────────────────────────────────────────────────
 // Fetch product list (paginated, filtered)
 // ──────────────────────────────────────────────────────────
 export const fetchProducts = async (params?: ProductFilters): Promise<ProductListResponse> => {
-  if (Config.USE_MOCK_API) {
-    return mockFetchProducts(params);
-  }
+  const COMPANY_SLUG = process.env.EXPO_PUBLIC_COMPANY_SLUG || 'sudama01';
+  const { data } = await client.get<unknown>('/api/mobile/items', {
+    params: { ...params, companySlug: COMPANY_SLUG },
+  });
+  
+  let totalPages = 1;
+  let total = 0;
+  let products: StoreProduct[] = [];
+  let page = 1;
 
-  try {
-    const COMPANY_SLUG = process.env.EXPO_PUBLIC_COMPANY_SLUG || 'sudama01';
-    const { data } = await client.get<unknown>('/api/mobile/items', {
-      params: { ...params, companySlug: COMPANY_SLUG },
-    });
+  if (data && typeof data === 'object') {
+    const obj = data as {
+      totalPages?: number;
+      total?: number;
+      products?: unknown;
+      items?: unknown;
+      data?: unknown;
+      page?: number;
+    };
     
-    let totalPages = 1;
-    let total = 0;
-    let products: StoreProduct[] = [];
-    let page = 1;
-
-    if (data && typeof data === 'object') {
-      const obj = data as {
-        totalPages?: number;
-        total?: number;
-        products?: unknown;
-        items?: unknown;
-        data?: unknown;
-        page?: number;
-      };
-      
-      const limit = params?.limit || 20;
-      const rawProducts = obj.products || obj.items || obj.data || [];
-      if (Array.isArray(rawProducts)) {
-        products = rawProducts as StoreProduct[];
-      }
-      
-      total = obj.total || products.length;
-      totalPages = obj.totalPages || Math.ceil(total / limit);
-      page = obj.page || 1;
+    const limit = params?.limit || 20;
+    const rawProducts = obj.products || obj.items || obj.data || [];
+    if (Array.isArray(rawProducts)) {
+      products = rawProducts as StoreProduct[];
     }
-
-    return { products, total, page, totalPages };
-  } catch (err) {
-    if (isBackendMissing(err)) {
-      console.info('[MOCK] fetchProducts fallback active');
-      return mockFetchProducts(params);
-    }
-    throw err;
+    
+    total = obj.total || products.length;
+    totalPages = obj.totalPages || Math.ceil(total / limit);
+    page = obj.page || 1;
   }
+
+  return { products, total, page, totalPages };
 };
 
 // ──────────────────────────────────────────────────────────
 // Fetch single product by slug
 // ──────────────────────────────────────────────────────────
 export const fetchProductBySlug = async (slug: string): Promise<StoreProduct> => {
-  if (Config.USE_MOCK_API) {
-    return mockFetchProductBySlug(slug);
+  const COMPANY_SLUG = process.env.EXPO_PUBLIC_COMPANY_SLUG || 'sudama01';
+  const { data } = await client.get<unknown>(`/api/mobile/items/${slug}`, {
+    params: { companySlug: COMPANY_SLUG },
+  });
+  
+  let product: StoreProduct | null = null;
+  if (data && typeof data === 'object') {
+    const obj = data as { product?: unknown; item?: unknown };
+    const rawProduct = obj.product || obj.item || data;
+    if (rawProduct) {
+      product = rawProduct as StoreProduct;
+    }
   }
-
-  try {
-    const COMPANY_SLUG = process.env.EXPO_PUBLIC_COMPANY_SLUG || 'sudama01';
-    const { data } = await client.get<unknown>(`/api/mobile/items/${slug}`, {
-      params: { companySlug: COMPANY_SLUG },
-    });
-    
-    let product: StoreProduct | null = null;
-    if (data && typeof data === 'object') {
-      const obj = data as { product?: unknown; item?: unknown };
-      const rawProduct = obj.product || obj.item || data;
-      if (rawProduct) {
-        product = rawProduct as StoreProduct;
-      }
-    }
-    if (!product) {
-      throw new Error('Product not found');
-    }
-    return product;
-  } catch (err) {
-    if (isBackendMissing(err)) {
-      console.info('[MOCK] fetchProductBySlug fallback active');
-      return mockFetchProductBySlug(slug);
-    }
-    throw err;
+  if (!product) {
+    throw new Error('Product not found');
   }
+  return product;
 };
 
 // ──────────────────────────────────────────────────────────
 // Fetch category list
 // ──────────────────────────────────────────────────────────
 export const fetchCategories = async (): Promise<string[]> => {
-  if (Config.USE_MOCK_API) {
-    return mockFetchCategories();
-  }
-
-  try {
-    const COMPANY_SLUG = process.env.EXPO_PUBLIC_COMPANY_SLUG || 'sudama01';
-    const { data } = await client.get<unknown>('/api/mobile/categories', {
-      params: { companySlug: COMPANY_SLUG },
-    });
-    
-    let categories: string[] = [];
-    if (data && typeof data === 'object') {
-      if (Array.isArray(data)) {
-        categories = data as string[];
-      } else {
-        const obj = data as { categories?: unknown };
-        if (Array.isArray(obj.categories)) {
-          categories = obj.categories as string[];
-        }
+  const COMPANY_SLUG = process.env.EXPO_PUBLIC_COMPANY_SLUG || 'sudama01';
+  const { data } = await client.get<unknown>('/api/mobile/categories', {
+    params: { companySlug: COMPANY_SLUG },
+  });
+  
+  let categories: string[] = [];
+  if (data && typeof data === 'object') {
+    if (Array.isArray(data)) {
+      categories = data as string[];
+    } else {
+      const obj = data as { categories?: unknown };
+      if (Array.isArray(obj.categories)) {
+        categories = obj.categories as string[];
       }
     }
-    return categories;
-  } catch (err) {
-    if (isBackendMissing(err)) {
-      console.info('[MOCK] fetchCategories fallback active');
-      return mockFetchCategories();
-    }
-    throw err;
   }
+  return categories;
 };
 
 // Aliases used by hooks/useProducts.ts

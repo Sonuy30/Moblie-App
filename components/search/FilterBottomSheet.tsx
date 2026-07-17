@@ -81,7 +81,7 @@ export default function FilterBottomSheet({
       // Animate In
       Animated.parallel([
         Animated.timing(fadeAnim, {
-          toValue: 0.6,
+          toValue: 0.45,
           duration: 300,
           useNativeDriver: true,
         }),
@@ -168,6 +168,11 @@ export default function FilterBottomSheet({
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             style={styles.keyboardContainer}
           >
+            {/* Drag Handle */}
+            <View style={styles.dragHandleContainer}>
+              <View style={styles.dragHandle} />
+            </View>
+
             {/* Header */}
             <View style={styles.header}>
               <Text style={styles.headerTitle}>Filter Products</Text>
@@ -521,10 +526,22 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
   },
+  dragHandle: {
+    backgroundColor: colors.border,
+    borderRadius: borderRadius.full,
+    height: 5,
+    width: 40,
+  },
+  dragHandleContainer: {
+    alignItems: 'center',
+    paddingBottom: 4,
+    paddingTop: 10,
+  },
   sheet: {
     backgroundColor: colors.white,
     borderTopLeftRadius: borderRadius.xl,
     borderTopRightRadius: borderRadius.xl,
+    flexShrink: 1,
     maxHeight: SCREEN_HEIGHT * 0.82,
     width: '100%',
   },

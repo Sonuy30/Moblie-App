@@ -15,6 +15,7 @@ interface CheckoutState {
   setPaymentMethod: (method: PaymentOptionType | null) => void;
   setCouponCode: (code: string) => void;
   setCouponDiscount: (amount: number) => void;
+  clearCoupon: () => void;
   setOrderDetails: (ecomOrderId: string | null, orderNumber: string | null) => void;
   resetCheckout: () => void;
 }
@@ -33,6 +34,7 @@ export const useCheckoutStore = create<CheckoutState>((set) => ({
   setPaymentMethod: (paymentMethod) => set({ paymentMethod }),
   setCouponCode: (couponCode) => set({ couponCode }),
   setCouponDiscount: (couponDiscount) => set({ couponDiscount }),
+  clearCoupon: () => set({ couponCode: '', couponDiscount: 0 }),
   setOrderDetails: (ecomOrderId, orderNumber) => set({ ecomOrderId, orderNumber }),
   resetCheckout: () =>
     set({

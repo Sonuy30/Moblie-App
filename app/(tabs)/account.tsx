@@ -1,10 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Switch, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/authStore';
 import { useNotificationStore, NOTIFICATION_CATEGORY_META } from '@/stores/notificationStore';
+import { useBiometrics } from '@/hooks/useBiometrics';
 import { colors } from '@/constants/colors';
 import { spacing, borderRadius } from '@/constants/config';
 
@@ -12,6 +15,56 @@ export default function AccountScreen() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const { preferences, toggleCategory } = useNotificationStore();
   const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
+
+  const [biometricsEnabled, setBiometricsEnabled] = useState(false);
+  const { isSupported, isEnrolled, authenticate } = useBiometrics();
+
+  useEffect(() => {
+    const loadBiometricsPreference = async () => {
+      try {
+        const stored = await AsyncStorage.getItem('aits_biometrics_preference');
+        setBiometricsEnabled(stored === 'true');
+      } catch (e) {
+        console.warn('Failed to load biometric preference', e);
+      }
+    };
+    if (isAuthenticated) {
+      void loadBiometricsPreference();
+    }
+  }, [isAuthenticated]);
+
+  const handleToggleBiometrics = async (value: boolean) => {
+    if (value) {
+      if (!isSupported || !isEnrolled) {
+        Alert.alert(
+          'Biometrics Not Available',
+          'Please ensure that fingerprint or Face ID is enabled and registered on your device settings.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+      const success = await authenticate();
+      if (success) {
+        setBiometricsEnabled(true);
+        await AsyncStorage.setItem('aits_biometrics_preference', 'true');
+        Toast.show({
+          type: 'success',
+          text1: 'Biometric Login Enabled',
+          text2: 'You can now sign in using your fingerprint or Face ID.',
+          position: 'bottom',
+        });
+      }
+    } else {
+      setBiometricsEnabled(false);
+      await AsyncStorage.setItem('aits_biometrics_preference', 'false');
+      Toast.show({
+        type: 'info',
+        text1: 'Biometric Login Disabled',
+        text2: 'Biometric authentication has been turned off.',
+        position: 'bottom',
+      });
+    }
+  };
 
   const menuItems = [
     { icon: 'cube-outline' as const, label: 'My orders', route: '/(tabs)/orders' as const },
@@ -21,9 +74,9 @@ export default function AccountScreen() {
       : []
     ),
     { icon: 'notifications-outline' as const, label: 'Notifications', route: null },
-    { icon: 'lock-closed-outline' as const, label: 'Change password', route: null },
-    { icon: 'help-circle-outline' as const, label: 'Help & Support', route: null },
-    { icon: 'document-text-outline' as const, label: 'Terms & Privacy', route: null },
+    { icon: 'lock-closed-outline' as const, label: 'Change password', route: '/(auth)/change-password' as const },
+    { icon: 'help-circle-outline' as const, label: 'Help & Support', route: '/support' as const },
+    { icon: 'document-text-outline' as const, label: 'Terms & Privacy', route: '/terms' as const },
   ];
 
   const getInitials = (name: string) => {
@@ -45,9 +98,11 @@ export default function AccountScreen() {
         {
           text: 'Sign Out',
           style: 'destructive',
-          onPress: async () => {
-            await logout();
-            router.replace('/(tabs)');
+          onPress: () => {
+            void (async () => {
+              await logout();
+              router.replace('/(tabs)');
+            })();
           },
         },
       ]
@@ -69,6 +124,8 @@ export default function AccountScreen() {
               style={styles.guestPrimaryBtn}
               onPress={() => router.push('/(auth)/login')}
               activeOpacity={0.8}
+              accessibilityLabel="Sign in to your account"
+              accessibilityRole="button"
             >
               <Text style={styles.guestPrimaryBtnText}>Sign In</Text>
             </TouchableOpacity>
@@ -77,6 +134,8 @@ export default function AccountScreen() {
               style={styles.guestSecondaryBtn}
               onPress={() => router.push('/(auth)/register')}
               activeOpacity={0.8}
+              accessibilityLabel="Create a new account"
+              accessibilityRole="button"
             >
               <Text style={styles.guestSecondaryBtnText}>Create Account</Text>
             </TouchableOpacity>
@@ -123,16 +182,22 @@ export default function AccountScreen() {
             <TouchableOpacity
               key={item.label}
               style={[styles.menuItem, item === menuItems[menuItems.length - 1] && { borderBottomWidth: 0 }]}
-              onPress={() => item.route && router.push(item.route)}
-              activeOpacity={item.route ? 0.6 : 0.9}
-              disabled={!item.route}
+              onPress={() => {
+                if (item.route) {
+                  router.push(item.route);
+                } else {
+                  Alert.alert('Coming Soon', 'This feature is being built. Available in the next update.', [{ text: 'OK' }]);
+                }
+              }}
+              activeOpacity={0.6}
+              accessibilityLabel={item.label}
+              accessibilityRole="button"
             >
               <View style={styles.menuItemLeft}>
-                <Ionicons name={item.icon} size={22} color={item.route ? colors.textSecondary : colors.textMuted} />
-                <Text style={[styles.menuLabel, !item.route && { color: colors.textMuted }]}>{item.label}</Text>
+                <Ionicons name={item.icon} size={22} color={colors.textSecondary} />
+                <Text style={styles.menuLabel}>{item.label}</Text>
               </View>
-              {item.route && <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />}
-              {!item.route && <Text style={styles.comingSoon}>Soon</Text>}
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
             </TouchableOpacity>
           ))}
         </View>
@@ -183,8 +248,52 @@ export default function AccountScreen() {
           </>
         )}
 
+        {/* ── Security Settings ───────────────────────────────────── */}
+        {isAuthenticated && isSupported && isEnrolled && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="shield-checkmark-outline" size={18} color={colors.primary} />
+              <Text style={styles.sectionHeaderText}>Security Settings</Text>
+            </View>
+            <View style={styles.menu}>
+              <View style={[styles.prefRow, { borderBottomWidth: 0 }]}>
+                <View style={styles.prefIcon}>
+                  <Ionicons
+                    name="finger-print-outline"
+                    size={20}
+                    color={biometricsEnabled ? colors.primary : colors.textMuted}
+                  />
+                </View>
+                <View style={styles.prefInfo}>
+                  <Text style={styles.prefLabel}>Biometric Sign-In</Text>
+                  <Text style={styles.prefDesc}>Use fingerprint or Face ID for fast and secure access</Text>
+                </View>
+                <Switch
+                  value={biometricsEnabled}
+                  onValueChange={(val) => { void handleToggleBiometrics(val); }}
+                  trackColor={{ false: colors.border, true: colors.primaryLight }}
+                  thumbColor={
+                    biometricsEnabled
+                      ? colors.primary
+                      : Platform.OS === 'android'
+                        ? colors.textMuted
+                        : '#fff'
+                  }
+                  ios_backgroundColor={colors.border}
+                />
+              </View>
+            </View>
+          </>
+        )}
+
         {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          onPress={handleLogout}
+          activeOpacity={0.7}
+          accessibilityLabel="Sign out of your account"
+          accessibilityRole="button"
+        >
           <Ionicons name="log-out-outline" size={20} color={colors.error} />
           <Text style={styles.logoutText}>Sign Out</Text>
         </TouchableOpacity>
@@ -199,24 +308,22 @@ const styles = StyleSheet.create({
   avatar: {
     alignItems: 'center',
     backgroundColor: colors.primary,
-    borderRadius: 32,
-    height: 64,
+    borderColor: colors.primaryLight,
+    borderRadius: 36,
+    borderWidth: 3,
+    elevation: 6,
+    height: 72,
     justifyContent: 'center',
-    width: 64,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    width: 72,
   },
   avatarText: {
     color: colors.white,
     fontSize: 22,
     fontWeight: '800',
-  },
-  comingSoon: {
-    backgroundColor: colors.surface,
-    borderRadius: 6,
-    color: colors.textMuted,
-    fontSize: 10,
-    fontWeight: '700',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
   },
   companyBadge: {
     alignItems: 'center',
@@ -307,9 +414,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   header: {
+    backgroundColor: colors.background,
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    elevation: 2,
     paddingBottom: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
   },
   logoutBtn: {
     alignItems: 'center',
@@ -360,6 +475,38 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
+  prefDesc: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontWeight: '400',
+    lineHeight: 16,
+  },
+  prefIcon: {
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 10,
+    height: 38,
+    justifyContent: 'center',
+    width: 38,
+  },
+  prefInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  prefLabel: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  prefRow: {
+    alignItems: 'center',
+    borderBottomColor: colors.surface,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 14,
+  },
   profileCard: {
     alignItems: 'center',
     backgroundColor: colors.white,
@@ -399,14 +546,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
   },
-  version: {
-    color: colors.textMuted,
-    fontSize: 11,
-    fontWeight: '500',
-    marginTop: spacing.lg,
-    textAlign: 'center',
-  },
-  // ── Notification preferences ─────────────────────────────────────────────
   sectionHeader: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -420,36 +559,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
-  prefRow: {
-    alignItems: 'center',
-    borderBottomColor: colors.surface,
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: 14,
-  },
-  prefIcon: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: 10,
-    height: 38,
-    justifyContent: 'center',
-    width: 38,
-  },
-  prefInfo: {
-    flex: 1,
-    gap: 2,
-  },
-  prefLabel: {
-    color: colors.text,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  prefDesc: {
-    color: colors.textSecondary,
-    fontSize: 12,
-    fontWeight: '400',
-    lineHeight: 16,
+  version: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: '500',
+    marginTop: spacing.lg,
+    textAlign: 'center',
   },
 });

@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
   Text,
@@ -50,10 +51,16 @@ export default function CheckoutPaymentScreen() {
       return;
     }
 
-    // Set default payment method to 'upi' if none selected
-    if (!paymentMethod) {
-      setPaymentMethod('upi');
-    }
+    // Restore last-used payment method; fall back to 'upi'
+    AsyncStorage.getItem('aits_last_payment').then((saved) => {
+      if (saved && !paymentMethod) {
+        setPaymentMethod(saved as PaymentOptionType);
+      } else if (!paymentMethod) {
+        setPaymentMethod('upi');
+      }
+    }).catch(() => {
+      if (!paymentMethod) setPaymentMethod('upi');
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAddress, deliveryOption]);
 
@@ -129,7 +136,10 @@ export default function CheckoutPaymentScreen() {
         ]}
         activeOpacity={0.8}
         disabled={isDisabled}
-        onPress={() => setPaymentMethod(method.id)}
+        onPress={() => {
+          setPaymentMethod(method.id);
+          void AsyncStorage.setItem('aits_last_payment', method.id);
+        }}
       >
         <View
           style={[

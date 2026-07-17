@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, LayoutAnimation, Platform, UIManager } from 'react-native';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
@@ -65,8 +65,8 @@ export default function ExploreScreen() {
   const total = data?.pages[0]?.total || 0;
 
   const onEndReached = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-  }, [hasNextPage, isFetchingNextPage]);
+    if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -131,7 +131,7 @@ export default function ExploreScreen() {
           {[1,2,3,4,5,6].map((i) => <View key={i} style={styles.gridItem}><ProductCardSkeleton /></View>)}
         </View>
       ) : isError ? (
-        <EmptyState icon="alert-circle-outline" title="Something went wrong" subtitle="Please try again" actionLabel="Retry" onAction={() => refetch()} />
+        <EmptyState icon="alert-circle-outline" title="Something went wrong" subtitle="Please try again" actionLabel="Retry" onAction={() => { void refetch(); }} />
       ) : allProducts.length === 0 ? (
         <EmptyState icon="search-outline" title="No products found" subtitle="Try different search or filters" actionLabel="Clear filters" onAction={() => { setSearch(''); setActiveChip(0); }} />
       ) : (

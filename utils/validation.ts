@@ -1,9 +1,15 @@
 import { z } from 'zod';
 
-export const loginSchema = z.object({
+export const emailLoginSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Enter a valid email'),
   password: z.string().min(1, 'Password is required'),
 });
+
+export const phoneLoginSchema = z.object({
+  phone: z.string().regex(/^[6-9]\d{9}$/, "Valid 10-digit Indian mobile number"),
+  password: z.string().min(1, "Password is required"),
+});
+export type PhoneLoginForm = z.infer<typeof phoneLoginSchema>;
 
 export const registerSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
@@ -43,7 +49,7 @@ export const reviewSchema = z.object({
   comment: z.string().min(20, 'Review must be at least 20 characters'),
 });
 
-export type LoginForm = z.infer<typeof loginSchema>;
+export type LoginForm = z.infer<typeof emailLoginSchema>;
 export type RegisterForm = z.infer<typeof registerSchema>;
 export type ForgotPasswordForm = z.infer<typeof forgotPasswordSchema>;
 export type AddressForm = z.infer<typeof addressSchema>;

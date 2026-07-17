@@ -1,6 +1,6 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/constants/colors';
 import { useCartStore } from '@/stores/cartStore';
@@ -80,14 +80,6 @@ export default function TabsLayout() {
         />
 
         {/* Hidden screens — files exist but not shown as tabs */}
-        <Tabs.Screen
-          name="explore"
-          options={{ href: null }}
-        />
-        <Tabs.Screen
-          name="sale"
-          options={{ href: null }}
-        />
         <Tabs.Screen
           name="wishlist"
           options={{ href: null }}

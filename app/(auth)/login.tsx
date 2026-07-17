@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Platform,
   StyleSheet,
   ActivityIndicator,
+  type TextInput as TextInputType,
 } from 'react-native';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -25,6 +26,9 @@ import { getErrorMessage } from '@/api/client';
 import { useAuthStore } from '@/stores/authStore';
 import { useAuthModalStore } from '@/stores/authModalStore';
 import { useCartStore } from '@/stores/cartStore';
+import type { CartItem } from '@/stores/cartStore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useBiometrics } from '@/hooks/useBiometrics';
 import { colors } from '@/constants/colors';
 import { spacing, borderRadius } from '@/constants/config';
 
@@ -41,6 +45,20 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [apiError, setApiError] = useState('');
+  const [biometricsPreference, setBiometricsPreference] = useState(false);
+  const { isSupported, isEnrolled, authenticate } = useBiometrics();
+
+  React.useEffect(() => {
+    const checkPreference = async () => {
+      try {
+        const stored = await AsyncStorage.getItem('aits_biometrics_preference');
+        setBiometricsPreference(stored === 'true');
+      } catch (e) {
+        console.warn('Failed to load biometric preference', e);
+      }
+    };
+    void checkPreference();
+  }, []);
 
   const {
     control,
@@ -51,6 +69,7 @@ export default function LoginScreen() {
     defaultValues: { phone: '', password: '' },
   });
 
+  const passwordRef = useRef<TextInputType>(null);
 
   const setupPushNotifications = async () => {
     try {
@@ -90,26 +109,30 @@ export default function LoginScreen() {
       const pendingData = useAuthModalStore.getState().pendingData;
 
       if (pendingAction === 'cart' && pendingData) {
-        useCartStore.getState().addItem(pendingData as any);
+        useCartStore.getState().addItem(pendingData as CartItem);
       }
       useAuthModalStore.getState().hide();
 
       if (user.role === 'admin' || user.role === 'delivery_staff' || user.role === 'warehouse_staff') {
         router.replace('/(staff)');
       } else if (pendingAction === 'checkout') {
-        if (pendingData) useCartStore.getState().addItem(pendingData as any);
+        if (pendingData) useCartStore.getState().addItem(pendingData as CartItem);
         router.replace('/checkout');
       } else {
         router.replace('/(tabs)');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setLoading(false);
       setApiError(getErrorMessage(err));
     }
   };
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView
+      style={styles.flex}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'android' ? 24 : 0}
+    >
       <StatusBar style="dark" />
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
 
@@ -164,6 +187,10 @@ export default function LoginScreen() {
                     value={value}
                     keyboardType="phone-pad"
                     maxLength={10}
+                    returnKeyType="next"
+                    onSubmitEditing={() => passwordRef.current?.focus()}
+                    blurOnSubmit={false}
+                    accessibilityLabel="Mobile number input"
                   />
                 </View>
               )}
@@ -186,6 +213,7 @@ export default function LoginScreen() {
                 <View style={[styles.inputContainer, errors.password && styles.inputError]}>
                   <Ionicons name="lock-closed-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
                   <TextInput
+                    ref={passwordRef}
                     style={styles.input}
                     placeholder="Enter your password"
                     placeholderTextColor={colors.textMuted}
@@ -194,6 +222,9 @@ export default function LoginScreen() {
                     value={value}
                     secureTextEntry={!showPassword}
                     autoCapitalize="none"
+                    returnKeyType="done"
+                    onSubmitEditing={() => { void handleSubmit(onSubmit)(); }}
+                    accessibilityLabel="Password input"
                   />
                   <TouchableOpacity onPress={() => setShowPassword(!showPassword)} activeOpacity={0.7} style={styles.eyeBtn}>
                     <Ionicons
@@ -231,7 +262,28 @@ export default function LoginScreen() {
               )}
             </LinearGradient>
           </TouchableOpacity>
-
+          {/* Biometric Sign In */}
+          {isSupported && isEnrolled && biometricsPreference && (
+            <TouchableOpacity
+              style={styles.biometricBtn}
+              onPress={() => {
+                void (async () => {
+                  const ok = await authenticate();
+                  if (ok) {
+                    await useAuthStore.getState().restoreSession();
+                    if (useAuthStore.getState().isAuthenticated) {
+                      router.replace('/(tabs)');
+                    }
+                  }
+                })();
+              }}
+              accessibilityLabel="Sign in with fingerprint or Face ID"
+              accessibilityRole="button"
+            >
+              <Ionicons name="finger-print" size={32} color={colors.primary} />
+              <Text style={styles.biometricText}>Use Fingerprint / Face ID</Text>
+            </TouchableOpacity>
+          )}
 
         </View>
 
@@ -253,6 +305,23 @@ const styles = StyleSheet.create({
     height: 44,
     justifyContent: 'center', marginBottom: spacing.xl,
     width: 44,
+  },
+  biometricBtn: {
+    alignItems: 'center',
+    borderColor: colors.primary,
+    borderRadius: 12,
+    borderStyle: 'dashed',
+    borderWidth: 1.5,
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'center',
+    marginTop: 16,
+    paddingVertical: 12,
+  },
+  biometricText: {
+    color: colors.primary,
+    fontSize: 14,
+    fontWeight: '600',
   },
   companyLabel: {
     color: colors.primary,

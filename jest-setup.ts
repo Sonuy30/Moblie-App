@@ -27,6 +27,22 @@ jest.mock('expo-secure-store', () => ({
   deleteItemAsync: jest.fn((k: string) => { mockSecureStore.delete(k); return Promise.resolve(); }),
 }));
 
+// ── @react-native-async-storage/async-storage: in-memory Map replacement ───
+const mockAsyncStorage = new Map<string, string>();
+
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  setItem: jest.fn((k: string, v: string) => { mockAsyncStorage.set(k, v); return Promise.resolve(); }),
+  getItem: jest.fn((k: string) => Promise.resolve(mockAsyncStorage.get(k) ?? null)),
+  removeItem: jest.fn((k: string) => { mockAsyncStorage.delete(k); return Promise.resolve(); }),
+  clear: jest.fn(() => { mockAsyncStorage.clear(); return Promise.resolve(); }),
+  getAllKeys: jest.fn(() => Promise.resolve(Array.from(mockAsyncStorage.keys()))),
+  multiGet: jest.fn((keys: string[]) => Promise.resolve(keys.map(k => [k, mockAsyncStorage.get(k) ?? null]))),
+  multiSet: jest.fn((pairs: [string, string][]) => {
+    pairs.forEach(([k, v]) => mockAsyncStorage.set(k, v));
+    return Promise.resolve();
+  }),
+}));
+
 // ── expo-constants: minimal stub ───────────────────────────────────────────
 jest.mock('expo-constants', () => ({
   default: {
@@ -70,4 +86,5 @@ global.console = {
 // ── Clear in-memory secure store before each test ─────────────────────────
 beforeEach(() => {
   mockSecureStore.clear();
+  mockAsyncStorage.clear();
 });

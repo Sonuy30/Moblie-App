@@ -15,13 +15,6 @@
  */
 
 import client from './client';
-import type { AxiosError } from 'axios';
-import { Config } from '@/utils/config';
-import {
-  mockFetchOrders,
-  mockFetchOrderById,
-  mockInitiateCheckout,
-} from './mockOrders';
 import type {
   OrderStatusValue,
   OrderTrackingData,
@@ -66,14 +59,7 @@ export interface EcomOrder {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Returns true when the error warrants a mock fallback instead of propagation. */
-function shouldUseMock(err: unknown): boolean {
-  if (!Config.USE_MOCK_API) return false;
-  const axErr = err as AxiosError;
-  if (!axErr?.response) return true;
-  const s = axErr.response.status;
-  return s === 401 || s === 403 || s === 404 || s === 405;
-}
+
 
 /**
  * Derive an OrderTrackingData object from a raw EcomOrder.
@@ -157,37 +143,15 @@ function buildTrackingData(order: EcomOrder): OrderTrackingData {
 // ── Fetch order list ──────────────────────────────────────────────────────────
 
 export const fetchOrders = async (params?: { status?: string; page?: number }) => {
-  if (Config.USE_MOCK_API) {
-    return mockFetchOrders(params);
-  }
-  try {
-    const { data } = await client.get<{ orders: EcomOrder[]; total: number }>('/api/mobile/orders', { params });
-    return data;
-  } catch (err) {
-    if (shouldUseMock(err)) {
-      console.info('[MOCK] fetchOrders fallback active');
-      return mockFetchOrders(params);
-    }
-    throw err;
-  }
+  const { data } = await client.get<{ orders: EcomOrder[]; total: number }>('/api/mobile/orders', { params });
+  return data;
 };
 
 // ── Fetch single order ────────────────────────────────────────────────────────
 
 export const fetchOrderById = async (id: string) => {
-  if (Config.USE_MOCK_API) {
-    return mockFetchOrderById(id);
-  }
-  try {
-    const { data } = await client.get<{ order: EcomOrder }>(`/api/mobile/orders/${id}`);
-    return data;
-  } catch (err) {
-    if (shouldUseMock(err)) {
-      console.info(`[MOCK] fetchOrderById fallback for: ${id}`);
-      return mockFetchOrderById(id);
-    }
-    throw err;
-  }
+  const { data } = await client.get<{ order: EcomOrder }>(`/api/mobile/orders/${id}`);
+  return data;
 };
 
 // ── Get lightweight order status ──────────────────────────────────────────────
@@ -203,14 +167,6 @@ export const fetchOrderById = async (id: string) => {
 export const getOrderStatus = async (
   orderId: string
 ): Promise<{ orderId: string; status: OrderStatusValue; updatedAt: string }> => {
-  if (Config.USE_MOCK_API) {
-    const { order } = await mockFetchOrderById(orderId);
-    return {
-      orderId:   order._id,
-      status:    order.status,
-      updatedAt: order.updatedAt,
-    };
-  }
   try {
     const { data } = await client.get<{
       orderId:   string;
@@ -241,10 +197,6 @@ export const getOrderStatus = async (
 export const getTrackingDetails = async (
   orderId: string
 ): Promise<OrderTrackingData> => {
-  if (Config.USE_MOCK_API) {
-    const { order } = await mockFetchOrderById(orderId);
-    return buildTrackingData(order);
-  }
   try {
     const { data } = await client.get<OrderTrackingData>(
       `/api/mobile/orders/${orderId}/tracking`
@@ -260,57 +212,30 @@ export const getTrackingDetails = async (
 // ── Initiate checkout (place order) ──────────────────────────────────────────
 
 export const initiateCheckout = async (payload: {
-  cartItems:       { productId: string; quantity: number; price: number; name: string; image?: string }[];
+  cartItems:       { productId: string; quantity: number; price: number; name: string; image?: string; variantId?: string | null; variantLabel?: string | null }[];
   addressId?:      string;
   shippingAddress?: Address;
   paymentMethod?:  string;
   promoCode?:      string;
 }) => {
-  if (Config.USE_MOCK_API) {
-    console.info('[MOCK] initiateCheckout fallback active');
-    return mockInitiateCheckout({
-      cartItems: payload.cartItems.map((i) => ({
-        ...i,
-        image: i.image || 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&auto=format&fit=crop&q=80',
-      })),
-      shippingAddress: payload.shippingAddress,
-      paymentMethod:   payload.paymentMethod,
-    });
-  }
-
   const orderPayload = {
     items: payload.cartItems.map((i) => ({
       productId: i.productId,
       name:      i.name,
       qty:       i.quantity,
       price:     i.price,
-      variantId: (i as any).variantId || null,
-      variantLabel: (i as any).variantLabel || null,
+      variantId: i.variantId || null,
+      variantLabel: i.variantLabel || null,
     })),
     paymentMethod:   payload.paymentMethod || 'cod',
     shippingAddress: payload.shippingAddress || {},
   };
 
-  try {
-    const { data } = await client.post<{
-      order:   { _id: string; orderNumber: string; totalAmount: number };
-      message: string;
-    }>('/api/mobile/orders', orderPayload);
-    return data;
-  } catch (err) {
-    if (shouldUseMock(err)) {
-      console.info('[MOCK] initiateCheckout fallback active');
-      return mockInitiateCheckout({
-        cartItems: payload.cartItems.map((i) => ({
-          ...i,
-          image: i.image || 'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=400&auto=format&fit=crop&q=80',
-        })),
-        shippingAddress: payload.shippingAddress,
-        paymentMethod:   payload.paymentMethod,
-      });
-    }
-    throw err;
-  }
+  const { data } = await client.post<{
+    order:   { _id: string; orderNumber: string; totalAmount: number };
+    message: string;
+  }>('/api/mobile/orders', orderPayload);
+  return data;
 };
 
 // ── Verify payment ────────────────────────────────────────────────────────────
@@ -321,24 +246,8 @@ export const verifyPayment = async (payload: {
   razorpay_signature:  string;
   ecomOrderId:         string;
 }) => {
-  if (Config.USE_MOCK_API) {
-    return {
-      orderNumber:       'MOCK',
-      estimatedDelivery: new Date(Date.now() + 5 * 24 * 3600000).toISOString(),
-    };
-  }
-  try {
-    const { data } = await client.post<{ orderNumber: string; estimatedDelivery: string }>('/api/store/checkout/verify', payload);
-    return data;
-  } catch (err) {
-    if (shouldUseMock(err)) {
-      return {
-        orderNumber:       'MOCK',
-        estimatedDelivery: new Date(Date.now() + 5 * 24 * 3600000).toISOString(),
-      };
-    }
-    throw err;
-  }
+  const { data } = await client.post<{ orderNumber: string; estimatedDelivery: string }>('/api/store/checkout/verify', payload);
+  return data;
 };
 
 

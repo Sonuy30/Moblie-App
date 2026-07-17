@@ -83,6 +83,7 @@ export default function ProductCard(props: ProductCardProps) {
           style={styles.image}
           contentFit="cover"
           transition={200}
+          recyclingKey={props._id}
         />
         {props.discount && props.discount > 0 ? (
           <SaleBadge discount={props.discount} style={styles.discountBadgePosition} isFlash={false} />
