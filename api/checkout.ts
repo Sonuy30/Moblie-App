@@ -23,14 +23,24 @@ export interface CheckoutInitResponse {
 }
 
 import client from './client';
-
-
+import { Config } from '@/utils/config';
 
 /**
  * Places an order in the ERP via /api/mobile/orders.
  * Falls back to local mock order creation if backend is unavailable.
  */
 export const initiateCheckout = async (payload: CheckoutPayload): Promise<CheckoutInitResponse> => {
+  if (Config.USE_MOCK_API) {
+    const totalAmount = payload.cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const gstAmount = Math.round(totalAmount * 0.18);
+    return {
+      ecomOrderId: `mock-order-${Date.now()}`,
+      orderNumber: `SO-MOB-${Date.now()}`,
+      amount: totalAmount + gstAmount,
+      currency: 'INR',
+    };
+  }
+
   const orderPayload = {
     items: payload.cartItems.map((i) => ({
       productId: i.productId,

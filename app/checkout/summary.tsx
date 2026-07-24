@@ -120,27 +120,24 @@ export default function CheckoutSummaryScreen() {
     else if (paymentMethod === 'offline_invoice') apiPaymentMethod = 'offline_invoice';
 
     try {
-      // 1. Create order on backend (returns ecomOrderId, orderNumber, amount)
-      const response = await initiateCheckout({
-        cartItems: items.map((i) => ({
-          productId: i.productId,
-          name: i.name + (i.variantLabel ? ` (${i.variantLabel})` : ''),
-          price: i.price,
-          quantity: i.quantity,
-          image: i.image || '',
-          variantId: i.variantId,
-          variantLabel: i.variantLabel,
-        })),
-        addressId: selectedAddress._id || '',
-        shippingAddress: selectedAddress,
-        paymentMethod: apiPaymentMethod,
-        promoCode: couponCode || undefined,
-      });
-
-      // 2. Process payment based on method
       if (apiPaymentMethod === 'online') {
-        const isSuccess = await payWithRazorpay(grandTotal, response.ecomOrderId);
-        if (!isSuccess) {
+        const checkoutDetails = {
+          items: items.map((i) => ({
+            productId: i.productId,
+            name: i.name + (i.variantLabel ? ` (${i.variantLabel})` : ''),
+            price: i.price,
+            quantity: i.quantity,
+            image: i.image || '',
+            variantId: i.variantId,
+            variantLabel: i.variantLabel,
+          })),
+          shippingAddress: selectedAddress,
+          paymentMethod: apiPaymentMethod,
+          promoCode: couponCode || undefined,
+        };
+
+        const result = await payWithRazorpay(grandTotal, checkoutDetails);
+        if (!result.success || !result.ecomOrderId) {
           Alert.alert(
             'Payment Failed',
             'Your transaction could not be processed. You can retry or choose Cash on Delivery (COD).',
@@ -152,19 +149,41 @@ export default function CheckoutSummaryScreen() {
           setLoading(false);
           return;
         }
-      } else if (apiPaymentMethod === 'credit') {
-        await payWithCreditLimit(response.ecomOrderId);
-      } else if (apiPaymentMethod === 'offline_invoice') {
-        await payOfflineInvoice(response.ecomOrderId);
+
+        // Store success order details
+        setOrderDetails(result.ecomOrderId, result.orderNumber || '');
       } else {
-        await demoPay(response.ecomOrderId);
+        // Non-online orders: create order first
+        const response = await initiateCheckout({
+          cartItems: items.map((i) => ({
+            productId: i.productId,
+            name: i.name + (i.variantLabel ? ` (${i.variantLabel})` : ''),
+            price: i.price,
+            quantity: i.quantity,
+            image: i.image || '',
+            variantId: i.variantId,
+            variantLabel: i.variantLabel,
+          })),
+          addressId: selectedAddress._id || '',
+          shippingAddress: selectedAddress,
+          paymentMethod: apiPaymentMethod,
+          promoCode: couponCode || undefined,
+        });
+
+        if (apiPaymentMethod === 'credit') {
+          await payWithCreditLimit(response.ecomOrderId);
+        } else if (apiPaymentMethod === 'offline_invoice') {
+          await payOfflineInvoice(response.ecomOrderId);
+        } else {
+          await demoPay(response.ecomOrderId);
+        }
+
+        // Store success order details
+        setOrderDetails(response.ecomOrderId, response.orderNumber);
       }
 
       // Clear the cart
       clearCart();
-
-      // Store success order details
-      setOrderDetails(response.ecomOrderId, response.orderNumber);
 
       // Route to success screen
       router.replace('/checkout/success');
@@ -449,6 +468,9 @@ const styles = StyleSheet.create({
   content: {
     gap: spacing.lg,
     padding: spacing.lg,
+    maxWidth: 640,
+    width: '100%',
+    alignSelf: 'center',
   },
   couponCard: {
     backgroundColor: colors.white,

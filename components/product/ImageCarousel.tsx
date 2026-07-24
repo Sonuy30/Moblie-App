@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Dimensions,
   ScrollView,
+  TouchableOpacity,
   type NativeSyntheticEvent,
   type NativeScrollEvent,
 } from 'react-native';
@@ -25,53 +26,84 @@ export default function ImageCarousel({ images, height = 350 }: ImageCarouselPro
 
   const imageList = images.length > 0 ? images : ['https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=600&auto=format&fit=crop&q=80'];
 
-
   const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
     setActiveIndex(index);
   };
 
   return (
-    <View style={[styles.container, { height }]}>
-      <FlatList
-        ref={flatListRef}
-        data={imageList}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
-        keyExtractor={(_, i) => i.toString()}
-        renderItem={({ item }) => (
-          <ScrollView
-            maximumZoomScale={3}
-            minimumZoomScale={1}
-            bouncesZoom
-            showsHorizontalScrollIndicator={false}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={[styles.imageWrapper, { width: SCREEN_WIDTH, height }]}
-          >
-            <Image
-              source={{ uri: item }}
-              style={styles.image}
-              contentFit="contain"
-              transition={300}
-            />
-          </ScrollView>
+    <View style={styles.outerContainer}>
+      <View style={[styles.container, { height }]}>
+        <FlatList
+          ref={flatListRef}
+          data={imageList}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          keyExtractor={(_, i) => i.toString()}
+          renderItem={({ item }) => (
+            <ScrollView
+              maximumZoomScale={3}
+              minimumZoomScale={1}
+              bouncesZoom
+              showsHorizontalScrollIndicator={false}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={[styles.imageWrapper, { width: SCREEN_WIDTH, height }]}
+            >
+              <Image
+                source={{ uri: item }}
+                style={styles.image}
+                contentFit="contain"
+                transition={300}
+              />
+            </ScrollView>
+          )}
+        />
+        {imageList.length > 1 && (
+          <View style={styles.dots}>
+            {imageList.map((_, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.dot,
+                  i === activeIndex ? styles.activeDot : styles.inactiveDot,
+                ]}
+              />
+            ))}
+          </View>
         )}
-      />
+      </View>
+
+      {/* Gallery / Image Carousel thumbnails for displaying additional product views */}
       {imageList.length > 1 && (
-        <View style={styles.dots}>
-          {imageList.map((_, i) => (
-            <View
-              key={i}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.thumbnailContainer}
+        >
+          {imageList.map((img, index) => (
+            <TouchableOpacity
+              key={index}
+              activeOpacity={0.8}
+              onPress={() => {
+                setActiveIndex(index);
+                flatListRef.current?.scrollToIndex({ index, animated: true });
+              }}
               style={[
-                styles.dot,
-                i === activeIndex ? styles.activeDot : styles.inactiveDot,
+                styles.thumbnailWrapper,
+                index === activeIndex && styles.thumbnailActive
               ]}
-            />
+            >
+              <Image
+                source={{ uri: img }}
+                style={styles.thumbnailImage}
+                contentFit="contain"
+              />
+            </TouchableOpacity>
           ))}
-        </View>
+        </ScrollView>
       )}
     </View>
   );
@@ -111,5 +143,31 @@ const styles = StyleSheet.create({
   },
   inactiveDot: {
     backgroundColor: colors.border,
+  },
+  outerContainer: {
+    backgroundColor: colors.white,
+    paddingBottom: 12,
+  },
+  thumbnailContainer: {
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+  },
+  thumbnailImage: {
+    height: '100%',
+    width: '100%',
+  },
+  thumbnailWrapper: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    borderWidth: 1.5,
+    height: 56,
+    overflow: 'hidden',
+    padding: 2,
+    width: 56,
+  },
+  thumbnailActive: {
+    borderColor: colors.primary,
   },
 });

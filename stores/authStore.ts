@@ -22,8 +22,48 @@
  */
 
 import { create } from 'zustand';
+import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { Config } from '@/utils/config';
+
+const safeStorage = {
+  getItemAsync: async (key: string): Promise<string | null> => {
+    if (Platform.OS === 'web') {
+      try {
+        return typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+      } catch {
+        return null;
+      }
+    }
+    try {
+      return await SecureStore.getItemAsync(key);
+    } catch {
+      return null;
+    }
+  },
+  setItemAsync: async (key: string, value: string): Promise<void> => {
+    if (Platform.OS === 'web') {
+      try {
+        if (typeof window !== 'undefined') localStorage.setItem(key, value);
+      } catch {}
+      return;
+    }
+    try {
+      await SecureStore.setItemAsync(key, value);
+    } catch {}
+  },
+  deleteItemAsync: async (key: string): Promise<void> => {
+    if (Platform.OS === 'web') {
+      try {
+        if (typeof window !== 'undefined') localStorage.removeItem(key);
+      } catch {}
+      return;
+    }
+    try {
+      await SecureStore.deleteItemAsync(key);
+    } catch {}
+  },
+};
 
 // ── Secure store keys ──────────────────────────────────────────────────────
 
@@ -42,6 +82,7 @@ export interface AuthUser {
   role: 'customer' | 'delivery_staff' | 'warehouse_staff' | 'admin';
   companyId: string;
   companyName: string;
+  companySlug?: string;
   tier?: 'premium' | 'regular' | 'guest';
   creditLimit?: number;
   creditAvailable?: number;
@@ -153,10 +194,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   // ── setSession ─────────────────────────────────────────────────────────
   setSession: async (accessToken, user, refreshToken) => {
     try {
-      await SecureStore.setItemAsync(SECURE_KEYS.ACCESS_TOKEN, accessToken);
-      await SecureStore.setItemAsync(SECURE_KEYS.USER, JSON.stringify(user));
+      await safeStorage.setItemAsync(SECURE_KEYS.ACCESS_TOKEN, accessToken);
+      await safeStorage.setItemAsync(SECURE_KEYS.USER, JSON.stringify(user));
       if (refreshToken) {
-        await SecureStore.setItemAsync(SECURE_KEYS.REFRESH_TOKEN, refreshToken);
+        await safeStorage.setItemAsync(SECURE_KEYS.REFRESH_TOKEN, refreshToken);
       }
     } catch (e) {
       console.warn('[AuthStore] Failed to persist session to SecureStore:', e);
@@ -164,25 +205,35 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set({ token: accessToken, user, isAuthenticated: true });
   },
 
-  // ── logout ─────────────────────────────────────────────────────────────
   logout: async () => {
     try {
-      await SecureStore.deleteItemAsync(SECURE_KEYS.ACCESS_TOKEN);
-      await SecureStore.deleteItemAsync(SECURE_KEYS.REFRESH_TOKEN);
-      await SecureStore.deleteItemAsync(SECURE_KEYS.USER);
+      await safeStorage.deleteItemAsync(SECURE_KEYS.ACCESS_TOKEN);
+      await safeStorage.deleteItemAsync(SECURE_KEYS.REFRESH_TOKEN);
+      await safeStorage.deleteItemAsync(SECURE_KEYS.USER);
     } catch (e) {
       console.warn('[AuthStore] SecureStore delete failed during logout:', e);
     }
     set({ token: null, user: null, isAuthenticated: false });
+
+    // Reset stores to prevent cross-account stale data leakage
+    try {
+      const { useCartStore } = await import('@/stores/cartStore');
+      useCartStore.getState().clearCart();
+    } catch (e) {}
+
+    try {
+      const { useWishlistStore } = await import('@/stores/wishlistStore');
+      useWishlistStore.getState().clearWishlist();
+    } catch (e) {}
   },
 
   // ── restoreSession ─────────────────────────────────────────────────────
   restoreSession: async () => {
     set({ isLoading: true });
     try {
-      const accessToken  = await SecureStore.getItemAsync(SECURE_KEYS.ACCESS_TOKEN);
-      const refreshToken = await SecureStore.getItemAsync(SECURE_KEYS.REFRESH_TOKEN);
-      const userStr      = await SecureStore.getItemAsync(SECURE_KEYS.USER);
+      const accessToken  = await safeStorage.getItemAsync(SECURE_KEYS.ACCESS_TOKEN);
+      const refreshToken = await safeStorage.getItemAsync(SECURE_KEYS.REFRESH_TOKEN);
+      const userStr      = await safeStorage.getItemAsync(SECURE_KEYS.USER);
 
       if (!accessToken || !userStr) {
         set({ isLoading: false });
@@ -269,7 +320,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     }
 
     try {
-      const refreshToken = await SecureStore.getItemAsync(SECURE_KEYS.REFRESH_TOKEN);
+      const refreshToken = await safeStorage.getItemAsync(SECURE_KEYS.REFRESH_TOKEN);
 
       if (!refreshToken) {
         console.info('[AuthStore] No refresh token stored — cannot refresh');
@@ -318,10 +369,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       }
 
       // Persist new tokens
-      await SecureStore.setItemAsync(SECURE_KEYS.ACCESS_TOKEN, newAccessToken);
+      await safeStorage.setItemAsync(SECURE_KEYS.ACCESS_TOKEN, newAccessToken);
       if (data.refreshToken) {
         // Server is rotating refresh tokens (more secure) — update stored token
-        await SecureStore.setItemAsync(SECURE_KEYS.REFRESH_TOKEN, data.refreshToken);
+        await safeStorage.setItemAsync(SECURE_KEYS.REFRESH_TOKEN, data.refreshToken);
       }
 
       // Update in-memory state
@@ -341,7 +392,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set((state) => {
       if (!state.user) return {};
       const updatedUser = { ...state.user, ...updates };
-      SecureStore.setItemAsync(SECURE_KEYS.USER, JSON.stringify(updatedUser)).catch((e) =>
+      safeStorage.setItemAsync(SECURE_KEYS.USER, JSON.stringify(updatedUser)).catch((e) =>
         console.warn('[AuthStore] Failed to persist user update:', e)
       );
       return { user: updatedUser };
@@ -353,7 +404,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     set((state) => {
       if (!state.user) return {};
       const updatedUser = { ...state.user, pushToken };
-      SecureStore.setItemAsync(SECURE_KEYS.USER, JSON.stringify(updatedUser)).catch((e) =>
+      safeStorage.setItemAsync(SECURE_KEYS.USER, JSON.stringify(updatedUser)).catch((e) =>
         console.warn('[AuthStore] Failed to persist push token:', e)
       );
       return { user: updatedUser };

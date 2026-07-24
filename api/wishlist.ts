@@ -31,9 +31,7 @@ export const getWishlist = async (): Promise<WishlistItem[]> => {
     }
     return list;
   } catch (err) {
-    const status = (err as { response?: { status?: number } })?.response?.status;
-    const isMissing = status === 404 || status === 405;
-    if (!Config.USE_MOCK_API && !isMissing) {
+    if (!Config.USE_MOCK_API) {
       throw err;
     }
     console.info('[WISHLIST] using in-memory wishlist fallback');
@@ -59,13 +57,10 @@ export const addToWishlist = async (productId: string): Promise<unknown> => {
     const { data } = await client.post<unknown>('/api/mobile/wishlist', { productId });
     return data;
   } catch (err) {
-    const status = (err as { response?: { status?: number } })?.response?.status;
-    const isMissing = status === 404 || status === 405;
-    if (!Config.USE_MOCK_API && !isMissing) {
+    if (!Config.USE_MOCK_API) {
       throw err;
     }
     console.info(`[WISHLIST] adding to in-memory wishlist: ${productId}`);
-    // Check if already in wishlist
     if (!mockWishlist.some(item => item.productId === productId)) {
       mockWishlist.push({
         _id: `wish-${Date.now()}`,
@@ -89,9 +84,7 @@ export const removeFromWishlist = async (productId: string): Promise<unknown> =>
     const { data } = await client.delete<unknown>(`/api/mobile/wishlist/${productId}`);
     return data;
   } catch (err) {
-    const status = (err as { response?: { status?: number } })?.response?.status;
-    const isMissing = status === 404 || status === 405;
-    if (!Config.USE_MOCK_API && !isMissing) {
+    if (!Config.USE_MOCK_API) {
       throw err;
     }
     console.info(`[WISHLIST] removing from in-memory wishlist: ${productId}`);

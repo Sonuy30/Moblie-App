@@ -1,9 +1,38 @@
-import React from 'react';
-import { Tabs } from 'expo-router';
+import React, { useEffect } from 'react';
+import { Tabs, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { View, ActivityIndicator } from 'react-native';
 import { colors } from '@/constants/colors';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function StaffLayout() {
+  const { user, isAuthenticated, isLoading } = useAuthStore();
+
+  useEffect(() => {
+    if (!isLoading) {
+      const isStaff = isAuthenticated && user &&
+        ['admin', 'delivery_staff', 'warehouse_staff'].includes(user.role);
+      if (!isStaff) {
+        router.replace('/(auth)/login');
+      }
+    }
+  }, [isLoading, isAuthenticated, user]);
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  const isStaff = isAuthenticated && user &&
+    ['admin', 'delivery_staff', 'warehouse_staff'].includes(user.role);
+
+  if (!isStaff) {
+    return null;
+  }
+
   return (
     <Tabs
       screenOptions={{

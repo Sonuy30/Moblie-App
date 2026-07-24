@@ -141,13 +141,6 @@ export default function HeroBanner() {
             </View>
           </View>
         </View>
-
-        {/* Decorative elements */}
-        <View style={styles.circle1} />
-        <View style={styles.circle2} />
-        <View style={styles.circle3} />
-        <View style={styles.beamH} />
-        <View style={styles.beamV} />
       </LinearGradient>
     </View>
   );
@@ -187,22 +180,6 @@ export default function HeroBanner() {
 const SLIDE_WIDTH = SCREEN_WIDTH - spacing.lg * 2;
 
 const styles = StyleSheet.create({
-  beamH: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    bottom: 28,
-    height: 2,
-    position: 'absolute',
-    right: 0,
-    width: '60%',
-  },
-  beamV: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    bottom: 0,
-    height: '70%',
-    position: 'absolute',
-    right: 60,
-    width: 2,
-  },
   brandLine: {
     color: 'rgba(255,255,255,0.75)',
     fontSize: 11,
@@ -226,33 +203,6 @@ const styles = StyleSheet.create({
     color: '#38ef7d',
     fontSize: 9,
     fontWeight: '700',
-  },
-  circle1: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 110,
-    height: 220,
-    position: 'absolute',
-    right: -60,
-    top: -60,
-    width: 220,
-  },
-  circle2: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 65,
-    bottom: -40,
-    height: 130,
-    position: 'absolute',
-    right: 30,
-    width: 130,
-  },
-  circle3: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderRadius: 30,
-    height: 60,
-    position: 'absolute',
-    right: 110,
-    top: 20,
-    width: 60,
   },
   container: {
     marginHorizontal: spacing.lg,

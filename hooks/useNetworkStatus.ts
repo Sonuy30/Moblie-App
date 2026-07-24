@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { Platform } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import type { NetInfoState } from '@react-native-community/netinfo';
 
@@ -53,5 +54,13 @@ export const NetworkStatusProvider: React.FC<{ children: React.ReactNode }> = ({
 };
 
 export const useNetworkStatus = () => {
-  return useContext(NetworkStatusContext);
+  const context = useContext(NetworkStatusContext);
+  if (Platform.OS === 'web') {
+    return {
+      isOnline: typeof navigator !== 'undefined' ? navigator.onLine : true,
+      isInternetReachable: true,
+      connectionType: 'wifi',
+    };
+  }
+  return context;
 };

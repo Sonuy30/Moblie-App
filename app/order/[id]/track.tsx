@@ -337,7 +337,7 @@ export default function OrderTrackScreen() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => router.replace(`/order/${id ?? ''}`)} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
@@ -433,7 +433,7 @@ export default function OrderTrackScreen() {
         {/* View full order link */}
         <TouchableOpacity
           style={styles.viewOrderBtn}
-          onPress={() => router.push(`/order/${id ?? ''}`)}
+          onPress={() => router.replace(`/order/${id ?? ''}`)}
           activeOpacity={0.7}
         >
           <Ionicons name="receipt-outline" size={18} color={colors.primary} />

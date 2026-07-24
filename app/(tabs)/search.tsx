@@ -25,6 +25,7 @@ import { useCategories } from '@/hooks/useProducts';
 import { colors } from '@/constants/colors';
 import { spacing, borderRadius } from '@/constants/config';
 import type { SearchFilters } from '@/types/search';
+import { withErrorBoundary } from '@/utils/withErrorBoundary';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
 const FlashList = OriginalFlashList as any;
@@ -41,7 +42,7 @@ const QUICK_FILTER_CHIPS = [
 
 const ProductCardMemo = React.memo(ProductCard);
 
-export default function SearchScreen() {
+function SearchScreen() {
   // ── Route params (from home chips / deal cards / banners) ──
   const params = useLocalSearchParams<{
     category?: string;
@@ -305,14 +306,14 @@ export default function SearchScreen() {
                   key={idx}
                   activeOpacity={0.7}
                   onPress={() => {
-                    setSearchQuery(cat);
-                    setDebouncedQuery(cat);
-                    setFilters((f) => ({ ...f, categories: [cat] }));
+                    setSearchQuery(cat.name);
+                    setDebouncedQuery(cat.name);
+                    setFilters((f) => ({ ...f, categories: [cat.name] }));
                   }}
                   style={styles.categoryChip}
                 >
-                  <Ionicons name="cube-outline" size={14} color={colors.primary} />
-                  <Text style={styles.categoryChipText}>{cat}</Text>
+                  <Ionicons name={(cat.icon || 'grid-outline') as any} size={14} color={colors.primary} />
+                  <Text style={styles.categoryChipText}>{cat.name}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -817,3 +818,5 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
 });
+
+export default withErrorBoundary(SearchScreen);

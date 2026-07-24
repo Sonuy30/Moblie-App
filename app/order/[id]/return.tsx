@@ -35,6 +35,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useMutation } from '@tanstack/react-query';
 import { initiateReturn } from '@/api/returns';
 import { useOrderDetail } from '@/hooks/useOrders';
+import { useCompanySettings } from '@/hooks/useCompany';
 import { SkeletonRect } from '@/components/skeletons/SkeletonBase';
 import { formatINR } from '@/utils/currency';
 import { formatDate } from '@/utils/date';
@@ -76,6 +77,7 @@ function SectionHeader({ step, title, subtitle }: { step: number; title: string;
 export default function ReturnScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: order, isLoading } = useOrderDetail(id ?? '');
+  const { data: settings } = useCompanySettings();
 
   // ── Form state ──────────────────────────────────────────────────────────
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
@@ -229,7 +231,7 @@ export default function ReturnScreen() {
 
   // ── Guard: eligibility ──────────────────────────────────────────────────
   const deliveredAt  = order.updatedAt;
-  const eligibility  = getReturnEligibility(deliveredAt);
+  const eligibility  = getReturnEligibility(deliveredAt, settings?.returnWindowDays);
 
   if (!eligibility.eligible) {
     return (
@@ -300,11 +302,16 @@ export default function ReturnScreen() {
               {order.items.map((item, idx) => {
                 const itemId    = String(idx);
                 const isChecked = selectedItemIds.has(itemId);
+                const isNonReturnable = settings?.nonReturnableCategories?.includes(item.category || '');
                 return (
                   <TouchableOpacity
                     key={itemId}
-                    style={[styles.itemRow, isChecked && styles.itemRowSelected]}
-                    onPress={() => {
+                    style={[
+                      styles.itemRow,
+                      isChecked && styles.itemRowSelected,
+                      isNonReturnable && { opacity: 0.5 }
+                    ]}
+                    onPress={isNonReturnable ? undefined : () => {
                       setSelectedItemIds((prev) => {
                         const next = new Set(prev);
                         if (next.has(itemId)) next.delete(itemId);
@@ -312,12 +319,18 @@ export default function ReturnScreen() {
                         return next;
                       });
                     }}
-                    activeOpacity={0.7}
+                    activeOpacity={isNonReturnable ? 1 : 0.7}
                   >
-                    {/* Checkbox */}
-                    <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
-                      {isChecked && <Ionicons name="checkmark" size={14} color="#fff" />}
-                    </View>
+                    {/* Checkbox / Lock */}
+                    {isNonReturnable ? (
+                      <View style={[styles.checkbox, { backgroundColor: colors.border, borderColor: colors.border }]}>
+                        <Ionicons name="lock-closed" size={12} color={colors.textMuted} />
+                      </View>
+                    ) : (
+                      <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
+                        {isChecked && <Ionicons name="checkmark" size={14} color="#fff" />}
+                      </View>
+                    )}
 
                     {/* Item image */}
                     {item.image ? (
@@ -331,8 +344,8 @@ export default function ReturnScreen() {
                     {/* Item info */}
                     <View style={styles.itemInfo}>
                       <Text style={styles.itemName} numberOfLines={2}>{item.name}</Text>
-                      <Text style={styles.itemMeta}>
-                        Qty: {item.quantity}  ·  {formatINR(item.price)}
+                      <Text style={[styles.itemMeta, isNonReturnable && { color: colors.error, fontWeight: '600' }]}>
+                        {isNonReturnable ? 'Non-returnable' : `Qty: ${item.quantity}  ·  ${formatINR(item.price)}`}
                       </Text>
                     </View>
                   </TouchableOpacity>

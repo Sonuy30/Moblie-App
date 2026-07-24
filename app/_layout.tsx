@@ -13,7 +13,7 @@
 
 import { Stack, router } from 'expo-router';
 import { useEffect, useCallback, useRef } from 'react';
-import { AppState, type AppStateStatus } from 'react-native';
+import { AppState, type AppStateStatus, View, Text } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { useAuthStore } from '@/stores/authStore';
 import { QueryClient } from '@tanstack/react-query';
@@ -32,7 +32,7 @@ import { useNotificationStore } from '@/stores/notificationStore';
 import { clearBadge } from '@/services/notifications';
 import { NetworkStatusProvider } from '@/hooks/useNetworkStatus';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
-import { MISSING_ENV_VARS } from '@/utils/config';
+import { MISSING_ENV_VARS, Config } from '@/utils/config';
 import { MissingEnvScreen } from '@/components/error/MissingEnvScreen';
 
 // ── 1. Sentry: initialise before any render ────────────────────────────────
@@ -196,6 +196,15 @@ export default function RootLayout() {
             {/* Offline banner at the top */}
             <OfflineBanner />
 
+            {/* Mock Mode banner at the top */}
+            {Config.USE_MOCK_API && (
+              <View style={{ backgroundColor: '#D32F2F', padding: 8, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: '#FFFFFF', fontWeight: 'bold', fontSize: 13, letterSpacing: 0.5 }}>
+                  MOCK MODE — NOT LIVE DATA
+                </Text>
+              </View>
+            )}
+
             {/* ── 6. Navigator ──────────────────────────────────────────── */}
             <Stack
               screenOptions={{ headerShown: false, animation: 'slide_from_right' }}
@@ -203,7 +212,6 @@ export default function RootLayout() {
               <Stack.Screen name="index" />
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="(onboarding)" />
-              <Stack.Screen name="(customer)" />
               <Stack.Screen name="(staff)" />
               <Stack.Screen name="(auth)" />
               <Stack.Screen name="product/[id]" />
@@ -216,6 +224,9 @@ export default function RootLayout() {
               <Stack.Screen name="wishlist" options={{ headerShown: false }} />
               <Stack.Screen name="support" options={{ headerShown: false }} />
               <Stack.Screen name="terms" options={{ headerShown: false }} />
+              {/* Subscription routes */}
+              <Stack.Screen name="subscribe/[itemId]" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="subscription/[id]" />
             </Stack>
 
             {/* ── 7. Global Toast overlay ───────────────────────────────── */}

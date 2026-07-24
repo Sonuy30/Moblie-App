@@ -39,6 +39,7 @@ import { useProductShare } from '@/hooks/useProductShare';
 import { ShareCard } from '@/components/product/ShareCard';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useRecentlyViewedStore } from '@/stores/recentlyViewedStore';
+import SubscribeQtyStepper from '@/components/product/SubscribeQtyStepper';
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -503,6 +504,34 @@ export default function ProductDetailScreen() {
 
           {/* ── Delivery Estimate Section ── */}
           <DeliveryEstimator productId={product._id} />
+
+          {/* ── Subscribe & Save (dairy/subscription items only) ── */}
+          {(product as unknown as { isSubscribable?: boolean }).isSubscribable && (
+            <View style={styles.section}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <Ionicons name="repeat-outline" size={18} color={colors.primary} />
+                <Text style={styles.sectionTitle}>Subscribe & Save</Text>
+              </View>
+
+              {/* Delivery window info */}
+              <View style={{ backgroundColor: '#f0f9ff', borderRadius: 10, padding: 12, marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name="time-outline" size={16} color={colors.primary} />
+                <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '600' }}>
+                  Delivered daily between 3:00–7:00 AM
+                </Text>
+              </View>
+
+              {/* Unit label */}
+              <Text style={{ color: colors.textSecondary, fontSize: 13, marginBottom: 8 }}>
+                Sold per {(product as unknown as { unit?: string }).unit || 'unit'} · Minimum {(product as unknown as { minSubscriptionQty?: number }).minSubscriptionQty ?? 0.5} {(product as unknown as { unit?: string }).unit || 'unit'}
+              </Text>
+
+              {/* Quantity stepper snapping to subscriptionIncrement */}
+              <SubscribeQtyStepper
+                product={product as unknown as { _id: string; minSubscriptionQty?: number; maxSubscriptionQty?: number; subscriptionIncrement?: number; unit?: string; storePrice?: number; gstRate?: number }}
+              />
+            </View>
+          )}
 
           {/* ── Seller Info Card ── */}
           <View style={styles.section}>

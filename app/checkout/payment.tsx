@@ -275,6 +275,9 @@ const styles = StyleSheet.create({
   content: {
     gap: spacing.lg,
     padding: spacing.lg,
+    maxWidth: 640,
+    width: '100%',
+    alignSelf: 'center',
   },
   header: {
     alignItems: 'center',

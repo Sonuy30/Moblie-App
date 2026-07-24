@@ -12,7 +12,38 @@ interface MockUser {
   profile: AuthUser;
 }
 
-const MOCK_USERS: MockUser[] = [];
+const MOCK_USERS: MockUser[] = [
+  {
+    phone: '9876543210',
+    password: 'password123',
+    profile: {
+      _id: 'mock-cust-001',
+      fullName: 'John Customer',
+      phone: '9876543210',
+      role: 'customer',
+      companyId: 'AITS_COMP_001',
+      companyName: companyName,
+      tier: 'regular',
+      creditLimit: 10000,
+      creditAvailable: 10000,
+    }
+  },
+  {
+    phone: '9999999999',
+    password: 'adminpassword',
+    profile: {
+      _id: 'mock-admin-001',
+      fullName: 'Store Admin Staff',
+      phone: '9999999999',
+      role: 'admin',
+      companyId: 'AITS_COMP_001',
+      companyName: companyName,
+      tier: 'regular',
+      creditLimit: 0,
+      creditAvailable: 0,
+    }
+  }
+];
 
 const OTP_STORE: Record<string, { otp: string; expiry: number; phone: string }> = {};
 

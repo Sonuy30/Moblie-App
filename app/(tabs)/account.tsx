@@ -90,6 +90,24 @@ export default function AccountScreen() {
   };
 
   const handleLogout = () => {
+    const doLogout = async () => {
+      await logout();
+      Toast.show({
+        type: 'info',
+        text1: 'Signed Out',
+        text2: 'You have been signed out successfully.',
+        position: 'bottom',
+      });
+      router.replace('/(auth)/login');
+    };
+
+    if (Platform.OS === 'web') {
+      const confirmLogout = typeof window !== 'undefined' ? window.confirm('Are you sure you want to sign out?') : true;
+      if (confirmLogout) {
+        void doLogout();
+      }
+      return;
+    }
     Alert.alert(
       'Sign Out',
       'Are you sure you want to sign out?',
@@ -99,10 +117,7 @@ export default function AccountScreen() {
           text: 'Sign Out',
           style: 'destructive',
           onPress: () => {
-            void (async () => {
-              await logout();
-              router.replace('/(tabs)');
-            })();
+            void doLogout();
           },
         },
       ]

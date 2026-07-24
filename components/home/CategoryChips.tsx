@@ -17,21 +17,12 @@ interface CategoryChipsProps {
 
 export default function CategoryChips({ initialCategory = '' }: CategoryChipsProps) {
   const [active, setActive] = useState<string>(initialCategory);
-  const { data: categoriesData } = useCategories();
+  const { data: categoriesData, isLoading } = useCategories();
 
   const CHIPS = React.useMemo(() => {
     const categories = categoriesData || [];
-    if (categories.length === 0) {
-      return [
-        { label: 'TMT Bars',      category: 'TMT Bars' },
-        { label: 'GI Pipes',      category: 'GI Pipes' },
-        { label: 'Binding Wire',  category: 'Binding Wire' },
-        { label: 'Cement',        category: 'Cement' },
-        { label: 'View All →',    category: '' },
-      ];
-    }
     return [
-      ...categories.map((cat) => ({ label: cat, category: cat })),
+      ...categories.map((cat) => ({ label: cat.name, category: cat.name })),
       { label: 'View All →',    category: '' },
     ];
   }, [categoriesData]);
@@ -47,6 +38,28 @@ export default function CategoryChips({ initialCategory = '' }: CategoryChipsPro
       });
     }
   };
+
+  if (isLoading) {
+    return (
+      <View style={styles.wrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          {[1, 2, 3, 4].map((index) => (
+            <View
+              key={index}
+              style={[
+                styles.chip,
+                { backgroundColor: colors.border, opacity: 0.4, width: 85, height: 35 }
+              ]}
+            />
+          ))}
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.wrapper}>

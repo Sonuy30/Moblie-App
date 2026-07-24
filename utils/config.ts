@@ -24,6 +24,7 @@ interface EnvVars {
   EXPO_PUBLIC_RAZORPAY_KEY: string;
   EXPO_PUBLIC_USE_MOCK_API: string;
   EXPO_PUBLIC_WS_URL: string;
+  EXPO_PUBLIC_COMPANY_TAGLINE: string;
 }
 
 // ── Internal env accessor (Expo SDK 54 compatible) ─────────────────────────
@@ -58,6 +59,9 @@ function getEnv(key: keyof EnvVars): string | undefined {
     case 'EXPO_PUBLIC_WS_URL':
       fromProcess = process.env.EXPO_PUBLIC_WS_URL;
       break;
+    case 'EXPO_PUBLIC_COMPANY_TAGLINE':
+      fromProcess = process.env.EXPO_PUBLIC_COMPANY_TAGLINE;
+      break;
   }
   if (fromProcess) return fromProcess;
 
@@ -73,7 +77,7 @@ function getEnv(key: keyof EnvVars): string | undefined {
 const REQUIRED_VARS = [
   'EXPO_PUBLIC_API_URL',
   'EXPO_PUBLIC_COMPANY_SLUG',
-] as const satisfies ReadonlyArray<keyof EnvVars>;
+ ] as const satisfies ReadonlyArray<keyof EnvVars>;
 
 // Export the list of missing required variables so it can be handled in UI
 export const MISSING_ENV_VARS = REQUIRED_VARS.filter((key) => {
@@ -93,7 +97,13 @@ export const MISSING_ENV_VARS = REQUIRED_VARS.filter((key) => {
 export const Config = {
   // API
   /** Backend base URL. Pulled from EXPO_PUBLIC_API_URL. */
-  API_URL: getEnv('EXPO_PUBLIC_API_URL') as string,
+  API_URL: (() => {
+    const raw = getEnv('EXPO_PUBLIC_API_URL') || 'http://localhost:3000';
+    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      return 'http://localhost:3000';
+    }
+    return raw;
+  })(),
 
   /** Request timeout in milliseconds. Defaults to 15 000 ms (15 s). */
   API_TIMEOUT: parseInt(getEnv('EXPO_PUBLIC_API_TIMEOUT') ?? '15000', 10),
@@ -104,6 +114,9 @@ export const Config = {
 
   /** Human-readable company name for UI display. */
   COMPANY_NAME: getEnv('EXPO_PUBLIC_COMPANY_NAME') ?? 'AITS Shop',
+
+  /** Tagline for splash/marketing. Pulled from EXPO_PUBLIC_COMPANY_TAGLINE. */
+  COMPANY_TAGLINE: getEnv('EXPO_PUBLIC_COMPANY_TAGLINE') ?? 'Shop with confidence',
 
   // Payments
   /** Razorpay publishable key. Use rzp_test_* in dev, rzp_live_* in prod. */

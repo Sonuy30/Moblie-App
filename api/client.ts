@@ -34,10 +34,26 @@ import axios, {
   type AxiosRequestConfig,
   type InternalAxiosRequestConfig,
 } from 'axios';
+import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 import { Config } from '@/utils/config';
 import { SECURE_KEYS } from '@/stores/authStore';
+
+const getStoredToken = async (): Promise<string | null> => {
+  if (Platform.OS === 'web') {
+    try {
+      return typeof window !== 'undefined' ? localStorage.getItem(SECURE_KEYS.ACCESS_TOKEN) : null;
+    } catch {
+      return null;
+    }
+  }
+  try {
+    return await SecureStore.getItemAsync(SECURE_KEYS.ACCESS_TOKEN);
+  } catch {
+    return null;
+  }
+};
 
 // ── Extended request config ────────────────────────────────────────────────
 // We mark retried requests so the interceptor doesn't enter an infinite loop.
@@ -109,13 +125,11 @@ const client = axios.create({
 client.interceptors.request.use(
   async (config: InternalAxiosRequestConfig): Promise<InternalAxiosRequestConfig> => {
     try {
-      const token = await SecureStore.getItemAsync(SECURE_KEYS.ACCESS_TOKEN);
+      const token = await getStoredToken();
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch {
-      // SecureStore can fail on old Android devices (<API 23).
-      // Proceed without auth — the server will return 401 if needed.
       console.warn('[API] SecureStore read failed — proceeding unauthenticated');
     }
     return config;
@@ -152,7 +166,7 @@ client.interceptors.response.use(
     // endpoint. Don't attempt a refresh — just surface the 401.
     let storedAccessToken: string | null = null;
     try {
-      storedAccessToken = await SecureStore.getItemAsync(SECURE_KEYS.ACCESS_TOKEN);
+      storedAccessToken = await getStoredToken();
     } catch {
       console.warn('[API] Could not read access token from SecureStore in 401 handler');
     }

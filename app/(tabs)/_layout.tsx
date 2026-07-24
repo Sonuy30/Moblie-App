@@ -84,6 +84,13 @@ export default function TabsLayout() {
           name="wishlist"
           options={{ href: null }}
         />
+        <Tabs.Screen
+          name="subscriptions"
+          options={{
+            title: 'Subscriptions',
+            tabBarIcon: ({ color, size }) => <Ionicons name="repeat-outline" size={size} color={color} />,
+          }}
+        />
       </Tabs>
 
       {/* Global Auth Modal overlay */}

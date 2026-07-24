@@ -1,10 +1,11 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Modal, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { useOrderDetail } from '@/hooks/useOrders';
+import { useOrderDetail, useCancelOrder } from '@/hooks/useOrders';
+import { useCompanySettings } from '@/hooks/useCompany';
 import { getReturnEligibility } from '@/types/returns';
 import { getReturnHistory } from '@/api/returns';
 import TrackingTimeline from '@/components/order/TrackingTimeline';
@@ -15,6 +16,7 @@ import { formatINR } from '@/utils/currency';
 import { formatDate } from '@/utils/date';
 import { colors } from '@/constants/colors';
 import { spacing, borderRadius } from '@/constants/config';
+import Toast from 'react-native-toast-message';
 
 const statusBanner: Record<string, { text: string; bg: string; color: string }> = {
   confirmed: { text: 'Your order is confirmed!', bg: colors.primaryLight, color: colors.primary },
@@ -27,6 +29,12 @@ const statusBanner: Record<string, { text: string; bg: string; color: string }> 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: rawOrder, isLoading } = useOrderDetail(id || '');
+  const { data: settings } = useCompanySettings();
+  const [isCancelModalVisible, setIsCancelModalVisible] = useState(false);
+  const [selectedReason, setSelectedReason] = useState('Ordered by mistake');
+  const cancelMutation = useCancelOrder();
+
+
 
   const { data: returns } = useQuery({
     queryKey: ['order-returns', id],
@@ -75,7 +83,7 @@ export default function OrderDetailScreen() {
     rawOrder?.updatedAt && rawOrder.updatedAt !== rawOrder.placedAt
       ? rawOrder.updatedAt
       : order.placedAt;
-  const eligibility = getReturnEligibility(eligibilityDate);
+  const eligibility = getReturnEligibility(eligibilityDate, settings?.returnWindowDays);
   const showReturnSection = safeStatus === 'delivered';
 
   const handleReturnPress = () => {
@@ -84,6 +92,29 @@ export default function OrderDetailScreen() {
     } else {
       router.push(`/order/${id}/return`);
     }
+  };
+
+  const handleCancelOrder = () => {
+    cancelMutation.mutate(
+      { orderId: id || '', reason: selectedReason },
+      {
+        onSuccess: (data) => {
+          setIsCancelModalVisible(false);
+          Toast.show({
+            type: 'success',
+            text1: 'Order cancelled successfully',
+            text2: data?.message || '',
+          });
+        },
+        onError: (err: any) => {
+          Toast.show({
+            type: 'error',
+            text1: 'Failed to cancel order',
+            text2: err.response?.data?.message || err.message || 'Please try again',
+          });
+        },
+      }
+    );
   };
 
   const returnButtonText = latestReturn
@@ -120,7 +151,7 @@ export default function OrderDetailScreen() {
             {safeStatus !== 'cancelled' && safeStatus !== 'delivered' && (
               <TouchableOpacity
                 style={styles.trackBtn}
-                onPress={() => router.push(`/order/${id}/track`)}
+                onPress={() => router.replace(`/order/${id}/track`)}
                 activeOpacity={0.75}
               >
                 <Ionicons name="navigate-outline" size={13} color={colors.primary} />
@@ -215,6 +246,20 @@ export default function OrderDetailScreen() {
             <Ionicons name="chevron-forward" size={18} color={colors.primary} />
           </TouchableOpacity>
         )}
+        {/* Cancel Order Section */}
+        {(safeStatus === 'confirmed' || safeStatus === 'pending' || safeStatus === 'open') && (
+          <TouchableOpacity
+            style={styles.cancelBtn}
+            onPress={() => setIsCancelModalVisible(true)}
+            activeOpacity={0.75}
+            disabled={cancelMutation.isPending}
+          >
+            <Ionicons name="close-circle-outline" size={20} color={colors.error} />
+            <Text style={styles.cancelBtnText}>
+              {cancelMutation.isPending ? 'Cancelling...' : 'Cancel Order'}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* Help */}
         <TouchableOpacity style={styles.helpCard}>
@@ -225,6 +270,60 @@ export default function OrderDetailScreen() {
 
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Cancellation Reason Modal */}
+      <Modal
+        visible={isCancelModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setIsCancelModalVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setIsCancelModalVisible(false)}
+        >
+          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Cancel Order</Text>
+              <TouchableOpacity onPress={() => setIsCancelModalVisible(false)}>
+                <Ionicons name="close" size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.modalBody}>
+              <Text style={styles.modalSubtitle}>Please select a reason for cancellation:</Text>
+              
+              {['Ordered by mistake', 'Found cheaper elsewhere', 'Delivery too slow', 'Other'].map((reason) => (
+                <TouchableOpacity
+                  key={reason}
+                  style={styles.reasonOption}
+                  onPress={() => setSelectedReason(reason)}
+                >
+                  <Ionicons
+                    name={selectedReason === reason ? 'radio-button-on' : 'radio-button-off'}
+                    size={20}
+                    color={selectedReason === reason ? colors.primary : colors.textMuted}
+                  />
+                  <Text style={styles.reasonText}>{reason}</Text>
+                </TouchableOpacity>
+              ))}
+
+              <TouchableOpacity
+                style={[styles.confirmCancelBtn, cancelMutation.isPending && styles.confirmCancelBtnDisabled]}
+                onPress={handleCancelOrder}
+                disabled={cancelMutation.isPending}
+              >
+                {cancelMutation.isPending ? (
+                  <ActivityIndicator size="small" color={colors.white} />
+                ) : (
+                  <Text style={styles.confirmCancelBtnText}>Confirm Cancellation</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -236,6 +335,37 @@ const styles = StyleSheet.create({
   backBtn: { alignItems: 'center', backgroundColor: colors.surface, borderRadius: 20, height: 40, justifyContent: 'center', width: 40 },
   banner: { alignItems: 'center', borderRadius: borderRadius.lg, flexDirection: 'row', gap: 10, padding: spacing.lg },
   bannerText: { fontSize: 15, fontWeight: '600' },
+  cancelBtn: {
+    alignItems: 'center',
+    backgroundColor: colors.errorLight,
+    borderColor: colors.error + '33',
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.md,
+    padding: spacing.lg,
+  },
+  cancelBtnText: {
+    color: colors.error,
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  confirmCancelBtn: {
+    alignItems: 'center',
+    backgroundColor: colors.error,
+    borderRadius: borderRadius.lg,
+    marginTop: spacing.lg,
+    padding: spacing.lg,
+  },
+  confirmCancelBtnDisabled: {
+    opacity: 0.6,
+  },
+  confirmCancelBtnText: {
+    color: colors.white,
+    fontSize: 15,
+    fontWeight: '700',
+  },
   content: { gap: spacing.xl, padding: spacing.lg },
   divider: { backgroundColor: colors.border, height: 1, marginVertical: 8 },
   header: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
@@ -253,6 +383,39 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   invoiceBtnText: { color: colors.primary, flex: 1, fontSize: 14, fontWeight: '700' },
+  modalBody: {
+    gap: spacing.md,
+    padding: spacing.lg,
+  },
+  modalContent: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: spacing['3xl'],
+  },
+  modalHeader: {
+    alignItems: 'center',
+    borderBottomColor: colors.border,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: spacing.lg,
+  },
+  modalOverlay: {
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalSubtitle: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    marginBottom: spacing.sm,
+  },
+  modalTitle: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: '700',
+  },
   payCard: { backgroundColor: colors.surface, borderRadius: borderRadius.md, gap: spacing.md, padding: spacing.lg },
   payLabel: { color: colors.textSecondary, fontSize: 13 },
   payRow: { alignItems: 'center', flexDirection: 'row', justifyContent: 'space-between' },
@@ -261,6 +424,16 @@ const styles = StyleSheet.create({
   priceLabel: { color: colors.textSecondary, fontSize: 14 },
   priceRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
   priceVal: { color: colors.text, fontSize: 14, fontWeight: '500' },
+  reasonOption: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+    paddingVertical: spacing.md,
+  },
+  reasonText: {
+    color: colors.text,
+    fontSize: 14,
+  },
   returnBtn: {
     alignItems: 'center',
     backgroundColor: colors.primaryLight,

@@ -188,31 +188,35 @@ export default function FilterBottomSheet({
               keyboardShouldPersistTaps="handled"
             >
               {/* Category Filter */}
-              {categories.length > 0 && (
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Categories</Text>
-                  <View style={styles.chipsContainer}>
-                    {categories.map((cat) => {
-                      const isSelected = selectedCategories.includes(cat);
-                      return (
-                        <TouchableOpacity
-                          key={cat}
-                          activeOpacity={0.7}
-                          onPress={() => toggleCategory(cat)}
-                          style={[styles.chip, isSelected && styles.chipActive]}
-                        >
-                          <Text style={[styles.chipText, isSelected && styles.chipTextActive]}>
-                            {cat}
-                          </Text>
-                          {isSelected && (
-                            <Ionicons name="checkmark-circle" size={14} color={colors.primary} />
-                          )}
-                        </TouchableOpacity>
-                      );
-                    })}
+              {(() => {
+                const safeCategories = categories.filter(c => c && typeof c.name === 'string' && c.name.trim().length > 0);
+                if (safeCategories.length === 0) return null;
+                return (
+                  <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>Categories</Text>
+                    <View style={styles.chipsContainer}>
+                      {safeCategories.map((cat) => {
+                        const isSelected = selectedCategories.includes(cat.name);
+                        return (
+                          <TouchableOpacity
+                            key={cat.name}
+                            activeOpacity={0.7}
+                            onPress={() => toggleCategory(cat.name)}
+                            style={[styles.chip, isSelected && styles.chipActive]}
+                          >
+                            <Text style={[styles.chipText, isSelected && styles.chipTextActive]}>
+                              {cat.name}
+                            </Text>
+                            {isSelected && (
+                              <Ionicons name="checkmark-circle" size={14} color={colors.primary} />
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
                   </View>
-                </View>
-              )}
+                );
+              })()}
 
               {/* Price Filter */}
               <View style={styles.section}>

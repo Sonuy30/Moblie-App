@@ -4,8 +4,7 @@ import { router } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-
-const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
+import { Config } from '@/utils/config';
 
 export default function SplashScreen() {
   const { isLoading, restoreSession } = useAuthStore();
@@ -116,15 +115,12 @@ export default function SplashScreen() {
 
       {/* Company Name */}
       <Animated.View style={[styles.textContainer, { opacity: textOpacity }]}>
-        <Text style={styles.companyName}>{companyName}</Text>
-        <View style={styles.pvtBadge}>
-          <Text style={styles.pvtText}>PRIVATE LIMITED</Text>
-        </View>
+        <Text style={styles.companyName}>{Config.COMPANY_NAME}</Text>
       </Animated.View>
 
       {/* Tagline */}
       <Animated.Text style={[styles.tagline, { opacity: taglineOpacity }]}>
-        Your Trusted B2B Steel Partner
+        {Config.COMPANY_TAGLINE}
       </Animated.Text>
 
       {/* Bottom strip */}

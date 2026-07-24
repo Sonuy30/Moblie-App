@@ -1,4 +1,5 @@
 import client from './client';
+import { Config } from '@/utils/config';
 
 export interface RazorpayOrderResponse {
   id: string; // Razorpay Order ID (e.g. order_DBdbPy480sfbpj)
@@ -7,12 +8,19 @@ export interface RazorpayOrderResponse {
   key?: string; // Razorpay Public Key
 }
 
-
-
 export const createOrder = async (
   amount: number,
   currency = 'INR'
 ): Promise<RazorpayOrderResponse> => {
+  if (Config.USE_MOCK_API) {
+    return {
+      id: `order_mock_${Date.now()}`,
+      amount: amount * 100,
+      currency,
+      key: 'rzp_test_mockkey12345',
+    };
+  }
+
   const { data } = await client.post<{
     id?: string;
     razorpayOrderId?: string;
@@ -33,16 +41,34 @@ export const verifyPayment = async (
   razorpay_order_id: string,
   razorpay_payment_id: string,
   razorpay_signature: string,
-  ecomOrderId?: string
-): Promise<{ success: boolean; message: string }> => {
-  const { data } = await client.post<{ success: boolean; message: string }>(
-    '/api/payments/verify',
-    {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-      ecomOrderId,
-    }
-  );
+  ecomOrderId?: string,
+  checkoutDetails?: {
+    items: any[];
+    shippingAddress: any;
+    paymentMethod: string;
+    promoCode?: string;
+  }
+): Promise<{ success: boolean; message: string; ecomOrderId?: string; orderNumber?: string }> => {
+  if (Config.USE_MOCK_API) {
+    return {
+      success: true,
+      message: 'Payment verified successfully (MOCK)',
+      ecomOrderId: ecomOrderId || `mock-order-${Date.now()}`,
+      orderNumber: `SO-MOB-${Date.now()}`,
+    };
+  }
+
+  const { data } = await client.post<{
+    success: boolean;
+    message: string;
+    ecomOrderId?: string;
+    orderNumber?: string;
+  }>('/api/payments/verify', {
+    razorpay_order_id,
+    razorpay_payment_id,
+    razorpay_signature,
+    ecomOrderId,
+    checkoutDetails,
+  });
   return data;
 };

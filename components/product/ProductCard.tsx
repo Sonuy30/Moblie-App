@@ -28,6 +28,7 @@ interface ProductCardProps {
   inStock: boolean;
   stockQty: number;
   unit?: string;
+  isSubscribable?: boolean;
   variants?: { _id: string }[];
   variantType?: string;
 }
@@ -60,7 +61,6 @@ export default function ProductCard(props: ProductCardProps) {
     };
 
     if (!isAuthenticated) {
-      // Prompt slide-up AuthModal and store pending cart action
       showAuthModal('cart', cartData);
       return;
     }
@@ -122,10 +122,25 @@ export default function ProductCard(props: ProductCardProps) {
         {!props.inStock ? (
           <Text style={styles.outOfStock}>Out of stock</Text>
         ) : (
-          <TouchableOpacity style={styles.addToCart} onPress={handleAddToCart} activeOpacity={0.8}>
-            <Ionicons name="cart-outline" size={14} color={colors.primary} />
-            <Text style={styles.addToCartText}>Add to Cart</Text>
-          </TouchableOpacity>
+          <View style={styles.btnRow}>
+            <TouchableOpacity style={styles.addToCart} onPress={handleAddToCart} activeOpacity={0.8}>
+              <Ionicons name="cart-outline" size={13} color={colors.primary} />
+              <Text style={styles.addToCartText}>Add</Text>
+            </TouchableOpacity>
+            {props.isSubscribable ? (
+              <TouchableOpacity
+                style={styles.subscribeBtn}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  router.push({ pathname: '/subscribe/[itemId]', params: { itemId: props.slug || props._id } });
+                }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="repeat" size={12} color="#fff" />
+                <Text style={styles.subscribeText}>Subscribe</Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
         )}
       </View>
     </TouchableOpacity>
@@ -137,11 +152,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.primaryLight,
     borderRadius: borderRadius.md,
+    flex: 1,
+    flexDirection: 'row',
+    gap: 2,
+    justifyContent: 'center',
+    paddingVertical: 7,
+  },
+  btnRow: {
     flexDirection: 'row',
     gap: 4,
-    justifyContent: 'center',
     marginTop: 6,
-    paddingVertical: 8,
+  },
+  subscribeBtn: {
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
+    flexDirection: 'row',
+    gap: 2,
+    justifyContent: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 7,
+  },
+  subscribeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
   },
   addToCartText: {
     color: colors.primary,

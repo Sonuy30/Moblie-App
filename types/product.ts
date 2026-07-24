@@ -57,6 +57,7 @@ export interface Product {
   inStock: boolean;
   stockQty: number;
   isFeatured: boolean;
+  isSubscribable?: boolean;
   avgRating: number;
   reviewCount: number;
   specifications?: { key: string; value: string }[];

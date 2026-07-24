@@ -1,5 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
-import { fetchOrders, fetchOrderById } from '@/api/orders';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchOrders, fetchOrderById, cancelOrder } from '@/api/orders';
 import { useAuthStore } from '@/stores/authStore';
 
 export const useOrders = () => {
@@ -25,4 +25,17 @@ export const useOrderDetail = (id: string) => {
     enabled: !!id,
   });
 };
+
+export const useCancelOrder = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: cancelOrder,
+    onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({ queryKey: ['order', variables.orderId] });
+      void queryClient.invalidateQueries({ queryKey: ['orders'] });
+    },
+  });
+};
+
 

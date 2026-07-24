@@ -1,4 +1,5 @@
 import client from './client';
+import { Config } from '@/utils/config';
 
 // ──────────────────────────────────────────────────────────
 // Product Variant — a single selectable option for a product
@@ -41,6 +42,7 @@ export interface StoreProduct {
   inStock: boolean;
   stockQty: number;
   isFeatured: boolean;
+  isSubscribable?: boolean;
   avgRating: number;
   reviewCount: number;
   specifications?: { key: string; value: string }[];
@@ -70,11 +72,98 @@ export interface ProductListResponse {
 
 
 
+// Mock Products and Categories for E2E Tests in USE_MOCK_API mode
+export const MOCK_PRODUCTS: StoreProduct[] = [
+  {
+    _id: 'prod-001',
+    slug: 'tmt-bar-12mm',
+    name: 'TMT Bar 12mm',
+    itemCode: 'TMT12',
+    storePrice: 1200,
+    mrp: 1500,
+    discount: 20,
+    minOrderQty: 10,
+    unit: 'ton',
+    images: ['tmt.png'],
+    category: 'Steel Bars',
+    description: 'High strength structural steel TMT bar 12mm.',
+    tags: ['steel', 'bar', 'tmt', 'construction'],
+    inStock: true,
+    stockQty: 500,
+    isFeatured: true,
+    avgRating: 4.5,
+    reviewCount: 15,
+  },
+  {
+    _id: 'prod-002',
+    slug: 'gi-pipe-2-inch',
+    name: 'GI Pipe 2 Inch',
+    itemCode: 'GI2',
+    storePrice: 2400,
+    mrp: 2800,
+    discount: 14,
+    minOrderQty: 5,
+    unit: 'piece',
+    images: ['gi.png'],
+    category: 'Pipes & Tubes',
+    description: 'Galvanized iron pipe 2 inch diameter.',
+    tags: ['gi', 'pipe', 'tube', 'iron'],
+    inStock: true,
+    stockQty: 200,
+    isFeatured: true,
+    avgRating: 4.2,
+    reviewCount: 8,
+  },
+  {
+    _id: 'prod-003',
+    slug: 'binding-wire-1kg',
+    name: 'Binding Wire 1kg',
+    itemCode: 'BW1',
+    storePrice: 85,
+    mrp: 100,
+    discount: 15,
+    minOrderQty: 20,
+    unit: 'kg',
+    images: ['wire.png'],
+    category: 'Wire & Mesh',
+    description: 'Flexible binding wire for rebar construction.',
+    tags: ['wire', 'binding', 'steel'],
+    inStock: true,
+    stockQty: 1000,
+    isFeatured: false,
+    avgRating: 4.0,
+    reviewCount: 3,
+  }
+];
+
+export const MOCK_CATEGORIES: Category[] = [
+  { name: 'Steel Bars', icon: 'cube-outline' },
+  { name: 'Pipes & Tubes', icon: 'git-network-outline' },
+  { name: 'Wire & Mesh', icon: 'grid-outline' }
+];
+
+import { useAuthStore } from '@/stores/authStore';
+
+export function getCompanySlug(): string {
+  const user = useAuthStore.getState().user;
+  if (user?.companySlug) return user.companySlug;
+  return Config.COMPANY_SLUG || 'ever';
+}
+
 // ──────────────────────────────────────────────────────────
 // Fetch product list (paginated, filtered)
 // ──────────────────────────────────────────────────────────
 export const fetchProducts = async (params?: ProductFilters): Promise<ProductListResponse> => {
-  const COMPANY_SLUG = process.env.EXPO_PUBLIC_COMPANY_SLUG || 'sudama01';
+  if (Config.USE_MOCK_API) {
+    return {
+      products: MOCK_PRODUCTS,
+      total: MOCK_PRODUCTS.length,
+      page: 1,
+      totalPages: 1
+    };
+  }
+
+  const COMPANY_SLUG = getCompanySlug();
   const { data } = await client.get<unknown>('/api/mobile/items', {
     params: { ...params, companySlug: COMPANY_SLUG },
   });
@@ -112,7 +201,13 @@ export const fetchProducts = async (params?: ProductFilters): Promise<ProductLis
 // Fetch single product by slug
 // ──────────────────────────────────────────────────────────
 export const fetchProductBySlug = async (slug: string): Promise<StoreProduct> => {
-  const COMPANY_SLUG = process.env.EXPO_PUBLIC_COMPANY_SLUG || 'sudama01';
+  if (Config.USE_MOCK_API) {
+    const found = MOCK_PRODUCTS.find(p => p.slug === slug);
+    if (!found) throw new Error('Product not found');
+    return found;
+  }
+
+  const COMPANY_SLUG = getCompanySlug();
   const { data } = await client.get<unknown>(`/api/mobile/items/${slug}`, {
     params: { companySlug: COMPANY_SLUG },
   });
@@ -131,24 +226,31 @@ export const fetchProductBySlug = async (slug: string): Promise<StoreProduct> =>
   return product;
 };
 
+export interface Category {
+  name: string;
+  icon: string;
+}
+
 // ──────────────────────────────────────────────────────────
 // Fetch category list
 // ──────────────────────────────────────────────────────────
-export const fetchCategories = async (): Promise<string[]> => {
-  const COMPANY_SLUG = process.env.EXPO_PUBLIC_COMPANY_SLUG || 'sudama01';
+export const fetchCategories = async (): Promise<Category[]> => {
+  if (Config.USE_MOCK_API) {
+    return MOCK_CATEGORIES;
+  }
+
+  const COMPANY_SLUG = getCompanySlug();
   const { data } = await client.get<unknown>('/api/mobile/categories', {
     params: { companySlug: COMPANY_SLUG },
   });
   
-  let categories: string[] = [];
+  let categories: Category[] = [];
   if (data && typeof data === 'object') {
-    if (Array.isArray(data)) {
-      categories = data as string[];
-    } else {
-      const obj = data as { categories?: unknown };
-      if (Array.isArray(obj.categories)) {
-        categories = obj.categories as string[];
-      }
+    const obj = data as { categories?: unknown };
+    if (Array.isArray(obj.categories)) {
+      categories = obj.categories as Category[];
+    } else if (Array.isArray(data)) {
+      categories = data as Category[];
     }
   }
   return categories;
@@ -158,3 +260,4 @@ export const fetchCategories = async (): Promise<string[]> => {
 export const getProducts = fetchProducts;
 export const getProductBySlug = fetchProductBySlug;
 export const getCategories = fetchCategories;
+

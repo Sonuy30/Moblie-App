@@ -15,6 +15,7 @@
  */
 
 import client from './client';
+import { Config } from '@/utils/config';
 import type {
   OrderStatusValue,
   OrderTrackingData,
@@ -39,7 +40,7 @@ export interface Address {
 export interface EcomOrder {
   _id:              string;
   orderNumber:      string;
-  items:            { name: string; image: string; quantity: number; price: number; unit: string }[];
+  items:            { name: string; image: string; quantity: number; price: number; unit: string; category?: string }[];
   deliveryAddress:  Address;
   subtotal:         number;
   gstAmount:        number;
@@ -56,6 +57,40 @@ export interface EcomOrder {
   createdAt?:       string;
   paymentMethod?:   string;
 }
+
+export const MOCK_ORDERS: EcomOrder[] = [
+  {
+    _id: 'mock-order-1',
+    orderNumber: 'SO-MOB-MOCK1',
+    placedAt: new Date(Date.now() - 3600000).toISOString(),
+    updatedAt: new Date().toISOString(),
+    status: 'confirmed',
+    paymentStatus: 'paid',
+    paymentMethod: 'online',
+    items: [
+      {
+        name: 'TMT Bar 12mm',
+        price: 1200,
+        quantity: 2,
+        unit: 'ton',
+        image: 'tmt.png',
+        category: 'Steel Bars',
+      }
+    ],
+    deliveryAddress: {
+      fullName: 'John Doe',
+      phone: '9999988888',
+      addressLine1: 'Flat 101, Steel Tower',
+      city: 'Mumbai',
+      state: 'Maharashtra',
+      pincode: '400001',
+    },
+    subtotal: 2400,
+    gstAmount: 432,
+    deliveryCharge: 0,
+    totalAmount: 2832,
+  }
+];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -143,6 +178,10 @@ function buildTrackingData(order: EcomOrder): OrderTrackingData {
 // ── Fetch order list ──────────────────────────────────────────────────────────
 
 export const fetchOrders = async (params?: { status?: string; page?: number }) => {
+  if (Config.USE_MOCK_API) {
+    return { orders: MOCK_ORDERS, total: MOCK_ORDERS.length };
+  }
+
   const { data } = await client.get<{ orders: EcomOrder[]; total: number }>('/api/mobile/orders', { params });
   return data;
 };
@@ -150,6 +189,18 @@ export const fetchOrders = async (params?: { status?: string; page?: number }) =
 // ── Fetch single order ────────────────────────────────────────────────────────
 
 export const fetchOrderById = async (id: string) => {
+  if (Config.USE_MOCK_API) {
+    if (id === 'non-existent-id') {
+      throw new Error('Order not found');
+    }
+    const found = MOCK_ORDERS.find(o => o._id === id);
+    if (!found) {
+      // Fallback: if not found by ID (e.g. dynamic ID created during checkout), return the first mock order
+      return { order: { ...MOCK_ORDERS[0], _id: id } };
+    }
+    return { order: found };
+  }
+
   const { data } = await client.get<{ order: EcomOrder }>(`/api/mobile/orders/${id}`);
   return data;
 };
@@ -232,13 +283,22 @@ export const initiateCheckout = async (payload: {
   };
 
   const { data } = await client.post<{
-    order:   { _id: string; orderNumber: string; totalAmount: number };
+    order?:  { _id: string; orderNumber: string; totalAmount: number };
+    ecomOrderId?: string;
+    orderNumber?: string;
     message: string;
   }>('/api/mobile/orders', orderPayload);
-  return data;
-};
 
-// ── Verify payment ────────────────────────────────────────────────────────────
+  const ecomOrderId = data.order?._id || data.ecomOrderId || `order-${Date.now()}`;
+  const orderNumber = data.order?.orderNumber || data.orderNumber || `SO-MOB-${Date.now()}`;
+
+  return {
+    ecomOrderId,
+    orderNumber,
+    order: data.order,
+    message: data.message,
+  };
+};
 
 export const verifyPayment = async (payload: {
   razorpay_payment_id: string;
@@ -249,6 +309,20 @@ export const verifyPayment = async (payload: {
   const { data } = await client.post<{ orderNumber: string; estimatedDelivery: string }>('/api/store/checkout/verify', payload);
   return data;
 };
+
+// ── Cancel order ──────────────────────────────────────────────────────────────
+
+export const cancelOrder = async (payload: {
+  orderId: string;
+  reason:  string;
+}) => {
+  const { data } = await client.post<{ success: boolean; message: string }>(
+    `/api/mobile/orders/${payload.orderId}/cancel`,
+    { reason: payload.reason }
+  );
+  return data;
+};
+
 
 
 
