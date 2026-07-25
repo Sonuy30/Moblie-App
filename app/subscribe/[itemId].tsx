@@ -163,7 +163,7 @@ export default function SubscribeScreen() {
       }
 
       // 3. Create subscription checkout session
-      const targetId = product?._id ? String(product._id) : itemId!;
+      const targetId = (product as any)?._id ? String((product as any)._id) : itemId!;
       const result = await checkoutSubscription({
         itemId: targetId,
         quantityPerDelivery: qty,
@@ -230,7 +230,7 @@ export default function SubscribeScreen() {
         return;
       }
       const rzpInstance = new (globalThis as any).Razorpay({
-        key: data.razorpayOrder.key || process.env.EXPO_PUBLIC_RAZORPAY_KEY || '***RAZORPAY_KEY_REDACTED***',
+        key: (data.razorpayOrder as any).key || process.env.EXPO_PUBLIC_RAZORPAY_KEY || '***RAZORPAY_KEY_REDACTED***',
         amount: Math.round(data.totalAmount * 100),
         currency: 'INR',
         order_id: data.razorpayOrder.id,

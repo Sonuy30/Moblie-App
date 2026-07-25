@@ -13,6 +13,7 @@ import {
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import Toast from 'react-native-toast-message';
 import {
   fetchMySubscriptions,
@@ -23,6 +24,7 @@ import {
   cancelSubscription,
   updateSubscriptionAddress,
   paySubscriptionBill,
+  fetchDeliveryDetails,
 } from '@/api/subscriptions';
 import { colors } from '@/constants/colors';
 import { borderRadius, spacing } from '@/constants/config';
