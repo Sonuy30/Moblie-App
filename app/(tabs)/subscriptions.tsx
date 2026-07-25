@@ -2,13 +2,13 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
-  FlatList,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
   ScrollView,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Image } from 'expo-image';
 import { router, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -230,10 +230,11 @@ export default function SubscriptionsScreen() {
             </TouchableOpacity>
           </View>
         ) : (
-          <FlatList
+          <FlashList
             data={subscriptions}
             keyExtractor={(item) => item._id}
             renderItem={({ item }) => <SubscriptionCard sub={item} />}
+            estimatedItemSize={160}
             contentContainerStyle={styles.listContent}
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
@@ -242,10 +243,11 @@ export default function SubscriptionsScreen() {
           />
         )
       ) : (
-        <FlatList
+        <FlashList
           data={displayProducts}
           keyExtractor={(item) => item._id}
           renderItem={({ item }) => <DailyProductCard item={item} />}
+          estimatedItemSize={120}
           contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />

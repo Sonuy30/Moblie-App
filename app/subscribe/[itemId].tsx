@@ -26,6 +26,8 @@ import { borderRadius, spacing } from '@/constants/config';
 import { useAuthStore } from '@/stores/authStore';
 import type { DeliveryAddress } from '@/types/subscription';
 import type { Address } from '@/api/orders';
+import { savePendingPayment, clearPendingPayment } from '@/utils/paymentQueue';
+import { addressSchema } from '@/utils/validation';
 
 type Frequency = 'daily' | 'alternate_days' | 'custom_days';
 type PlanType = 'day' | 'week' | 'month';
@@ -154,9 +156,19 @@ export default function SubscribeScreen() {
         return;
       }
 
-      // 2. Validate address
-      if (!address.fullName || !address.phone || !address.address1 || !address.pin) {
-        setErrorMsg('Please complete your delivery address before proceeding.');
+      // 2. Validate address with Zod schema
+      const zodResult = addressSchema.safeParse({
+        fullName: address.fullName,
+        phone: address.phone.replace(/[\s\-\+]/g, '').replace(/^91/, ''),
+        addressLine1: address.address1,
+        addressLine2: address.address2 || undefined,
+        city: address.city,
+        state: address.state,
+        pincode: address.pin,
+      });
+      if (!zodResult.success) {
+        const firstError = zodResult.error.issues[0]?.message || 'Please complete your delivery address.';
+        setErrorMsg(firstError);
         setStep('address');
         setLoading(false);
         return;
@@ -242,6 +254,14 @@ export default function SubscribeScreen() {
           },
         },
         handler: async (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
+          // ── Payment Drop Protection: persist receipt BEFORE API call ──
+          await savePendingPayment({
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+            startDate,
+            deliveryAddress: address,
+          });
           await handlePaymentSuccess(
             response.razorpay_order_id,
             response.razorpay_payment_id,
@@ -278,6 +298,8 @@ export default function SubscribeScreen() {
         startDate,
         deliveryAddress: address,
       });
+      // ── Clear queue entry on success ──────────────────────────────────
+      await clearPendingPayment(razorpay_payment_id);
       Toast.show({ type: 'success', text1: '🎉 Subscription Activated!', text2: 'First delivery scheduled as per plan.' });
       router.replace('/(tabs)/subscriptions');
     } catch (err: unknown) {

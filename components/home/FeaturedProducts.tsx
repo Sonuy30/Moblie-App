@@ -2,11 +2,11 @@ import React from 'react';
 import {
   View,
   Text,
-  FlatList,
   TouchableOpacity,
   ScrollView,
   StyleSheet,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { router } from 'expo-router';
 import { useProducts } from '@/hooks/useProducts';
 import type { StoreProduct } from '@/api/products';
@@ -117,23 +117,18 @@ export default function FeaturedProducts() {
         {isBestLoading ? (
           <SkeletonRow />
         ) : bestSellers.length === 0 ? null : (
-        <FlatList
+        <FlashList
             data={bestSellers}
             numColumns={2}
             keyExtractor={(item: StoreProduct) => item._id}
             scrollEnabled={false}
+            estimatedItemSize={220}
             renderItem={({ item }: { item: StoreProduct }) => (
               <View style={styles.gridItem}>
                 <ProductCard {...item} />
               </View>
             )}
             contentContainerStyle={styles.grid}
-            columnWrapperStyle={styles.row}
-            getItemLayout={(_data, index) => ({
-              length: 220,
-              offset: 220 * Math.floor(index / 2),
-              index,
-            })}
           />
         )}
       </View>

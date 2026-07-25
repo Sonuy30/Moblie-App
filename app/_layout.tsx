@@ -34,6 +34,7 @@ import { NetworkStatusProvider } from '@/hooks/useNetworkStatus';
 import { OfflineBanner } from '@/components/ui/OfflineBanner';
 import { MISSING_ENV_VARS, Config } from '@/utils/config';
 import { MissingEnvScreen } from '@/components/error/MissingEnvScreen';
+import { recoverPendingPayments } from '@/utils/paymentQueue';
 
 // ── 1. Sentry: initialise before any render ────────────────────────────────
 // Called at module evaluation time (outside component) so it captures
@@ -74,7 +75,11 @@ export default function RootLayout() {
   useEffect(() => {
     if (!sessionRestored.current) {
       sessionRestored.current = true;
-      void restoreSession();
+      void restoreSession().then(() => {
+        // After session is available, retry any payments that were interrupted
+        // by app kill / network loss between Razorpay callback and verify API.
+        void recoverPendingPayments();
+      });
     }
   }, [restoreSession]);
 
