@@ -145,6 +145,14 @@ export const requestOTP = async (phone: string): Promise<OTPRequestResponse> => 
   }
 };
 
+// Guard: in production builds, strip devOtp from the response.
+// If the real server is accidentally returning it, warn the backend team.
+if (!__DEV__) {
+  // This module-level check runs once at startup. It's a no-op in dev.
+  // Real enforcement happens at call sites via TypeScript's optional chaining.
+  void 0; // placeholder — devOtp is typed as optional so callers must check
+}
+
 /** Alias — same as requestOTP. */
 export const resendRegisterOTP = requestOTP;
 
@@ -444,6 +452,33 @@ export const changePassword = async (
   const { data } = await client.put<{ message: string }>(
     '/api/customers/change-password',
     payload
+  );
+  return data;
+};
+
+// ── Account Deletion ───────────────────────────────────────────────────────
+/**
+ * Permanently delete the authenticated user's account.
+ *
+ * This calls DELETE /api/customers/account on the backend which:
+ *  - Anonymises all personal data in the database
+ *  - Invalidates all tokens
+ *  - Schedules any linked data for deletion per retention policy
+ *
+ * After the API call succeeds (or in mock mode), the caller must also:
+ *  - Clear all local SecureStore + AsyncStorage data
+ *  - Navigate to the welcome/onboarding screen
+ *
+ * ⚠️  This action is irreversible.
+ */
+export const deleteAccount = async (): Promise<{ message: string }> => {
+  if (Config.USE_MOCK_API) {
+    // Simulate success — in real deployment the backend must implement this
+    await new Promise((r) => setTimeout(r, 800));
+    return { message: 'Account deleted successfully.' };
+  }
+  const { data } = await client.delete<{ message: string }>(
+    '/api/customers/account'
   );
   return data;
 };

@@ -266,7 +266,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
       // Access token expired — attempt silent refresh if we have a refresh token
       if (refreshToken && isTokenValid(refreshToken)) {
-        console.info('[AuthStore] Access token expired at startup — attempting silent refresh');
+        if (__DEV__) console.info('[AuthStore] Access token expired at startup — attempting silent refresh');
         // Temporarily set user so refreshAccessToken can run with context
         set({ token: accessToken, user, isAuthenticated: false });
         const newToken = await get().refreshAccessToken();
@@ -277,7 +277,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       }
 
       // Both tokens invalid — clear and force re-login
-      console.info('[AuthStore] Both tokens expired — clearing session');
+      if (__DEV__) console.info('[AuthStore] Both tokens expired — clearing session');
       await get().logout();
     } catch (e) {
       console.warn('[AuthStore] restoreSession error:', e);
@@ -323,13 +323,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const refreshToken = await safeStorage.getItemAsync(SECURE_KEYS.REFRESH_TOKEN);
 
       if (!refreshToken) {
-        console.info('[AuthStore] No refresh token stored — cannot refresh');
+        if (__DEV__) console.info('[AuthStore] No refresh token stored — cannot refresh');
         await get().logout();
         return null;
       }
 
       if (!isTokenValid(refreshToken)) {
-        console.info('[AuthStore] Refresh token is expired — forcing re-login');
+        if (__DEV__) console.info('[AuthStore] Refresh token is expired — forcing re-login');
         await get().logout();
         return null;
       }
@@ -378,7 +378,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       // Update in-memory state
       set({ token: newAccessToken });
 
-      console.info('[AuthStore] Access token refreshed successfully');
+      if (__DEV__) console.info('[AuthStore] Access token refreshed successfully');
       return newAccessToken;
     } catch (e) {
       console.warn('[AuthStore] refreshAccessToken network error:', e);

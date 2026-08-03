@@ -87,7 +87,8 @@ export async function mockRequestOTP(phone: string): Promise<{ message: string; 
   await delay(600);
   const otp = String(Math.floor(100000 + Math.random() * 900000));
   OTP_STORE[phone] = { otp, expiry: Date.now() + 5 * 60 * 1000, phone };
-  console.info(`[MOCK] OTP for ${phone}: ${otp}`);
+  // ⚠️ Privacy: never log the OTP itself; mask the phone number
+  if (__DEV__) console.info(`[MOCK] OTP generated for ${phone.slice(0, 3)}***${phone.slice(-2)} (check devOtp field in response)`);
   return {
     message: 'OTP sent successfully',
     companyName: companyName,
@@ -136,7 +137,8 @@ export async function mockRegisterUser(params: { fullName: string; phone: string
     throw new Error('Phone number already registered. Please login instead.');
   }
   const otp = String(Math.floor(100000 + Math.random() * 900000));
-  console.info(`[MOCK] Register OTP for ${params.phone}: ${otp}`);
+  // ⚠️ Privacy: never log the OTP itself; mask the phone number
+  if (__DEV__) console.info(`[MOCK] Register OTP generated for ${params.phone.slice(0, 3)}***${params.phone.slice(-2)} (check devOtp field in response)`);
   const pending: MockUser = {
     phone: params.phone,
     password: params.password || '',

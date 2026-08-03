@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Switch, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Switch, Platform, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,8 +8,10 @@ import Toast from 'react-native-toast-message';
 import { useAuthStore } from '@/stores/authStore';
 import { useNotificationStore, NOTIFICATION_CATEGORY_META } from '@/stores/notificationStore';
 import { useBiometrics } from '@/hooks/useBiometrics';
+import { deleteAccount } from '@/api/auth';
 import { colors } from '@/constants/colors';
 import { spacing, borderRadius } from '@/constants/config';
+
 
 export default function AccountScreen() {
   const { user, isAuthenticated, logout } = useAuthStore();
@@ -17,7 +19,9 @@ export default function AccountScreen() {
   const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
 
   const [biometricsEnabled, setBiometricsEnabled] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const { isSupported, isEnrolled, authenticate } = useBiometrics();
+
 
   useEffect(() => {
     const loadBiometricsPreference = async () => {
@@ -122,6 +126,54 @@ export default function AccountScreen() {
         },
       ]
     );
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      '⚠️ Delete Account',
+      'This will permanently delete your account and all associated data (orders, addresses, subscriptions). This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete My Account',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Are you absolutely sure?',
+              'All your personal data will be permanently erased from our servers.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Yes, Delete Everything',
+                  style: 'destructive',
+                  onPress: () => void doDeleteAccount(),
+                },
+              ]
+            );
+          },
+        },
+      ]
+    );
+  };
+
+  const doDeleteAccount = async () => {
+    setIsDeletingAccount(true);
+    try {
+      await deleteAccount();
+      await logout();
+      await AsyncStorage.clear();
+      Toast.show({
+        type: 'info',
+        text1: 'Account Deleted',
+        text2: 'Your account and all data have been permanently removed.',
+        position: 'bottom',
+      });
+      router.replace('/(onboarding)/welcome');
+    } catch (e: unknown) {
+      setIsDeletingAccount(false);
+      const msg = e instanceof Error ? e.message : 'Failed to delete account. Please try again.';
+      Alert.alert('Error', msg, [{ text: 'OK' }]);
+    }
   };
 
   if (!isAuthenticated || !user) {
@@ -311,6 +363,25 @@ export default function AccountScreen() {
         >
           <Ionicons name="log-out-outline" size={20} color={colors.error} />
           <Text style={styles.logoutText}>Sign Out</Text>
+        </TouchableOpacity>
+
+        {/* Delete Account */}
+        <TouchableOpacity
+          style={styles.deleteAccountBtn}
+          onPress={handleDeleteAccount}
+          activeOpacity={0.7}
+          disabled={isDeletingAccount}
+          accessibilityLabel="Permanently delete your account"
+          accessibilityRole="button"
+        >
+          {isDeletingAccount ? (
+            <ActivityIndicator size="small" color={colors.error} />
+          ) : (
+            <Ionicons name="trash-outline" size={16} color={colors.error} />
+          )}
+          <Text style={styles.deleteAccountText}>
+            {isDeletingAccount ? 'Deleting…' : 'Delete My Account'}
+          </Text>
         </TouchableOpacity>
 
         <Text style={styles.version}>{companyName} · v1.0.0</Text>
@@ -580,5 +651,24 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginTop: spacing.lg,
     textAlign: 'center',
+  },
+  deleteAccountBtn: {
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    borderColor: colors.errorLight,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'center',
+    marginHorizontal: spacing.lg,
+    marginTop: 12,
+    paddingVertical: 12,
+  },
+  deleteAccountText: {
+    color: colors.error,
+    fontSize: 13,
+    fontWeight: '600',
+    opacity: 0.8,
   },
 });
