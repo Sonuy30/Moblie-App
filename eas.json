@@ -16,12 +16,12 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://ff17f6814ba7abbf-103-186-47-124.serveousercontent.com",
+        "EXPO_PUBLIC_API_URL": "https://www.pankajal.in",
         "EXPO_PUBLIC_API_TIMEOUT": "15000",
-        "EXPO_PUBLIC_COMPANY_SLUG": "ever",
-        "EXPO_PUBLIC_COMPANY_NAME": "Ever",
+        "EXPO_PUBLIC_COMPANY_SLUG": "DailyNest",
+        "EXPO_PUBLIC_COMPANY_NAME": "DailyNest",
         "EXPO_PUBLIC_USE_MOCK_API": "false",
-        "EXPO_PUBLIC_WS_URL": "wss://ff17f6814ba7abbf-103-186-47-124.serveousercontent.com"
+        "EXPO_PUBLIC_WS_URL": "wss://www.pankajal.in"
       }
     },
 
@@ -35,11 +35,12 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://ff17f6814ba7abbf-103-186-47-124.serveousercontent.com",
+        "EXPO_PUBLIC_API_URL": "https://www.pankajal.in",
         "EXPO_PUBLIC_API_TIMEOUT": "15000",
-        "EXPO_PUBLIC_COMPANY_SLUG": "ever",
-        "EXPO_PUBLIC_COMPANY_NAME": "Ever",
-        "EXPO_PUBLIC_USE_MOCK_API": "false"
+        "EXPO_PUBLIC_COMPANY_SLUG": "DailyNest",
+        "EXPO_PUBLIC_COMPANY_NAME": "DailyNest",
+        "EXPO_PUBLIC_USE_MOCK_API": "false",
+        "EXPO_PUBLIC_WS_URL": "wss://www.pankajal.in"
       }
     },
 
@@ -53,11 +54,12 @@
         "simulator": false
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://pankajalerp.vercel.app",
+        "EXPO_PUBLIC_API_URL": "https://www.pankajal.in",
         "EXPO_PUBLIC_API_TIMEOUT": "15000",
-        "EXPO_PUBLIC_COMPANY_SLUG": "ever",
-        "EXPO_PUBLIC_COMPANY_NAME": "Ever",
-        "EXPO_PUBLIC_USE_MOCK_API": "false"
+        "EXPO_PUBLIC_COMPANY_SLUG": "DailyNest",
+        "EXPO_PUBLIC_COMPANY_NAME": "DailyNest",
+        "EXPO_PUBLIC_USE_MOCK_API": "false",
+        "EXPO_PUBLIC_WS_URL": "wss://www.pankajal.in"
       }
     }
   },

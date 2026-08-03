@@ -27,10 +27,10 @@ import { colors } from '@/constants/colors';
 import { borderRadius } from '@/constants/config';
 
 export default function OTPScreen() {
-  const { phone, devOtp } = useLocalSearchParams<{ phone: string; devOtp?: string }>();
+  const { phone } = useLocalSearchParams<{ phone: string }>();
 
   const [otp, setOtp] = useState('');
-  const [shownOtp, setShownOtp] = useState(devOtp || ''); // OTP shown from server in dev mode
+  const [shownOtp, setShownOtp] = useState(''); // Dev-mode OTP display only
   const [seconds, setSeconds] = useState(60);
   const [isLoading, setIsLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -229,21 +229,23 @@ export default function OTPScreen() {
           </Text>
         </View>
 
-        {/* OTP Display Box — always visible since SMS is not live */}
-        <View style={styles.devOtpBox}>
-          <Ionicons name="information-circle" size={20} color="#0C447C" />
-          <View style={{ flex: 1 }}>
-            <Text style={styles.devOtpLabel}>
-              {shownOtp ? 'Your OTP Code' : 'Your OTP Code (Demo Mode)'}
-            </Text>
-            <Text style={styles.devOtpCode}>{shownOtp || '123456'}</Text>
-            <Text style={styles.devOtpNote}>
-              {shownOtp
-                ? 'SMS not configured. Use this code to verify.'
-                : 'Live SMS not configured. Use this code to verify.'}
-            </Text>
+        {/* OTP Display Box — only visible in development builds */}
+        {__DEV__ && (
+          <View style={styles.devOtpBox}>
+            <Ionicons name="information-circle" size={20} color="#0C447C" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.devOtpLabel}>
+                {shownOtp ? 'Your OTP Code' : 'Your OTP Code (Demo Mode)'}
+              </Text>
+              <Text style={styles.devOtpCode}>{shownOtp || '123456'}</Text>
+              <Text style={styles.devOtpNote}>
+                {shownOtp
+                  ? 'SMS not configured. Use this code to verify.'
+                  : 'Live SMS not configured. Use this code to verify.'}
+              </Text>
+            </View>
           </View>
-        </View>
+        )}
 
 
         {/* Input Card Container */}
