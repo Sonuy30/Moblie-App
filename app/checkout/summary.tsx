@@ -67,7 +67,7 @@ export default function CheckoutSummaryScreen() {
   }, [selectedAddress, deliveryOption, paymentMethod]);
 
   const deliveryCharge = deliveryOption?.price || 0;
-  const grandTotal = subtotal + gst + deliveryCharge - couponDiscount;
+  const grandTotal = Math.max(0, subtotal + gst + deliveryCharge - couponDiscount);
 
   const handleApplyCoupon = async () => {
     setCouponError('');

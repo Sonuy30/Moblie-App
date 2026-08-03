@@ -46,7 +46,6 @@ export const initiateCheckout = async (payload: CheckoutPayload): Promise<Checko
       productId: i.productId,
       name:      i.name,
       qty:       i.quantity,
-      price:     i.price,
       image:     i.image,
     })),
     paymentMethod:   payload.paymentMethod || 'cod',

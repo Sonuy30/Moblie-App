@@ -68,13 +68,11 @@ export default function RegisterScreen() {
         password: data.password,
       });
       setLoading(false);
-      // Pass devOtp (if returned by server in dev mode) to OTP screen
       router.push({
         pathname: '/(auth)/otp',
         params: {
           phone: data.phone,
           fullName: data.fullName,
-          devOtp: (result as any).devOtp || '',
         },
       });
     } catch (err: any) {
