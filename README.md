@@ -63,8 +63,8 @@ EXPO_PUBLIC_WS_URL=ws://192.168.0.103:3000
 EXPO_PUBLIC_API_TIMEOUT=15000
 
 # Tenant Configuration
-EXPO_PUBLIC_COMPANY_SLUG=sudama01
-EXPO_PUBLIC_COMPANY_NAME=Sudama Enterprises
+EXPO_PUBLIC_COMPANY_SLUG=DailyNest
+EXPO_PUBLIC_COMPANY_NAME=DailyNest
 
 # Payments (Razorpay Publishable Key)
 EXPO_PUBLIC_RAZORPAY_KEY=rzp_test_xxxxxx
@@ -139,3 +139,26 @@ Run ESLint checks:
 ```bash
 npm run lint
 ```
+
+---
+
+## 🔐 Security Notes
+
+### Environment Variables
+All secrets are managed via environment variables (`EXPO_PUBLIC_*` prefix for client-safe values).
+- `.env.local` and `.env.production` are **gitignored** — never commit them.
+- Copy `.env.example` → `.env.local` and fill in real values before running the app.
+- The **Razorpay publishable key** (`EXPO_PUBLIC_RAZORPAY_KEY`) is safe to expose client-side — it is a publishable, not secret, key.
+
+### ⚠️ Git History Warning
+> **ROTATE YOUR SECRETS IMMEDIATELY** if any secret was previously hardcoded in source code.
+> Git history preserves every committed value forever, even after deletion.
+>
+> Previously identified hardcoded value (now removed):
+> - `***RAZORPAY_KEY_REDACTED***` was found as a fallback string in `app/subscribe/[itemId].tsx` (removed in commit after `1c1fb99`).
+>
+> **Action required:**
+> 1. Log in to your [Razorpay Dashboard](https://dashboard.razorpay.com) → Settings → API Keys.
+> 2. **Regenerate** your live API key pair (`rzp_live_*`).
+> 3. Update the new key in your EAS secrets / deployment environment.
+> 4. The old key `***RAZORPAY_KEY_REDACTED***` should be considered compromised and must be deactivated.

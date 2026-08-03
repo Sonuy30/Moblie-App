@@ -8,6 +8,8 @@ import {
   Alert,
   ActivityIndicator,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -82,7 +84,7 @@ export default function SubscribeScreen() {
   const [daysOfWeek, setDaysOfWeek] = useState<string[]>(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']);
   const [planType, setPlanType] = useState<PlanType>('month');
   const [paymentMode, setPaymentMode] = useState<PaymentMode>('online');
-  const [qty, setQty] = useState(parseFloat(defaultQty || '0.5') || 0.5);
+  const [qty, setQty] = useState(parseFloat(defaultQty || '1') || 1);
 
   // Tomorrow as default start date
   const tomorrow = new Date();
@@ -108,6 +110,60 @@ export default function SubscribeScreen() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const selectedPlan = PLANS.find((p) => p.type === planType) || PLANS[2];
+
+  const computeEndDatePreview = (startDateStr: string, total: number, freq: string, days: string[]) => {
+    try {
+      const start = new Date(startDateStr);
+      if (isNaN(start.getTime())) return '';
+      start.setHours(0, 0, 0, 0);
+
+      if (total <= 1) return start.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+
+      if (freq === 'daily') {
+        const end = new Date(start);
+        end.setDate(end.getDate() + total - 1);
+        return end.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+      }
+
+      if (freq === 'alternate_days') {
+        const end = new Date(start);
+        end.setDate(end.getDate() + (total - 1) * 2);
+        return end.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+      }
+
+      if (freq === 'custom_days') {
+        const dayMap = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+        const validDays = (days || []).map(d => String(d).toLowerCase());
+        if (validDays.length === 0) {
+          const end = new Date(start);
+          end.setDate(end.getDate() + total - 1);
+          return end.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+
+        let count = 0;
+        let curr = new Date(start);
+        let lastDeliveryDate = new Date(start);
+
+        while (count < total) {
+          const dayName = dayMap[curr.getDay()];
+          if (validDays.includes(dayName)) {
+            count++;
+            lastDeliveryDate = new Date(curr);
+          }
+          if (count < total) {
+            curr.setDate(curr.getDate() + 1);
+          }
+        }
+        return lastDeliveryDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+      }
+
+      const end = new Date(start);
+      end.setDate(end.getDate() + total - 1);
+      return end.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+    } catch {
+      return '';
+    }
+  };
 
   // Load saved addresses
   useEffect(() => {
@@ -242,7 +298,7 @@ export default function SubscribeScreen() {
         return;
       }
       const rzpInstance = new (globalThis as any).Razorpay({
-        key: (data.razorpayOrder as any).key || process.env.EXPO_PUBLIC_RAZORPAY_KEY || '***RAZORPAY_KEY_REDACTED***',
+        key: (data.razorpayOrder as any).key || process.env.EXPO_PUBLIC_RAZORPAY_KEY || '',
         amount: Math.round(data.totalAmount * 100),
         currency: 'INR',
         order_id: data.razorpayOrder.id,
@@ -411,7 +467,16 @@ export default function SubscribeScreen() {
               </View>
             )}
 
-            <TouchableOpacity style={styles.nextBtn} onPress={() => setStep('plan')}>
+            <TouchableOpacity
+              style={[styles.nextBtn, frequency === 'custom_days' && daysOfWeek.length === 0 && { opacity: 0.5 }]}
+              onPress={() => {
+                if (frequency === 'custom_days' && daysOfWeek.length === 0) {
+                  Alert.alert('Selection Required', 'Please select at least 1 weekday for delivery.');
+                  return;
+                }
+                setStep('plan');
+              }}
+            >
               <Text style={styles.nextBtnText}>Next: Choose Plan</Text>
               <Ionicons name="arrow-forward" size={18} color="#fff" />
             </TouchableOpacity>
@@ -498,13 +563,7 @@ export default function SubscribeScreen() {
                 {selectedPlan.deliveries === 1
                   ? '1 delivery on your chosen date.'
                   : `${selectedPlan.deliveries} deliveries starting from this date.`}
-                {'\n'}Subscription ends: {(() => {
-                  try {
-                    const end = new Date(startDate);
-                    end.setDate(end.getDate() + selectedPlan.deliveries);
-                    return end.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
-                  } catch { return ''; }
-                })()}
+                {'\n'}Subscription ends: {computeEndDatePreview(startDate, selectedPlan.deliveries, frequency, daysOfWeek)}
               </Text>
             </View>
 
@@ -566,14 +625,14 @@ export default function SubscribeScreen() {
               </>
             )}
 
-            {([ 
-              { key: 'fullName', label: 'Full Name', placeholder: 'John Doe' },
-              { key: 'phone', label: 'Phone', placeholder: '9876543210', keyboard: 'phone-pad' },
-              { key: 'address1', label: 'Address Line 1', placeholder: 'House No., Street' },
-              { key: 'address2', label: 'Landmark (optional)', placeholder: 'Near temple' },
-              { key: 'city', label: 'City', placeholder: 'Mumbai' },
-              { key: 'state', label: 'State', placeholder: 'Maharashtra' },
-              { key: 'pin', label: 'Pincode', placeholder: '400001', keyboard: 'number-pad' },
+            {([
+              { key: 'fullName',  label: 'Full Name',          placeholder: 'John Doe',          returnKey: 'next'   },
+              { key: 'phone',     label: 'Phone',              placeholder: '9876543210',         returnKey: 'next',  keyboard: 'phone-pad'  },
+              { key: 'address1',  label: 'Address Line 1',     placeholder: 'House No., Street', returnKey: 'next'   },
+              { key: 'address2',  label: 'Landmark (optional)',placeholder: 'Near temple',        returnKey: 'next'   },
+              { key: 'city',      label: 'City',               placeholder: 'Mumbai',            returnKey: 'next'   },
+              { key: 'state',     label: 'State',              placeholder: 'Maharashtra',       returnKey: 'next'   },
+              { key: 'pin',       label: 'Pincode',            placeholder: '400001',            returnKey: 'done',  keyboard: 'number-pad' },
             ] as const).map((field) => (
               <View key={field.key} style={{ marginBottom: 12 }}>
                 <Text style={styles.fieldLabel}>{field.label}</Text>
@@ -586,6 +645,8 @@ export default function SubscribeScreen() {
                   }}
                   placeholder={field.placeholder}
                   keyboardType={(field as { keyboard?: string }).keyboard as never || 'default'}
+                  returnKeyType={(field as { returnKey: string }).returnKey as never}
+                  blurOnSubmit={false}
                 />
               </View>
             ))}
@@ -868,12 +929,21 @@ export default function SubscribeScreen() {
       </View>
       <Text style={styles.stepName}>{STEP_NAMES[step]}</Text>
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      {/* KeyboardAvoidingView ensures address TextInputs are not covered by keyboard */}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'android' ? 0 : 0}
       >
-        {renderStep()}
-      </ScrollView>
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+        >
+          {renderStep()}
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
