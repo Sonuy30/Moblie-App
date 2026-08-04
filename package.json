@@ -14,7 +14,8 @@
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "typecheck": "tsc --noEmit",
-    "eas-build-pre-install": "node scripts/verify-build.js"
+    "eas-build-pre-install": "node scripts/verify-build.js",
+    "postinstall": "node scripts/fix-razorpay-namespace.js"
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
