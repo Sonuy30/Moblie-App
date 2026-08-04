@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "Sudama Enterprises",
+    "name": "DailyNest",
     "slug": "aits-shop",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
-    "scheme": "sudamaenterprises",
+    "newArchEnabled": false,
+    "scheme": "dailynest",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.sudama.enterprises"
+      "bundleIdentifier": "com.dailynest.shop"
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +23,7 @@
         "backgroundColor": "#185FA5"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.sudama.enterprises",
+      "package": "com.dailynest.shop",
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.INTERNET",
@@ -43,7 +43,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Allow Sudama Enterprises to use the camera to scan invite QR codes."
+          "cameraPermission": "Allow DailyNest to use the camera to scan QR codes."
         }
       ],
       [
@@ -72,3 +72,4 @@
     "owner": "ronp6"
   }
 }
+
