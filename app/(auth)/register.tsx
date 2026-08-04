@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -28,6 +28,7 @@ const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'DailyNest';
 const registerSchema = z
   .object({
     fullName: z.string().min(2, 'Name must be at least 2 characters'),
+    email: z.string().email('Enter a valid email address').optional().or(z.literal('')),
     phone: z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit Indian mobile number'),
     password: z.string().min(8, 'Password must be at least 8 characters'),
     confirmPassword: z.string(),
@@ -51,9 +52,10 @@ export default function RegisterScreen() {
     formState: { errors },
   } = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { fullName: '', phone: '', password: '', confirmPassword: '' },
+    defaultValues: { fullName: '', email: '', phone: '', password: '', confirmPassword: '' },
   });
 
+  const emailRef = useRef<TextInputType>(null);
   const phoneRef = useRef<TextInputType>(null);
   const passwordRef = useRef<TextInputType>(null);
   const confirmRef = useRef<TextInputType>(null);
@@ -64,6 +66,7 @@ export default function RegisterScreen() {
     try {
       const result = await registerUser({
         fullName: data.fullName,
+        email: data.email,
         phone: data.phone,
         password: data.password,
       });
@@ -139,7 +142,7 @@ export default function RegisterScreen() {
                     value={value}
                     autoCapitalize="words"
                     returnKeyType="next"
-                    onSubmitEditing={() => phoneRef.current?.focus()}
+                    onSubmitEditing={() => emailRef.current?.focus()}
                     blurOnSubmit={false}
                     accessibilityLabel="Full name input"
                   />
@@ -147,6 +150,36 @@ export default function RegisterScreen() {
               )}
             />
             {errors.fullName && <Text style={styles.fieldError}>{errors.fullName.message}</Text>}
+          </View>
+
+          {/* Email */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Email Address (Optional)</Text>
+            <Controller
+              control={control}
+              name="email"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <View style={[styles.inputContainer, errors.email && styles.inputError]}>
+                  <Ionicons name="mail-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
+                  <TextInput
+                    ref={emailRef}
+                    style={styles.input}
+                    placeholder="name@example.com"
+                    placeholderTextColor={colors.textMuted}
+                    onBlur={onBlur}
+                    onChangeText={onChange}
+                    value={value}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    returnKeyType="next"
+                    onSubmitEditing={() => phoneRef.current?.focus()}
+                    blurOnSubmit={false}
+                    accessibilityLabel="Email address input"
+                  />
+                </View>
+              )}
+            />
+            {errors.email && <Text style={styles.fieldError}>{errors.email.message}</Text>}
           </View>
 
           {/* Phone */}

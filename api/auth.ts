@@ -207,6 +207,7 @@ export const verifyRegisterOTP = verifyOTP;
 // ── Register ───────────────────────────────────────────────────────────────
 export const registerUser = async (params: {
   fullName: string;
+  email?: string;
   phone: string;
   password?: string;
 }): Promise<RegisterResponse> => {
