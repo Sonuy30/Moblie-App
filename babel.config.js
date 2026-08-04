@@ -5,7 +5,6 @@ module.exports = function (api) {
       ['babel-preset-expo', { unstable_transformImportMeta: true }],
     ],
     plugins: [
-      'babel-plugin-transform-import-meta',
       [
         'module-resolver',
         {
