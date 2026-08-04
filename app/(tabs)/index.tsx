@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -62,8 +63,15 @@ export default function HomeScreen() {
       {/* ── Premium Custom Header ── */}
       <View style={styles.header}>
         <View style={styles.brandContainer}>
-          <Text style={styles.brandTitle}>{companyName}</Text>
-          <Text style={styles.brandSubtitle}>OFFICIAL STORE</Text>
+          <Image
+            source={require('../../assets/icon.png')}
+            style={{ width: 34, height: 34, borderRadius: 8, marginRight: 8 }}
+            resizeMode="contain"
+          />
+          <View>
+            <Text style={styles.brandTitle}>{companyName}</Text>
+            <Text style={styles.brandSubtitle}>OFFICIAL STORE</Text>
+          </View>
         </View>
         <View style={styles.headerRight}>
           <TouchableOpacity
@@ -175,7 +183,8 @@ const styles = StyleSheet.create({
     height: 40,
   },
   brandContainer: {
-    flexDirection: 'column',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   brandSubtitle: {
     color: colors.textMuted,

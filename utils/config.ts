@@ -15,6 +15,8 @@
 
 import Constants from 'expo-constants';
 
+import Platform from 'react-native';
+
 // ── Type for all recognised environment variables ──────────────────────────
 interface EnvVars {
   EXPO_PUBLIC_API_URL: string;
@@ -98,8 +100,8 @@ export const Config = {
   // API
   /** Backend base URL. Pulled from EXPO_PUBLIC_API_URL. */
   API_URL: (() => {
-    const raw = getEnv('EXPO_PUBLIC_API_URL') || 'http://localhost:3000';
-    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    const raw = getEnv('EXPO_PUBLIC_API_URL') || 'https://www.pankajal.in';
+    if (typeof window !== 'undefined' && window.location && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
       return 'http://localhost:3000';
     }
     return raw;
@@ -110,10 +112,10 @@ export const Config = {
 
   // Company / Tenant
   /** ERP tenant slug — sent in pre-login request bodies. */
-  COMPANY_SLUG: getEnv('EXPO_PUBLIC_COMPANY_SLUG') as string,
+  COMPANY_SLUG: getEnv('EXPO_PUBLIC_COMPANY_SLUG') ?? 'DailyNest',
 
   /** Human-readable company name for UI display. */
-  COMPANY_NAME: getEnv('EXPO_PUBLIC_COMPANY_NAME') ?? 'AITS Shop',
+  COMPANY_NAME: getEnv('EXPO_PUBLIC_COMPANY_NAME') ?? 'DailyNest',
 
   /** Tagline for splash/marketing. Pulled from EXPO_PUBLIC_COMPANY_TAGLINE. */
   COMPANY_TAGLINE: getEnv('EXPO_PUBLIC_COMPANY_TAGLINE') ?? 'Shop with confidence',

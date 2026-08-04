@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, Animated, Easing, Image } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -108,7 +108,11 @@ export default function SplashScreen() {
         ]}
       >
         <View style={styles.logoInner}>
-          <Ionicons name="cube" size={56} color="#185FA5" />
+          <Image
+            source={require('../assets/icon.png')}
+            style={{ width: 80, height: 80, borderRadius: 16 }}
+            resizeMode="contain"
+          />
         </View>
         <View style={styles.logoShine} />
       </Animated.View>
