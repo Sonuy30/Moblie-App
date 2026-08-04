@@ -22,7 +22,6 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#185FA5"
       },
-      "edgeToEdgeEnabled": true,
       "package": "com.dailynest.shop",
       "permissions": [
         "android.permission.CAMERA",
