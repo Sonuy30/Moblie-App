@@ -30,7 +30,7 @@ import RecentlyViewed from '@/components/home/RecentlyViewed';
 import { colors } from '@/constants/colors';
 import { spacing } from '@/constants/config';
 
-const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama Enterprises';
+const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'DailyNest';
 
 export default function HomeScreen() {
   const queryClient = useQueryClient();

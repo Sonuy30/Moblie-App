@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import { colors } from '@/constants/colors';
 import { spacing, borderRadius } from '@/constants/config';
 
 const { width } = Dimensions.get('window');
-const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
+const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'DailyNest';
 
 interface SlideItem {
   id: string;

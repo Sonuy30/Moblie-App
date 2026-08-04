@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -71,7 +71,7 @@ export default function CheckoutDeliveryScreen() {
           estimatedDays: standardDays,
           estimatedDeliveryDate: res.deliveryDate || getFormattedDate(standardDays),
           isDeliverable: true,
-          message: 'Safe and secure delivery via Sudama Enterprises logistics',
+          message: 'Safe and secure delivery via DailyNest logistics',
         };
 
         const expressOpt: DeliveryOption = {

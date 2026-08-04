@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -32,7 +32,7 @@ import { useBiometrics } from '@/hooks/useBiometrics';
 import { colors } from '@/constants/colors';
 import { spacing, borderRadius } from '@/constants/config';
 
-const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
+const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'DailyNest';
 
 const loginSchema = z.object({
   phone: z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit Indian mobile number'),

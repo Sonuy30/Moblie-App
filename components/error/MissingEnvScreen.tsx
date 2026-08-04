@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   View,
   Text,
@@ -32,7 +32,7 @@ export function MissingEnvScreen({ missingVars }: MissingEnvScreenProps) {
         <View style={styles.logoBadge}>
           <Text style={styles.logoText}>AS</Text>
         </View>
-        <Text style={styles.appName}>Sudama Enterprises</Text>
+        <Text style={styles.appName}>DailyNest</Text>
       </LinearGradient>
 
       {/* Content card */}

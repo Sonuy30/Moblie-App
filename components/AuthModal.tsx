@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function AuthModal() {
   const { isVisible, hide } = useAuthModalStore();
-  const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
+  const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'DailyNest';
 
   if (!isVisible) return null;
 

@@ -1,7 +1,7 @@
-import type { AuthUser } from '@/stores/authStore';
+﻿import type { AuthUser } from '@/stores/authStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
+const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'DailyNest';
 
 // ──────────────────────────────────────────────────────────
 // Demo users store (in-memory for session)

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+﻿import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import { colors } from '@/constants/colors';
 import { borderRadius, spacing } from '@/constants/config';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
+const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'DailyNest';
 
 interface Banner {
   id: string;

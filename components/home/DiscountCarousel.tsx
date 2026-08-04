@@ -1,4 +1,4 @@
-/**
+﻿/**
  * DiscountCarousel — "Today's Offers" horizontal cards
  *
  * Shows flat-discount offer cards (e.g. "Flat 10% Off", "Flat 20% Off").
@@ -28,7 +28,7 @@ import { formatINR } from '@/utils/currency';
 
 const CARD_WIDTH = 210;
 
-const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama Enterprises';
+const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'DailyNest';
 
 /** Format a date as "12 Jun" */
 function fmtDate(d: Date): string {

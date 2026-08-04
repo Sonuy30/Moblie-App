@@ -1,4 +1,4 @@
-import client from './client';
+﻿import client from './client';
 
 export interface CompanySettings {
   returnWindowDays: number;
@@ -6,7 +6,7 @@ export interface CompanySettings {
 }
 
 export const fetchCompanySettings = async (): Promise<CompanySettings> => {
-  const COMPANY_SLUG = process.env.EXPO_PUBLIC_COMPANY_SLUG || 'sudama01';
+  const COMPANY_SLUG = process.env.EXPO_PUBLIC_COMPANY_SLUG || 'DailyNest';
   const { data } = await client.get<CompanySettings>('/api/mobile/company/settings', {
     params: { companySlug: COMPANY_SLUG },
   });

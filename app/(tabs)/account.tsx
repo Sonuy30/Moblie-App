@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Switch, Platform, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,7 +16,7 @@ import { spacing, borderRadius } from '@/constants/config';
 export default function AccountScreen() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const { preferences, toggleCategory } = useNotificationStore();
-  const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01';
+  const companyName = process.env.EXPO_PUBLIC_COMPANY_NAME || 'DailyNest';
 
   const [biometricsEnabled, setBiometricsEnabled] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);

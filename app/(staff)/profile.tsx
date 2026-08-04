@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -122,7 +122,7 @@ export default function StaffProfile() {
           <Text style={styles.logoutText}>Sign Out</Text>
         </TouchableOpacity>
 
-        <Text style={styles.version}>{process.env.EXPO_PUBLIC_COMPANY_NAME || 'Sudama01'} Pvt Ltd · v1.0.0 · Staff Portal</Text>
+        <Text style={styles.version}>{process.env.EXPO_PUBLIC_COMPANY_NAME || 'DailyNest'} Pvt Ltd · v1.0.0 · Staff Portal</Text>
         <View style={{ height: 40 }} />
       </ScrollView>
     </SafeAreaView>
