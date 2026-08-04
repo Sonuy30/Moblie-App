@@ -65,7 +65,8 @@
             "buildToolsVersion": "35.0.0"
           }
         }
-      ]
+      ],
+      "@sentry/react-native"
     ],
     "extra": {
       "router": {},
@@ -76,4 +77,3 @@
     "owner": "ronp6"
   }
 }
-
